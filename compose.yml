@@ -7,6 +7,8 @@ services:
       - 'POSTGRES_USER=postgres'
     ports:
       - '5432:5432'
+    networks:
+      - proxy
 
   rabbitmq:
     image: 'rabbitmq:4.1.3-management'
@@ -16,16 +18,19 @@ services:
     ports:
       - '5672:5672'
       - '15672:15672'
+    networks:
+      - proxy
   zipkin:
     image: 'openzipkin/zipkin:3.5.1'
     environment:
       - STORAGE_TYPE=mem
     ports:
       - '9411:9411'
+    networks:
+      - proxy
 
-  spring-modular-monolith:
+  monolith:
     image: sivaprasadreddy/spring-modular-monolith
-    container_name: spring-modular-monolith
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -37,12 +42,22 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-    ports:
-      - "8080:8080"
     depends_on:
       - postgres
       - rabbitmq
       - zipkin
     restart: unless-stopped
-    profiles:
-      - app
+    networks:
+      - proxy
+
+  webproxy:
+    depends_on:
+      - monolith
+    build: webproxy
+    networks:
+      - proxy
+    ports:
+      - "8080:80"
+
+networks:
+  proxy:
