@@ -1,8 +1,10 @@
 package com.sivalabs.bookstore.orders.web;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class Cart {
+public class Cart implements Serializable {
+    private static final long serialVersionUID = 1L;
     private LineItem item;
 
     public LineItem getItem() {
@@ -32,7 +34,8 @@ public class Cart {
         item.setQuantity(quantity);
     }
 
-    public static class LineItem {
+    public static class LineItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String code;
         private String name;
         private BigDecimal price;
