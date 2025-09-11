@@ -1,8 +1,8 @@
 SET search_path TO inventory;
 
-create sequence inventory_id_seq start with 100 increment by 50;
+create sequence if not exists inventory_id_seq start with 100 increment by 50;
 
-create table inventory
+create table if not exists inventory
 (
     id           bigint not null default nextval('inventory.inventory_id_seq'),
     product_code text   not null unique,
@@ -26,4 +26,4 @@ insert into inventory(product_code, quantity) values
 ('P112', 4300),
 ('P113', 700),
 ('P114', 600)
-;
+ON CONFLICT (product_code) DO NOTHING;

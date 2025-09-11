@@ -1,8 +1,8 @@
 SET search_path TO orders;
 
-create sequence order_id_seq start with 100 increment by 50;
+create sequence if not exists order_id_seq start with 100 increment by 50;
 
-create table orders
+create table if not exists orders
 (
     id               bigint    not null default nextval('orders.order_id_seq'),
     order_number     text      not null unique,

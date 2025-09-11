@@ -47,6 +47,7 @@ public class HazelcastConfig {
         String instanceName = "bookstore-hazelcast-" + System.currentTimeMillis();
         config.setInstanceName(instanceName);
         config.setClusterName("bookstore-cluster");
+        config.getJetConfig().setEnabled(true);
 
         // Configure the orders cache map
         MapConfig ordersCacheMapConfig = new MapConfig(ORDERS_CACHE_NAME);
