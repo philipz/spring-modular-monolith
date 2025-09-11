@@ -2,7 +2,12 @@ package com.sivalabs.bookstore.orders.cache;
 
 import com.hazelcast.map.IMap;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -534,5 +539,152 @@ public class OrderCacheService {
 
         logger.info("Cache warm-up completed: {} orders preloaded", successCount);
         return successCount;
+    }
+
+    /**
+     * Get all order keys currently in the cache.
+     *
+     * @return Set of order numbers (keys) in the cache
+     */
+    public Set<String> getAllCacheKeys() {
+        return errorHandler.executeWithFallback(
+                () -> {
+                    Set<String> keys = ordersCache.keySet();
+                    logger.debug("Retrieved {} cache keys", keys.size());
+                    return keys;
+                },
+                "getAllCacheKeys",
+                "global",
+                () -> {
+                    logger.debug("Failed to retrieve cache keys, returning empty set");
+                    return Set.of();
+                });
+    }
+
+    /**
+     * Get all cached orders.
+     *
+     * @return List of all OrderEntity objects in the cache
+     */
+    public List<OrderEntity> getAllCachedOrders() {
+        return errorHandler.executeWithFallback(
+                () -> {
+                    List<OrderEntity> orders = new ArrayList<>();
+                    for (Object value : ordersCache.values()) {
+                        if (value instanceof OrderEntity orderEntity) {
+                            orders.add(orderEntity);
+                        } else if (value != null) {
+                            logger.warn("Unexpected object type in cache: {}", value.getClass());
+                        }
+                    }
+                    logger.debug("Retrieved {} cached orders", orders.size());
+                    return orders;
+                },
+                "getAllCachedOrders",
+                "global",
+                () -> {
+                    logger.debug("Failed to retrieve cached orders, returning empty list");
+                    return List.of();
+                });
+    }
+
+    /**
+     * Get all cached orders as a map of orderNumber -> OrderEntity.
+     *
+     * @return Map of order numbers to OrderEntity objects
+     */
+    public Map<String, OrderEntity> getAllCachedOrdersAsMap() {
+        return errorHandler.executeWithFallback(
+                () -> {
+                    Map<String, OrderEntity> orderMap = new HashMap<>();
+                    for (Map.Entry<String, Object> entry : ordersCache.entrySet()) {
+                        Object value = entry.getValue();
+                        if (value instanceof OrderEntity orderEntity) {
+                            orderMap.put(entry.getKey(), orderEntity);
+                        } else if (value != null) {
+                            logger.warn(
+                                    "Unexpected object type in cache for key {}: {}", entry.getKey(), value.getClass());
+                        }
+                    }
+                    logger.debug("Retrieved {} cached orders as map", orderMap.size());
+                    return orderMap;
+                },
+                "getAllCachedOrdersAsMap",
+                "global",
+                () -> {
+                    logger.debug("Failed to retrieve cached orders as map, returning empty map");
+                    return Map.of();
+                });
+    }
+
+    /**
+     * Get a subset of cached orders with pagination support.
+     *
+     * @param limit maximum number of orders to return
+     * @param offset starting position (for pagination)
+     * @return List of OrderEntity objects (paginated)
+     */
+    public List<OrderEntity> getCachedOrdersPaginated(int limit, int offset) {
+        return errorHandler.executeWithFallback(
+                () -> {
+                    List<OrderEntity> allOrders = getAllCachedOrders();
+
+                    if (offset >= allOrders.size()) {
+                        return List.of();
+                    }
+
+                    int endIndex = Math.min(offset + limit, allOrders.size());
+                    List<OrderEntity> paginatedOrders = allOrders.subList(offset, endIndex);
+
+                    logger.debug(
+                            "Retrieved {} paginated cached orders (limit: {}, offset: {})",
+                            paginatedOrders.size(),
+                            limit,
+                            offset);
+                    return paginatedOrders;
+                },
+                "getCachedOrdersPaginated",
+                String.format("limit=%d,offset=%d", limit, offset),
+                () -> {
+                    logger.debug("Failed to retrieve paginated cached orders, returning empty list");
+                    return List.of();
+                });
+    }
+
+    /**
+     * Get basic cache content summary with counts and sample data.
+     *
+     * @return Map containing cache content summary
+     */
+    public Map<String, Object> getCacheContentSummary() {
+        return errorHandler.executeWithFallback(
+                () -> {
+                    Map<String, Object> summary = new HashMap<>();
+
+                    Set<String> keys = ordersCache.keySet();
+                    List<OrderEntity> orders = getAllCachedOrders();
+
+                    summary.put("totalEntries", keys.size());
+                    summary.put("orderCount", orders.size());
+                    summary.put("keys", keys);
+
+                    // Add sample orders (first 3)
+                    List<OrderEntity> sampleOrders = orders.stream().limit(3).toList();
+                    summary.put("sampleOrders", sampleOrders);
+
+                    logger.debug("Generated cache content summary with {} entries", keys.size());
+                    return summary;
+                },
+                "getCacheContentSummary",
+                "global",
+                () -> {
+                    logger.debug("Failed to generate cache content summary, returning empty summary");
+                    Map<String, Object> emptySummary = new HashMap<>();
+                    emptySummary.put("totalEntries", 0);
+                    emptySummary.put("orderCount", 0);
+                    emptySummary.put("keys", Set.of());
+                    emptySummary.put("sampleOrders", List.of());
+                    return emptySummary;
+                });
     }
 }

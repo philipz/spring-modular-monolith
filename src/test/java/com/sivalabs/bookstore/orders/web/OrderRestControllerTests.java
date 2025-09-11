@@ -106,6 +106,89 @@ class OrderRestControllerTests {
         mockMvc.perform(get("/api/orders")).andExpect(status().isOk());
     }
 
+    @Test
+    void shouldReturnCacheDisabledWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("disabled")))
+                .andExpect(jsonPath("$.message", is("Hazelcast cache is not enabled or not available")));
+    }
+
+    @Test
+    void shouldReturnCacheHealthDownWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/health"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status", is("DOWN")))
+                .andExpect(jsonPath("$.details", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnCacheStatsUnavailableWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnConnectivityTestFailureWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(post("/api/orders/cache/test-connectivity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnCircuitBreakerResetFailureWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(post("/api/orders/cache/reset-circuit-breaker"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnEmptyCacheDataWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/data"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnEmptyOrdersListWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.orders").isEmpty())
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnEmptyKeysWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/orders/keys"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.keys").isEmpty())
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnEmptyPaginatedOrdersWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/orders/paginated?limit=5&offset=0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.orders").isEmpty())
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
+    @Test
+    void shouldReturnOrderNotFoundWhenCacheNotEnabled() throws Exception {
+        mockMvc.perform(get("/api/orders/cache/orders/ORDER-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available", is(false)))
+                .andExpect(jsonPath("$.message", is("Cache service is not available")));
+    }
+
     private static OrderEntity buildOrderEntity() {
         CreateOrderRequest request = buildCreateOrderRequest();
         return OrderMapper.convertToEntity(request);
