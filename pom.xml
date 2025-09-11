@@ -26,7 +26,7 @@
         <htmx.version>2.0.6</htmx.version>
         <spotless.version>2.46.1</spotless.version>
         <palantir-java-format.version>2.72.0</palantir-java-format.version>
-        <hazelcast.version>5.5.0</hazelcast.version>
+        <hazelcast.version>5.5.6</hazelcast.version>
     </properties>
 
     <dependencyManagement>
@@ -226,13 +226,17 @@
 
     <repositories>
         <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
+            <id>hazelcast</id>
+            <url>https://repository.hazelcast.com/release/</url>
         </repository>
+        
+        <!-- Spring Repository (for Spring artifacts) -->
+        <repository>
+            <id>spring-releases</id>
+            <name>Spring Releases</name>
+            <url>https://repo.spring.io/release</url>
+        </repository>
+
     </repositories>
 
     <pluginRepositories>
