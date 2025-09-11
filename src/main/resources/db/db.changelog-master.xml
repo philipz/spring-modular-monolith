@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- 
+    Master Changelog for Spring Modular Monolith Bookstore Application
+    Organized by Spring Modulith module boundaries following domain separation
+    -->
+
+    <!-- Foundation: Common Schemas -->
+    <changeSet id="1" author="common" labels="foundation" context="all">
+        <comment>Create database schemas for all modules</comment>
+        <sqlFile path="db/migration/V1__create_schemas.sql"/>
+        <rollback>
+            DROP SCHEMA IF EXISTS events CASCADE;
+            DROP SCHEMA IF EXISTS inventory CASCADE; 
+            DROP SCHEMA IF EXISTS orders CASCADE; 
+            DROP SCHEMA IF EXISTS catalog CASCADE;
+        </rollback>
+    </changeSet>
+
+    <!-- CATALOG MODULE -->
+    <changeSet id="2" author="catalog" labels="catalog" context="all">
+        <comment>Create products table in catalog schema</comment>
+        <sqlFile path="db/migration/V2__catalog_create_products_table.sql"/>
+        <rollback>
+            DROP TABLE IF EXISTS catalog.products CASCADE;
+            DROP SEQUENCE IF EXISTS catalog.product_id_seq CASCADE;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="3" author="catalog" labels="catalog,data" context="all">
+        <comment>Add books data to products table</comment>
+        <sqlFile path="db/migration/V3__catalog_add_books_data.sql"/>
+        <rollback>
+            DELETE FROM catalog.products WHERE code IN ('P100','P101','P102','P103','P104','P105','P106','P107','P108','P109','P110','P111','P112','P113','P114');
+        </rollback>
+    </changeSet>
+
+    <!-- ORDERS MODULE -->
+    <changeSet id="4" author="orders" labels="orders" context="all">
+        <comment>Create orders table in orders schema</comment>
+        <sqlFile path="db/migration/V4__orders_create_orders_table.sql"/>
+        <rollback>
+            DROP TABLE IF EXISTS orders.orders CASCADE;
+            DROP SEQUENCE IF EXISTS orders.order_id_seq CASCADE;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="5" author="orders" labels="orders,data" context="all">
+        <comment>Add sample orders data</comment>
+        <sqlFile path="db/migration/V5__orders_add_orders_data.sql"/>
+        <rollback>
+            DELETE FROM orders.orders WHERE id IN (1, 2, 3);
+        </rollback>
+    </changeSet>
+
+    <!-- INVENTORY MODULE -->
+    <changeSet id="6" author="inventory" labels="inventory" context="all">
+        <comment>Create inventory table and populate with initial data</comment>
+        <sqlFile path="db/migration/V6__inventory_create_inventory_table.sql"/>
+        <rollback>
+            DROP TABLE IF EXISTS inventory.inventory CASCADE;
+            DROP SEQUENCE IF EXISTS inventory.inventory_id_seq CASCADE;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -16,4 +16,4 @@ insert into products(code, name, description, image_url, price) values
 ('P112','The Book Thief','Nazi Germany. The country is holding its breath. Death has never been busier, and will be busier still.By her brother''s graveside, Liesel''s life is changed when she picks up a single object, partially hidden in the snow.','https://images.gr-assets.com/books/1522157426l/19063.jpg',30.0),
 ('P113','One Flew Over the Cuckoo''s Nest','Tyrannical Nurse Ratched rules her ward in an Oregon State mental hospital with a strict and unbending routine, unopposed by her patients, who remain cowed by mind-numbing medication and the threat of electric shock therapy.','https://images.gr-assets.com/books/1516211014l/332613.jpg',23.0),
 ('P114','Fifty Shades of Grey','When literature student Anastasia Steele goes to interview young entrepreneur Christian Grey, she encounters a man who is beautiful, brilliant, and intimidating.','https://images.gr-assets.com/books/1385207843l/10818853.jpg', 27.0)
-;
+ON CONFLICT (code) DO NOTHING;

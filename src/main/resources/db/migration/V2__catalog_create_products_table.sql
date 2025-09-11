@@ -1,8 +1,8 @@
 SET search_path TO catalog;
 
-create sequence product_id_seq start with 100 increment by 50;
+create sequence if not exists product_id_seq start with 100 increment by 50;
 
-create table products
+create table if not exists products
 (
     id          bigint  not null default nextval('catalog.product_id_seq'),
     code        text    not null unique,

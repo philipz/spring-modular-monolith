@@ -87,12 +87,8 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -294,6 +290,17 @@
                         <printStderrOnFailure>true</printStderrOnFailure>
                         <printStderrOnSuccess>false</printStderrOnSuccess>
                     </statelessTestsetInfoReporter>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-maven-plugin</artifactId>
+                <configuration>
+                    <changeLogFile>src/main/resources/db/db.changelog-master.xml</changeLogFile>
+                    <url>jdbc:postgresql://localhost:5432/postgres</url>
+                    <username>postgres</username>
+                    <password>postgres</password>
+                    <driver>org.postgresql.Driver</driver>
                 </configuration>
             </plugin>
             <plugin>
