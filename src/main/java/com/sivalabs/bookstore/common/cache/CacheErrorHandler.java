@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.orders.cache;
+package com.sivalabs.bookstore.common.cache;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

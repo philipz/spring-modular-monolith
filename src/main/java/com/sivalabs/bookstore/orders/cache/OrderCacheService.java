@@ -1,6 +1,7 @@
 package com.sivalabs.bookstore.orders.cache;
 
 import com.hazelcast.map.IMap;
+import com.sivalabs.bookstore.common.cache.CacheErrorHandler;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;

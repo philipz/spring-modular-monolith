@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.inventory;
+package com.sivalabs.bookstore.inventory.domain;
 
 import static jakarta.persistence.GenerationType.SEQUENCE;
 
@@ -12,10 +12,10 @@ import jakarta.validation.constraints.NotEmpty;
 
 @Entity
 @Table(name = "inventory", schema = "inventory")
-class InventoryEntity {
+public class InventoryEntity {
     @Id
     @GeneratedValue(strategy = SEQUENCE, generator = "inventory_id_generator")
-    @SequenceGenerator(name = "inventory_id_generator", sequenceName = "inventory_id_seq", schema = "catalog")
+    @SequenceGenerator(name = "inventory_id_generator", sequenceName = "inventory_id_seq", schema = "inventory")
     private Long id;
 
     @Column(name = "product_code", nullable = false, unique = true)

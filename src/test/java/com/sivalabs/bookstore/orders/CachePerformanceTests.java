@@ -263,7 +263,11 @@ public class CachePerformanceTests {
     @Nested
     @DisplayName("Cache Disabled Performance Tests")
     @TestPropertySource(
-            properties = {"bookstore.cache.enabled=false", "logging.level.com.sivalabs.bookstore.orders.cache=INFO"})
+            properties = {
+                "bookstore.cache.enabled=false",
+                "bookstore.session.hazelcast.enabled=false",
+                "logging.level.com.sivalabs.bookstore.orders.cache=INFO"
+            })
     class CacheDisabledTests {
 
         @Autowired

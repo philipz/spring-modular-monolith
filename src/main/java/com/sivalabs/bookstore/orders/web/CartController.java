@@ -28,17 +28,18 @@ class CartController {
 
     @PostMapping("/buy")
     String addProductToCart(@RequestParam String code, HttpSession session) {
-        log.info("Adding product code:{} to cart", code);
+        log.info("Adding product code:{} to cart, sessionId={}", code, session.getId());
         Cart cart = CartUtil.getCart(session);
         ProductDto product = productApi.getByCode(code).orElseThrow();
         cart.setItem(new Cart.LineItem(product.code(), product.name(), product.price(), 1));
-        session.setAttribute("cart", cart);
+        CartUtil.setCart(session, cart);
         return "redirect:/cart";
     }
 
     @GetMapping({"/cart"})
     String showCart(Model model, HttpSession session) {
         Cart cart = CartUtil.getCart(session);
+        log.info("Show cart, sessionId={}, hasItem={}", session.getId(), cart.getItem() != null);
         model.addAttribute("cart", cart);
         OrderForm orderForm = new OrderForm(new Customer("", "", ""), "");
         model.addAttribute("orderForm", orderForm);
@@ -51,7 +52,7 @@ class CartController {
         log.info("Updating cart code:{}, quantity:{}", code, quantity);
         Cart cart = CartUtil.getCart(session);
         cart.updateItemQuantity(quantity);
-        session.setAttribute("cart", cart);
+        CartUtil.setCart(session, cart);
         boolean refresh = cart.getItem() == null;
         if (refresh) {
             return new HtmxRefreshView();

@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.web;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -15,6 +16,7 @@ public class Cart implements Serializable {
         this.item = item;
     }
 
+    @JsonIgnore
     public BigDecimal getTotalAmount() {
         if (item == null) {
             return BigDecimal.ZERO;

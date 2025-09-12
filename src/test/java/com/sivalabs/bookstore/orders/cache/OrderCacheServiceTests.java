@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.LocalMapStats;
+import com.sivalabs.bookstore.common.cache.CacheErrorHandler;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.models.Customer;
 import com.sivalabs.bookstore.orders.domain.models.OrderItem;
