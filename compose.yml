@@ -61,5 +61,17 @@ services:
     ports:
       - "8080:80"
 
+  hazelcast-mgmt:
+    depends_on:
+      - monolith
+    image: hazelcast/management-center:latest
+    environment:
+      - HZ_CLUSTERNAME=bookstore-cluster
+      - HZ_NETWORK_PORT_AUTOINCREMENT=true
+    networks:
+      - proxy
+    ports:
+      - "38080:8080"
+
 networks:
   proxy:
