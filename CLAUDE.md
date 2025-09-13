@@ -75,12 +75,26 @@ task test
 # REST API tests
 ./mvnw test -Dtest=ProductRestControllerTests
 ./mvnw test -Dtest=OrderRestControllerTests
+
+# Cache integration tests
+./mvnw test -Dtest=ProductCacheServiceIntegrationTests
+./mvnw test -Dtest=InventoryCacheServiceIntegrationTests
+./mvnw test -Dtest=HazelcastConfigTests
+
+# Cache unit tests
+./mvnw test -Dtest=OrderCacheServiceTests
+./mvnw test -Dtest=ProductMapStoreTests
+./mvnw test -Dtest=InventoryMapStoreTests
 ```
 
 #### Integration Tests
 ```bash
 # Run all integration tests
 ./mvnw verify -Dit.test="**/*IntegrationTests"
+
+# Run cache-specific integration tests
+./mvnw test -Dtest="**/*CacheService*IntegrationTests"
+./mvnw test -Dtest="**/*MapStore*Tests"
 ```
 
 ## Architecture Overview
@@ -106,10 +120,18 @@ The application follows Spring Modulith principles with these business modules:
 - Inventory module consumes `OrderCreatedEvent` to update stock levels
 - Notifications module consumes `OrderCreatedEvent` to send confirmation emails
 
+#### Caching Architecture
+- **Module-specific cache services**: Each module has its own cache service layer
+- **Shared cache infrastructure**: Common CacheErrorHandler and circuit breaker
+- **Write-through pattern**: Cache automatically syncs with database via MapStore
+- **Cache isolation**: Each module's cache operates independently
+- **Cross-module health monitoring**: Unified health reporting across all caches
+
 #### Data Isolation
 - Each module manages its own database schema
 - No direct cross-module database access
 - PostgreSQL with separate schemas per module
+- **Cache data isolation**: Each module caches only its own domain entities
 
 ### Key Spring Modulith Features Used
 
@@ -146,6 +168,13 @@ class CatalogIntegrationTests {
 - **Spring Data JPA** for persistence
 - **Spring AMQP** for messaging
 
+### Caching Infrastructure
+- **Hazelcast** distributed cache for write-through caching
+- **Three cache types**: Orders (String keys), Products (String keys), Inventory (Long keys)
+- **MapStore integration** for automatic cache-database synchronization
+- **Circuit breaker pattern** for cache fault tolerance
+- **Cache health monitoring** via Spring Boot Actuator
+
 ### Database & Migration
 - **PostgreSQL** as primary database
 - **Flyway** for database migrations
@@ -160,6 +189,7 @@ class CatalogIntegrationTests {
 - **Micrometer** with Prometheus registry
 - **OpenTelemetry** tracing with Zipkin export
 - **Spring Actuator** with modulith endpoints
+- **Cache metrics** and health indicators
 
 ### Frontend
 - **Thymeleaf** templating
@@ -204,6 +234,8 @@ class CatalogIntegrationTests {
 - **Application**: http://localhost:8080
 - **Actuator**: http://localhost:8080/actuator
 - **Modulith Info**: http://localhost:8080/actuator/modulith
+- **Cache Health**: http://localhost:8080/actuator/health
+- **Cache Metrics**: http://localhost:8080/actuator/metrics
 - **RabbitMQ Admin**: http://localhost:15672 (guest/guest)
 - **Zipkin**: http://localhost:9411
 
@@ -212,6 +244,28 @@ class CatalogIntegrationTests {
 - **Events**: JDBC event store with schema initialization
 - **Tracing**: Full sampling with Zipkin export
 - **RabbitMQ**: Local connection for event publishing
+- **Cache**: Hazelcast configuration via `bookstore.cache.*`
+
+#### Cache Configuration Properties
+```properties
+# Enable/disable caching
+bookstore.cache.enabled=true
+
+# Write-through cache behavior
+bookstore.cache.write-through=true
+bookstore.cache.write-delay-seconds=1
+
+# Cache sizing and TTL
+bookstore.cache.max-size=1000
+bookstore.cache.time-to-live-seconds=3600
+
+# Cache metrics and monitoring
+bookstore.cache.metrics-enabled=true
+
+# Circuit breaker settings
+bookstore.cache.circuit-breaker.failure-threshold=5
+bookstore.cache.circuit-breaker.recovery-timeout=30000
+```
 
 ### Environment Setup
 - **Java 21** (recommended: install via SDKMAN)
