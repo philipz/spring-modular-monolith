@@ -6,11 +6,16 @@ The goal of this application is to demonstrate various features of Spring Moduli
 
 This application follows modular monolith architecture with the following modules:
 
-* **Common:** This module contains the code that is shared by all modules.
+* **Common:** This module contains the code that is shared by all modules, including distributed caching with Hazelcast.
 * **Catalog:** This module manages the catalog of products and store data in `catalog` schema.
 * **Orders:** This module implements the order management and store the data in `orders` schema.
 * **Inventory:** This module implements the inventory management and store the data in `inventory` schema.
 * **Notifications:** This module handles the events published by other modules and sends notifications to the interested parties.
+
+**Distributed Caching:**
+* The application uses **Hazelcast** for distributed caching to improve performance across all modules.
+* **Hazelcast Management Center** provides real-time monitoring and management of cache clusters.
+* Cache configurations include TTL (Time To Live), eviction policies, and backup strategies for high availability.
 
 **Goals:**
 * Implement each module as independently as possible.
@@ -81,6 +86,7 @@ $ task restart
 * Actuator URL for modulith: http://localhost:8080/actuator/modulith
 * RabbitMQ Admin URL: http://localhost:15672 (Credentials: guest/guest)
 * Zipkin URL: http://localhost:9411
+* Hazelcast Management Center URL: http://localhost:38080 (Monitor Hazelcast Clusters)
 
 ## Deploying on k8s cluster
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
@@ -110,3 +116,4 @@ $ task kind_destroy
 * Application URL: http://localhost:30090
 * RabbitMQ Admin URL: http://localhost:30091 (Credentials: guest/guest)
 * Zipkin URL: http://localhost:30092
+* Hazelcast Management Center URL: http://localhost:30093 (Monitor Hazelcast Clusters)
