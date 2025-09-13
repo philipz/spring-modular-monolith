@@ -2,6 +2,7 @@ package com.sivalabs.bookstore.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.hazelcast.config.annotation.web.http.EnableHazelcastHttpSession;
 
@@ -13,6 +14,11 @@ import org.springframework.session.hazelcast.config.annotation.web.http.EnableHa
  * application instances in a horizontally scaled deployment.
  */
 @Configuration
+@ConditionalOnProperty(
+        prefix = "bookstore.session.hazelcast",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 @EnableHazelcastHttpSession(
         maxInactiveIntervalInSeconds = 1800 // 30 minutes session timeout
         )

@@ -16,7 +16,7 @@ Spring Boot modular monolith e-commerce web application demonstrating Spring Mod
 - **Spring Data JPA**: Database abstraction layer with repository pattern
 - **Spring AMQP**: RabbitMQ integration for external event publishing
 - **PostgreSQL Driver**: Database connectivity for multi-schema persistence
-- **Flyway**: Database migration and versioning management
+- **Liquibase**: Database migration and versioning management
 - **Thymeleaf**: Server-side templating engine for web views
 - **HTMX**: Modern web interactions without complex JavaScript frameworks
 - **Bootstrap**: CSS framework for responsive UI design
@@ -40,7 +40,7 @@ Spring Boot modular monolith e-commerce web application demonstrating Spring Mod
 - **Primary storage**: PostgreSQL 15+ with schema-per-module approach
 - **Event storage**: JDBC-based event store for Spring Modulith events
 - **Schema isolation**: `catalog`, `orders`, `inventory` schemas for data boundaries
-- **Migration management**: Flyway with module-specific migration paths
+- **Migration management**: Liquibase with module-specific migration paths
 
 ### External Integrations
 - **Messaging**: RabbitMQ for external event publishing and cross-service communication
@@ -101,7 +101,7 @@ Spring Boot modular monolith e-commerce web application demonstrating Spring Mod
 
 ### Update Mechanism
 - **Rolling Updates**: Kubernetes rolling deployment strategy
-- **Database Migrations**: Automatic Flyway migrations on startup
+- **Database Migrations**: Automatic Liquibase migrations on startup
 - **Configuration Updates**: ConfigMap updates with pod restarts
 - **Feature Flags**: Profile-based feature enablement
 

@@ -16,7 +16,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 @ApplicationModuleTest(webEnvironment = RANDOM_PORT)
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, com.sivalabs.bookstore.testsupport.cache.ProductsCacheTestConfig.class})
 @AutoConfigureMockMvc
 @Sql("/test-products-data.sql")
 class ProductRestControllerTests {

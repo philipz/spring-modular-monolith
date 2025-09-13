@@ -61,7 +61,7 @@ spring-modular-monolith/
 │   ├── application.properties          # Main application properties
 │   ├── application-dev.properties      # Development profile
 │   ├── application-prod.properties     # Production profile
-│   ├── db/migration/                   # Flyway database migrations
+│   ├── db/migration/                   # Liquibase database migrations
 │   │   ├── common/                     # Shared schema migrations
 │   │   ├── catalog/                    # Catalog module migrations
 │   │   ├── orders/                     # Orders module migrations
@@ -350,7 +350,7 @@ class OrdersIntegrationTests {
 - **Module Purpose**: Each module has README explaining its responsibility
 - **API Documentation**: OpenAPI/Swagger for REST endpoints
 - **Event Documentation**: Document all published and consumed events
-- **Database Schema**: Flyway migration files serve as schema documentation
+- **Database Schema**: Liquibase migration files serve as schema documentation
 
 ### Spring Modulith Documentation
 - **Module Dependencies**: Documented in `package-info.java` files

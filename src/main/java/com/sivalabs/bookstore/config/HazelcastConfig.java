@@ -4,15 +4,18 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
+import com.hazelcast.spring.context.SpringManagedContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +34,8 @@ public class HazelcastConfig {
     private static final Logger logger = LoggerFactory.getLogger(HazelcastConfig.class);
 
     private static final String ORDERS_CACHE_NAME = "orders-cache";
+    private static final String PRODUCTS_CACHE_NAME = "products-cache";
+    private static final String INVENTORY_CACHE_NAME = "inventory-cache";
 
     /**
      * Creates and configures the main Hazelcast configuration.
@@ -39,7 +44,7 @@ public class HazelcastConfig {
      * @return configured Hazelcast Config instance
      */
     @Bean
-    public Config hazelcastConfiguration(CacheProperties cacheProperties) {
+    public Config hazelcastConfiguration(CacheProperties cacheProperties, ApplicationContext applicationContext) {
         logger.info("Initializing Hazelcast configuration");
 
         Config config = new Config();
@@ -48,6 +53,8 @@ public class HazelcastConfig {
         config.setInstanceName(instanceName);
         config.setClusterName("bookstore-cluster");
         config.getJetConfig().setEnabled(true);
+        // Allow Hazelcast to inject Spring-managed dependencies into components like MapStore
+        config.setManagedContext(new SpringManagedContext(applicationContext));
 
         // Configure the orders cache map
         MapConfig ordersCacheMapConfig = new MapConfig(ORDERS_CACHE_NAME);
@@ -64,17 +71,70 @@ public class HazelcastConfig {
         ordersCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
         ordersCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
 
-        // Configure MapStore for write-through behavior
-        // Note: MapStore configuration is temporarily disabled to resolve circular dependency
-        // The write-through behavior is handled by OrderCacheService and OrderService
-        if (cacheProperties.isWriteThrough()) {
-            // TODO: Implement MapStore configuration that respects Spring Modulith boundaries
-            logger.info("Write-through caching enabled - handled by service layer instead of MapStore for now");
-        }
+        // Configure MapStore for orders cache - temporarily disabled due to Spring injection timing
+        // MapStoreConfig ordersMapStoreConfig = new MapStoreConfig();
+        // ordersMapStoreConfig.setEnabled(true);
+        // ordersMapStoreConfig.setClassName("com.sivalabs.bookstore.orders.cache.OrderMapStore");
+        // ordersMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        // ordersMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        // ordersCacheMapConfig.setMapStoreConfig(ordersMapStoreConfig);
 
         ordersCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
         config.addMapConfig(ordersCacheMapConfig);
+
+        // Configure the products cache map (same configuration as orders cache)
+        MapConfig productsCacheMapConfig = new MapConfig(PRODUCTS_CACHE_NAME);
+
+        EvictionConfig productsEvictionConfig = new EvictionConfig();
+        productsEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
+        productsEvictionConfig.setSize(cacheProperties.getMaxSize());
+        productsEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        productsCacheMapConfig.setEvictionConfig(productsEvictionConfig);
+
+        productsCacheMapConfig.setTimeToLiveSeconds(cacheProperties.getTimeToLiveSeconds());
+        productsCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
+        productsCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
+        productsCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
+
+        productsCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
+
+        // Configure MapStore for products cache - temporarily disabled due to Spring injection timing
+        // MapStoreConfig productsMapStoreConfig = new MapStoreConfig();
+        // productsMapStoreConfig.setEnabled(true);
+        // productsMapStoreConfig.setClassName("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
+        // productsMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        // productsMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        // productsCacheMapConfig.setMapStoreConfig(productsMapStoreConfig);
+
+        config.addMapConfig(productsCacheMapConfig);
+
+        // Configure the inventory cache map (same configuration as others but with shorter TTL)
+        MapConfig inventoryCacheMapConfig = new MapConfig(INVENTORY_CACHE_NAME);
+
+        EvictionConfig inventoryEvictionConfig = new EvictionConfig();
+        inventoryEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
+        inventoryEvictionConfig.setSize(cacheProperties.getMaxSize());
+        inventoryEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        inventoryCacheMapConfig.setEvictionConfig(inventoryEvictionConfig);
+
+        // Use shorter TTL for inventory data due to volatility
+        inventoryCacheMapConfig.setTimeToLiveSeconds(1800); // 30 minutes instead of default
+        inventoryCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
+        inventoryCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
+        inventoryCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
+
+        inventoryCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
+
+        // Configure MapStore for inventory cache
+        MapStoreConfig inventoryMapStoreConfig = new MapStoreConfig();
+        inventoryMapStoreConfig.setEnabled(true);
+        inventoryMapStoreConfig.setClassName("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
+        inventoryMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        inventoryMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        inventoryCacheMapConfig.setMapStoreConfig(inventoryMapStoreConfig);
+
+        config.addMapConfig(inventoryCacheMapConfig);
 
         // Enable metrics if requested
         if (cacheProperties.isMetricsEnabled()) {
@@ -147,5 +207,60 @@ public class HazelcastConfig {
     @Bean("ordersCacheName")
     public String ordersCacheName() {
         return ORDERS_CACHE_NAME;
+    }
+
+    /**
+     * Creates the products cache IMap bean.
+     * Note: Using Object as value type to avoid module boundary violations.
+     * The actual ProductEntity will be handled by the catalog module components.
+     *
+     * @param hazelcastInstance the Hazelcast instance
+     * @return IMap for products cache
+     */
+    @Bean("productsCache")
+    @Lazy // Keep consistent with ordersCache bean pattern
+    public IMap<String, Object> productsCache(HazelcastInstance hazelcastInstance) {
+        logger.info("Creating products cache map");
+        IMap<String, Object> productsMap = hazelcastInstance.getMap(PRODUCTS_CACHE_NAME);
+        logger.info("Products cache map created: {} with MapStore support", PRODUCTS_CACHE_NAME);
+        return productsMap;
+    }
+
+    /**
+     * Provides products cache name constant for other components.
+     *
+     * @return the products cache name
+     */
+    @Bean("productsCacheName")
+    public String productsCacheName() {
+        return PRODUCTS_CACHE_NAME;
+    }
+
+    /**
+     * Creates the inventory cache IMap bean.
+     * Note: Using Object as value type to avoid module boundary violations.
+     * The actual InventoryEntity will be handled by the inventory module components.
+     * Uses Long keys for inventory ID-based lookups.
+     *
+     * @param hazelcastInstance the Hazelcast instance
+     * @return IMap for inventory cache
+     */
+    @Bean("inventoryCache")
+    @Lazy // Keep consistent with other cache bean patterns
+    public IMap<Long, Object> inventoryCache(HazelcastInstance hazelcastInstance) {
+        logger.info("Creating inventory cache map");
+        IMap<Long, Object> inventoryMap = hazelcastInstance.getMap(INVENTORY_CACHE_NAME);
+        logger.info("Inventory cache map created: {} with MapStore support", INVENTORY_CACHE_NAME);
+        return inventoryMap;
+    }
+
+    /**
+     * Provides inventory cache name constant for other components.
+     *
+     * @return the inventory cache name
+     */
+    @Bean("inventoryCacheName")
+    public String inventoryCacheName() {
+        return INVENTORY_CACHE_NAME;
     }
 }
