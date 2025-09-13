@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import com.sivalabs.bookstore.catalog.domain.ProductRepository;
+import com.sivalabs.bookstore.testsupport.cache.AbstractMapStoreTest;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,70 +18,148 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("ProductMapStore Unit Tests")
-class ProductMapStoreTests {
+class ProductMapStoreTests extends AbstractMapStoreTest<String, ProductEntity, ProductMapStore, ProductRepository> {
 
     @Mock
     private ProductRepository productRepository;
 
-    @Mock
-    private HazelcastInstance hazelcastInstance;
-
-    private ProductMapStore productMapStore;
-
-    private ProductEntity testProduct;
-    private ProductEntity anotherTestProduct;
-
+    @Override
     @BeforeEach
-    void setUp() {
-        productMapStore = new ProductMapStore(productRepository);
-
-        // Create test product data
-        testProduct = createTestProduct("P001", "Test Product 1", "Description 1", new BigDecimal("29.99"));
-        testProduct.setId(1L);
-
-        anotherTestProduct = createTestProduct("P002", "Test Product 2", "Description 2", new BigDecimal("39.99"));
-        anotherTestProduct.setId(2L);
+    protected void setUp() {
+        // Initialize with specific typed mock to avoid ClassCastException
+        mapStore = new ProductMapStore(productRepository);
+        testEntity1 = createTestEntity1();
+        testEntity2 = createTestEntity2();
     }
 
-    @Test
-    @DisplayName("Should initialize successfully with ProductRepository")
-    void shouldInitializeWithProductRepository() {
-        assertThat(productMapStore).isNotNull();
+    @Override
+    protected ProductMapStore createMapStore(ProductRepository repository) {
+        return new ProductMapStore(repository);
     }
 
-    @Test
-    @DisplayName("Should complete lifecycle init without errors")
-    void shouldInitializeLifecycle() {
+    @Override
+    protected ProductEntity createTestEntity1() {
+        ProductEntity product = createTestProduct("P001", "Test Product 1", "Description 1", new BigDecimal("29.99"));
+        product.setId(1L);
+        return product;
+    }
+
+    @Override
+    protected ProductEntity createTestEntity2() {
+        ProductEntity product = createTestProduct("P002", "Test Product 2", "Description 2", new BigDecimal("39.99"));
+        product.setId(2L);
+        return product;
+    }
+
+    @Override
+    protected String getTestEntity1Key() {
+        return "P001";
+    }
+
+    @Override
+    protected String getTestEntity2Key() {
+        return "P002";
+    }
+
+    @Override
+    protected String getNonExistentKey() {
+        return "NON-EXISTENT";
+    }
+
+    @Override
+    protected void mockRepositoryFindByKey(String key, ProductEntity entity) {
+        given(productRepository.findByCode(key)).willReturn(Optional.of(entity));
+    }
+
+    @Override
+    protected void mockRepositoryFindByKeyEmpty(String key) {
+        given(productRepository.findByCode(key)).willReturn(Optional.empty());
+    }
+
+    @Override
+    protected void mockRepositoryFindByKeyException(String key, RuntimeException exception) {
+        given(productRepository.findByCode(key)).willThrow(exception);
+    }
+
+    @Override
+    protected void mockRepositoryFindAll(ProductEntity... entities) {
+        given(productRepository.findAll()).willReturn(Arrays.asList(entities));
+    }
+
+    @Override
+    protected void mockRepositoryFindAllException(RuntimeException exception) {
+        given(productRepository.findAll()).willThrow(exception);
+    }
+
+    @Override
+    protected void verifyRepositoryFindByKey(String key) {
+        verify(productRepository).findByCode(key);
+    }
+
+    @Override
+    protected void verifyRepositoryFindAll() {
+        verify(productRepository).findAll();
+    }
+
+    @Override
+    protected ProductEntity loadFromMapStore(String key) {
+        return mapStore.load(key);
+    }
+
+    @Override
+    protected Map<String, ProductEntity> loadAllFromMapStore(Collection<String> keys) {
+        return mapStore.loadAll(keys);
+    }
+
+    @Override
+    protected Iterable<String> loadAllKeysFromMapStore() {
+        return mapStore.loadAllKeys();
+    }
+
+    @Override
+    protected void storeInMapStore(String key, ProductEntity entity) {
+        mapStore.store(key, entity);
+    }
+
+    @Override
+    protected void storeAllInMapStore(Map<String, ProductEntity> entities) {
+        mapStore.storeAll(entities);
+    }
+
+    @Override
+    protected void deleteFromMapStore(String key) {
+        mapStore.delete(key);
+    }
+
+    @Override
+    protected void deleteAllFromMapStore(Collection<String> keys) {
+        mapStore.deleteAll(keys);
+    }
+
+    @Override
+    protected void initMapStore() {
         Properties props = new Properties();
         String mapName = "products-cache";
-
-        // Should not throw any exception
-        productMapStore.init(hazelcastInstance, props, mapName);
+        mapStore.init(hazelcastInstance, props, mapName);
     }
 
-    @Test
-    @DisplayName("Should complete lifecycle destroy without errors")
-    void shouldDestroyLifecycle() {
-        // Should not throw any exception
-        productMapStore.destroy();
+    @Override
+    protected void destroyMapStore() {
+        mapStore.destroy();
     }
 
-    @Test
-    @DisplayName("Should store product successfully - validation only")
-    void shouldStoreProductSuccessfully() {
-        String productCode = "P001";
-
-        // Store operation should complete without exception
-        productMapStore.store(productCode, testProduct);
-
-        // Verify no exception was thrown - store method mainly validates
+    @Override
+    protected void assertEntitiesEqual(ProductEntity expected, ProductEntity actual) {
+        assertThat(actual.getCode()).isEqualTo(expected.getCode());
+        assertThat(actual.getId()).isEqualTo(expected.getId());
+        assertThat(actual.getName()).isEqualTo(expected.getName());
+        assertThat(actual.getPrice()).isEqualByComparingTo(expected.getPrice());
     }
+
+    // Additional product-specific tests
 
     @Test
     @DisplayName("Should handle store with mismatched product code")
@@ -89,113 +167,16 @@ class ProductMapStoreTests {
         String differentProductCode = "P999";
 
         // Should complete without throwing exception but log warning
-        productMapStore.store(differentProductCode, testProduct);
-    }
-
-    @Test
-    @DisplayName("Should handle store with null product entity")
-    void shouldHandleStoreWithNullProduct() {
-        String productCode = "P001";
-
-        // Should complete without throwing exception
-        productMapStore.store(productCode, null);
-    }
-
-    @Test
-    @DisplayName("Should load product successfully from ProductRepository")
-    void shouldLoadProductSuccessfully() {
-        String productCode = "P001";
-        given(productRepository.findByCode(productCode)).willReturn(Optional.of(testProduct));
-
-        ProductEntity result = productMapStore.load(productCode);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getCode()).isEqualTo(productCode);
-        assertThat(result.getId()).isEqualTo(testProduct.getId());
-        assertThat(result.getName()).isEqualTo(testProduct.getName());
-        assertThat(result.getPrice()).isEqualByComparingTo(testProduct.getPrice());
-        verify(productRepository).findByCode(productCode);
-    }
-
-    @Test
-    @DisplayName("Should return null when product not found")
-    void shouldReturnNullWhenProductNotFound() {
-        String productCode = "NON-EXISTENT";
-        given(productRepository.findByCode(productCode)).willReturn(Optional.empty());
-
-        ProductEntity result = productMapStore.load(productCode);
-
-        assertThat(result).isNull();
-        verify(productRepository).findByCode(productCode);
-    }
-
-    @Test
-    @DisplayName("Should handle load exception gracefully")
-    void shouldHandleLoadException() {
-        String productCode = "P001";
-        RuntimeException testException = new RuntimeException("Database error");
-        given(productRepository.findByCode(productCode)).willThrow(testException);
-
-        // Should not throw exception and return null
-        ProductEntity result = productMapStore.load(productCode);
-
-        assertThat(result).isNull();
-        verify(productRepository).findByCode(productCode);
-    }
-
-    @Test
-    @DisplayName("Should load multiple products successfully")
-    void shouldLoadAllProductsSuccessfully() {
-        Collection<String> productCodes = Arrays.asList("P001", "P002", "P003");
-
-        given(productRepository.findByCode("P001")).willReturn(Optional.of(testProduct));
-        given(productRepository.findByCode("P002")).willReturn(Optional.of(anotherTestProduct));
-        given(productRepository.findByCode("P003")).willReturn(Optional.empty());
-
-        Map<String, ProductEntity> result = productMapStore.loadAll(productCodes);
-
-        assertThat(result).hasSize(2);
-        assertThat(result).containsKey("P001");
-        assertThat(result).containsKey("P002");
-        assertThat(result).doesNotContainKey("P003");
-        assertThat(result.get("P001")).isEqualTo(testProduct);
-        assertThat(result.get("P002")).isEqualTo(anotherTestProduct);
-
-        verify(productRepository).findByCode("P001");
-        verify(productRepository).findByCode("P002");
-        verify(productRepository).findByCode("P003");
-    }
-
-    @Test
-    @DisplayName("Should handle loadAll with empty collection")
-    void shouldHandleLoadAllWithEmptyCollection() {
-        Collection<String> emptyProductCodes = Arrays.asList();
-
-        Map<String, ProductEntity> result = productMapStore.loadAll(emptyProductCodes);
-
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Should handle loadAll exception gracefully")
-    void shouldHandleLoadAllException() {
-        Collection<String> productCodes = Arrays.asList("P001");
-        RuntimeException testException = new RuntimeException("Database error");
-        given(productRepository.findByCode("P001")).willThrow(testException);
-
-        // Should return empty map instead of throwing
-        Map<String, ProductEntity> result = productMapStore.loadAll(productCodes);
-
-        assertThat(result).isEmpty();
+        mapStore.store(differentProductCode, testEntity1);
     }
 
     @Test
     @DisplayName("Should return all product codes for loadAllKeys")
     void shouldReturnAllProductCodesForLoadAllKeys() {
-        List<ProductEntity> allProducts = Arrays.asList(testProduct, anotherTestProduct);
+        List<ProductEntity> allProducts = Arrays.asList(testEntity1, testEntity2);
         given(productRepository.findAll()).willReturn(allProducts);
 
-        Set<String> result = (Set<String>) productMapStore.loadAllKeys();
+        Set<String> result = (Set<String>) mapStore.loadAllKeys();
 
         assertThat(result).hasSize(2);
         assertThat(result).contains("P001", "P002");
@@ -207,7 +188,7 @@ class ProductMapStoreTests {
     void shouldHandleLoadAllKeysWithEmptyRepository() {
         given(productRepository.findAll()).willReturn(Arrays.asList());
 
-        Set<String> result = (Set<String>) productMapStore.loadAllKeys();
+        Set<String> result = (Set<String>) mapStore.loadAllKeys();
 
         assertThat(result).isEmpty();
         verify(productRepository).findAll();
@@ -220,57 +201,10 @@ class ProductMapStoreTests {
         given(productRepository.findAll()).willThrow(testException);
 
         // Should not throw exception
-        Set<String> result = (Set<String>) productMapStore.loadAllKeys();
+        Set<String> result = (Set<String>) mapStore.loadAllKeys();
 
         assertThat(result).isEmpty();
         verify(productRepository).findAll();
-    }
-
-    @Test
-    @DisplayName("Should handle delete operation gracefully")
-    void shouldHandleDeleteOperation() {
-        String productCode = "P001";
-
-        // Should complete without throwing exception
-        productMapStore.delete(productCode);
-
-        // Method should log but not actually delete - deletion handled by service layer
-    }
-
-    @Test
-    @DisplayName("Should handle deleteAll operation gracefully")
-    void shouldHandleDeleteAllOperation() {
-        Collection<String> productCodes = Arrays.asList("P001", "P002");
-
-        // Should complete without throwing exception
-        productMapStore.deleteAll(productCodes);
-
-        // Method should log but not actually delete - deletion handled by service layer
-    }
-
-    @Test
-    @DisplayName("Should handle storeAll operation gracefully")
-    void shouldHandleStoreAllOperation() {
-        Map<String, ProductEntity> products = Map.of(
-                "P001", testProduct,
-                "P002", anotherTestProduct);
-
-        // Should complete without throwing exception
-        productMapStore.storeAll(products);
-
-        // Method should log completion
-    }
-
-    @Test
-    @DisplayName("Should handle store operation exception")
-    void shouldHandleStoreException() {
-        // Create a product that will trigger validation warning
-        ProductEntity invalidProduct =
-                createTestProduct("DIFFERENT-CODE", "Invalid Product", "Description", new BigDecimal("99.99"));
-        String productCode = "P001";
-
-        // Should complete without throwing exception but log warning
-        productMapStore.store(productCode, invalidProduct);
     }
 
     @Test
@@ -280,7 +214,7 @@ class ProductMapStoreTests {
         ProductEntity complexProduct = createComplexTestProduct();
         given(productRepository.findByCode(productCode)).willReturn(Optional.of(complexProduct));
 
-        ProductEntity result = productMapStore.load(productCode);
+        ProductEntity result = mapStore.load(productCode);
 
         assertThat(result).isNotNull();
         assertThat(result.getCode()).isEqualTo(productCode);
@@ -298,7 +232,7 @@ class ProductMapStoreTests {
                 createTestProduct("P-CHEAP", "Cheap Product", "Affordable item", new BigDecimal("0.99"));
         given(productRepository.findByCode("P-CHEAP")).willReturn(Optional.of(cheapProduct));
 
-        ProductEntity result1 = productMapStore.load("P-CHEAP");
+        ProductEntity result1 = mapStore.load("P-CHEAP");
         assertThat(result1).isNotNull();
         assertThat(result1.getPrice()).isEqualByComparingTo(new BigDecimal("0.99"));
 
@@ -307,7 +241,7 @@ class ProductMapStoreTests {
                 createTestProduct("P-EXPENSIVE", "Expensive Product", "Premium item", new BigDecimal("9999.99"));
         given(productRepository.findByCode("P-EXPENSIVE")).willReturn(Optional.of(expensiveProduct));
 
-        ProductEntity result2 = productMapStore.load("P-EXPENSIVE");
+        ProductEntity result2 = mapStore.load("P-EXPENSIVE");
         assertThat(result2).isNotNull();
         assertThat(result2.getPrice()).isEqualByComparingTo(new BigDecimal("9999.99"));
 
@@ -322,29 +256,11 @@ class ProductMapStoreTests {
                 createTestProduct("P-001-A#1", "Special Product", "Has special code", new BigDecimal("49.99"));
         given(productRepository.findByCode("P-001-A#1")).willReturn(Optional.of(specialProduct));
 
-        ProductEntity result = productMapStore.load("P-001-A#1");
+        ProductEntity result = mapStore.load("P-001-A#1");
 
         assertThat(result).isNotNull();
         assertThat(result.getCode()).isEqualTo("P-001-A#1");
         verify(productRepository).findByCode("P-001-A#1");
-    }
-
-    @Test
-    @DisplayName("Should handle loadAll with mixed success and failure results")
-    void shouldHandleLoadAllWithMixedResults() {
-        Collection<String> productCodes = Arrays.asList("P001", "P-ERROR", "P002");
-
-        given(productRepository.findByCode("P001")).willReturn(Optional.of(testProduct));
-        given(productRepository.findByCode("P-ERROR")).willThrow(new RuntimeException("Specific error"));
-        given(productRepository.findByCode("P002")).willReturn(Optional.of(anotherTestProduct));
-
-        Map<String, ProductEntity> result = productMapStore.loadAll(productCodes);
-
-        // Should continue processing other products even if one fails
-        assertThat(result).hasSize(2);
-        assertThat(result).containsKey("P001");
-        assertThat(result).containsKey("P002");
-        assertThat(result).doesNotContainKey("P-ERROR");
     }
 
     @Test
@@ -359,7 +275,7 @@ class ProductMapStoreTests {
 
         given(productRepository.findByCode(productCode)).willReturn(Optional.of(fullProduct));
 
-        ProductEntity result = productMapStore.load(productCode);
+        ProductEntity result = mapStore.load(productCode);
 
         assertThat(result).isNotNull();
         assertThat(result.getCode()).isEqualTo(productCode);

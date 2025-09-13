@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
@@ -125,13 +126,13 @@ public class HazelcastConfig {
 
         inventoryCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
-        // Configure MapStore for inventory cache - temporarily disabled due to Spring injection timing
-        // MapStoreConfig inventoryMapStoreConfig = new MapStoreConfig();
-        // inventoryMapStoreConfig.setEnabled(true);
-        // inventoryMapStoreConfig.setClassName("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
-        // inventoryMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        // inventoryMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        // inventoryCacheMapConfig.setMapStoreConfig(inventoryMapStoreConfig);
+        // Configure MapStore for inventory cache
+        MapStoreConfig inventoryMapStoreConfig = new MapStoreConfig();
+        inventoryMapStoreConfig.setEnabled(true);
+        inventoryMapStoreConfig.setClassName("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
+        inventoryMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        inventoryMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        inventoryCacheMapConfig.setMapStoreConfig(inventoryMapStoreConfig);
 
         config.addMapConfig(inventoryCacheMapConfig);
 

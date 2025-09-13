@@ -44,7 +44,7 @@ import org.springframework.test.context.TestPropertySource;
             "bookstore.cache.metrics-enabled=true",
             "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG"
         })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("HazelcastConfig Integration Tests")
 class HazelcastConfigTests {
 
@@ -148,11 +148,8 @@ class HazelcastConfigTests {
             assertThat(ordersCacheConfig.getTimeToLiveSeconds()).isEqualTo(3600);
             assertThat(ordersCacheConfig.getBackupCount()).isEqualTo(1);
 
-            // Verify MapStore configuration
-            assertThat(ordersCacheConfig.getMapStoreConfig()).isNotNull();
-            assertThat(ordersCacheConfig.getMapStoreConfig().isEnabled()).isTrue();
-            assertThat(ordersCacheConfig.getMapStoreConfig().getClassName())
-                    .isEqualTo("com.sivalabs.bookstore.orders.cache.OrderMapStore");
+            // MapStore configuration is disabled for orders cache to avoid circular dependency
+            assertThat(ordersCacheConfig.getMapStoreConfig().isEnabled()).isFalse();
         }
 
         @Test
@@ -198,11 +195,8 @@ class HazelcastConfigTests {
             assertThat(productsCacheConfig.getTimeToLiveSeconds()).isEqualTo(3600);
             assertThat(productsCacheConfig.getBackupCount()).isEqualTo(1);
 
-            // Verify MapStore configuration
-            assertThat(productsCacheConfig.getMapStoreConfig()).isNotNull();
-            assertThat(productsCacheConfig.getMapStoreConfig().isEnabled()).isTrue();
-            assertThat(productsCacheConfig.getMapStoreConfig().getClassName())
-                    .isEqualTo("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
+            // MapStore configuration is disabled for products cache to avoid circular dependency
+            assertThat(productsCacheConfig.getMapStoreConfig().isEnabled()).isFalse();
         }
 
         @Test
@@ -429,15 +423,27 @@ class HazelcastConfigTests {
         void shouldHaveAllRequiredMapStoreConfigurations() {
             Map<String, MapConfig> mapConfigs = hazelcastInstance.getConfig().getMapConfigs();
 
-            // Verify all three cache maps are configured
-            assertThat(mapConfigs).hasSize(3);
-            assertThat(mapConfigs).containsKeys("orders-cache", "products-cache", "inventory-cache");
+            // Filter out Hazelcast internal maps (like __jet.*, __sql.catalog, default, etc.)
+            Map<String, MapConfig> appMapConfigs = mapConfigs.entrySet().stream()
+                    .filter(entry ->
+                            !entry.getKey().startsWith("__") && !entry.getKey().equals("default"))
+                    .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            // Verify each has MapStore enabled
-            mapConfigs.values().forEach(config -> {
-                assertThat(config.getMapStoreConfig().isEnabled()).isTrue();
-                assertThat(config.getMapStoreConfig().getClassName()).isNotEmpty();
-            });
+            // Verify all three cache maps are configured
+            assertThat(appMapConfigs).hasSize(3);
+            assertThat(appMapConfigs).containsKeys("orders-cache", "products-cache", "inventory-cache");
+
+            // Only inventory cache has MapStore enabled (orders/products disabled due to circular dependency)
+            assertThat(appMapConfigs.get("inventory-cache").getMapStoreConfig().isEnabled())
+                    .isTrue();
+            assertThat(appMapConfigs.get("inventory-cache").getMapStoreConfig().getClassName())
+                    .isNotEmpty();
+
+            // Orders and products MapStore should be disabled
+            assertThat(appMapConfigs.get("orders-cache").getMapStoreConfig().isEnabled())
+                    .isFalse();
+            assertThat(appMapConfigs.get("products-cache").getMapStoreConfig().isEnabled())
+                    .isFalse();
         }
 
         @Test
@@ -445,11 +451,18 @@ class HazelcastConfigTests {
         void shouldConfigureWriteThroughSettingsCorrectlyForAllCaches() {
             Map<String, MapConfig> mapConfigs = hazelcastInstance.getConfig().getMapConfigs();
 
-            mapConfigs.values().forEach(config -> {
-                assertThat(config.getMapStoreConfig().isEnabled()).isTrue();
-                assertThat(config.getMapStoreConfig().getWriteDelaySeconds()).isEqualTo(1);
-                assertThat(config.getMapStoreConfig().getWriteBatchSize()).isEqualTo(1);
-            });
+            // Only inventory cache has write-through enabled (orders/products disabled due to circular dependency)
+            MapConfig inventoryConfig = mapConfigs.get("inventory-cache");
+            assertThat(inventoryConfig.getMapStoreConfig().isEnabled()).isTrue();
+            assertThat(inventoryConfig.getMapStoreConfig().getWriteDelaySeconds())
+                    .isEqualTo(1);
+            assertThat(inventoryConfig.getMapStoreConfig().getWriteBatchSize()).isEqualTo(1);
+
+            // Orders and products should have MapStore disabled
+            assertThat(mapConfigs.get("orders-cache").getMapStoreConfig().isEnabled())
+                    .isFalse();
+            assertThat(mapConfigs.get("products-cache").getMapStoreConfig().isEnabled())
+                    .isFalse();
         }
 
         @Test

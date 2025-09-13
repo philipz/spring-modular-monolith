@@ -177,7 +177,7 @@ class CatalogIntegrationTests {
 
 ### Database & Migration
 - **PostgreSQL** as primary database
-- **Flyway** for database migrations
+- **Liquibase** for database migrations
 - **Separate schemas** per module for data isolation
 
 ### Messaging & Events
@@ -209,24 +209,70 @@ class CatalogIntegrationTests {
 4. **Public APIs**: Expose functionality through dedicated API components
 5. **Testability**: Modules should be testable in isolation using `@ApplicationModuleTest`
 
+### Module Organization & Structure
+- **Java sources**: `src/main/java/com/sivalabs/bookstore/{common,catalog,orders,inventory,notifications,config}`
+- **Resources**: `src/main/resources/{templates,static,db}` (Liquibase migrations in `db/migration/`)
+- **Tests**: `src/test/java` (module-focused tests; Testcontainers where needed)
+- **Operations**: `compose.yml`, `k8s/`, and `Taskfile.yml` for local/dev workflows
+- **Module Boundaries**: Define with `@ApplicationModule` (`package-info.java`) and `@NamedInterface`
+- **Allowed Dependencies**: Respect module boundaries (e.g., `orders` → `catalog` only)
+- **Cross-module Access**: Via explicit APIs (e.g., `catalog.ProductApi`)
+
 ### Adding New Modules
 1. Create package under `com.sivalabs.bookstore.[modulename]`
 2. Add `package-info.java` to define module boundaries
-3. Create dedicated database schema and Flyway migrations
+3. Create dedicated database schema and Liquibase migrations
 4. Implement public API component for cross-module access
 5. Add module-specific integration test with `@ApplicationModuleTest`
 6. Update `ModularityTests` to verify new module structure
+
+### Coding Style & Naming Conventions
+- **Java Version**: Java 21 with 4-space indentation, one class per file
+- **Naming**:
+  - Packages: lowercase
+  - Classes: PascalCase
+  - Methods/fields: camelCase
+  - Constants: UPPER_SNAKE_CASE
+- **Formatting**: Run `task format` before pushing (Spotless + Palantir Java Format)
+- **Module APIs**: Keep small; prefer event-driven communication
+- **License Headers**: Avoid adding license headers
 
 ### Event Handling Best Practices
 - Use `@EventListener` for consuming events within the same module
 - Events are automatically published externally via RabbitMQ configuration
 - Events are persisted and can be replayed on application restart
-- Design events as immutable data structures
+- Design events as immutable data structures (see `orders.domain.models.OrderCreatedEvent`)
 
 ### Database Schema Management
-- Each module manages its own Flyway migrations in `db/migration/[module]/`
+- Each module manages its own Liquibase migrations in `db/migration/[module]/`
 - Use module-specific schema names (e.g., `catalog`, `orders`, `inventory`)
 - No cross-schema foreign keys or joins
+- Seed data in `src/main/resources/db/migration` when appropriate
+
+### Testing Guidelines
+- **Frameworks**: JUnit 5, Spring Boot Test, Spring Modulith Test, Testcontainers (Postgres, RabbitMQ)
+- **Naming Convention**: `*Tests.java`
+- **Scope**: Test modules in isolation; avoid loading the whole app unless required
+- **Data Setup**: Rely on Liquibase for schema setup
+- **Execution**: `./mvnw -q -DskipITs=false test` or `./mvnw clean verify`
+
+### Security & Configuration
+- **Configuration**: Use `application.properties`; override via environment variables
+- **Docker Compose**: Sets DB/RabbitMQ/Zipkin automatically
+- **Secrets**: Never commit secrets; use `.env` files or CI secrets
+- **Cache/Session**: Hazelcast defaults tunable via `bookstore.cache.*` properties
+
+### Commit & Pull Request Guidelines
+- **Commit Messages**: Concise, imperative mood (e.g., "Add orders cache metrics")
+- **Grouping**: Group related changes in single commits
+- **PR Requirements**:
+  - Clear description with rationale
+  - Screenshots for UI changes
+  - Link related issues
+  - Green build status
+  - Formatted code (`task format`)
+  - Added/updated tests
+  - No cross-module violations
 
 ## Configuration
 

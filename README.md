@@ -33,11 +33,17 @@ This application follows modular monolith architecture with the following module
 * **Notifications** module consumes "OrderCreatedEvent" and sends an order confirmation email to the customer.
 
 ## Prerequisites
-* JDK 24
-* Docker and Docker Compose
-* Your favourite IDE (Recommended: [IntelliJ IDEA](https://www.jetbrains.com/idea/))
 
-Install JDK, Maven, Gradle, etc using [SDKMAN](https://sdkman.io/)
+**Required Tools:**
+- Java 21+ (recommended 24, tested)
+- Docker and Docker Compose
+- Maven Wrapper (included)
+- Task runner
+- IDE: Recommended [IntelliJ IDEA](https://www.jetbrains.com/idea/)
+
+**Installation Guide:**
+
+Install JDK and related tools using [SDKMAN](https://sdkman.io/):
 
 ```shell
 $ curl -s "https://get.sdkman.io" | bash
@@ -46,15 +52,15 @@ $ sdk install java 24.0.1-tem
 $ sdk install maven
 ```
 
-Task is a task runner that we can use to run any arbitrary commands in easier way.
+Install Task runner:
 
 ```shell
 $ brew install go-task
-(or)
+# or
 $ go install github.com/go-task/task/v3/cmd/task@latest
 ```
 
-Verify the prerequisites
+Verify installation:
 
 ```shell
 $ java -version
@@ -63,57 +69,127 @@ $ docker compose version
 $ task --version
 ```
 
-## Using `task` to perform various tasks:
+## Quick Start
+
+### 1. Docker Compose (Recommended)
+
+```shell
+# Build and start all services
+$ task start
+
+# Stop services
+$ task stop
+
+# Restart (rebuild images)
+$ task restart
+```
+
+### 2. Local Development
 
 ```shell
 # Run tests
 $ task test
 
-# Automatically format code using spotless-maven-plugin
+# Format code
 $ task format
 
-# Build docker image
+# Build Docker image
 $ task build_image
 
-# Run application in docker container
-$ task start
-$ task stop
-$ task restart
+# Local run (requires external PostgreSQL and RabbitMQ)
+$ ./mvnw spring-boot:run
 ```
 
-* Application URL: http://localhost:8080 
-* Actuator URL: http://localhost:8080/actuator 
-* Actuator URL for modulith: http://localhost:8080/actuator/modulith
-* RabbitMQ Admin URL: http://localhost:15672 (Credentials: guest/guest)
-* Zipkin URL: http://localhost:9411
-* Hazelcast Management Center URL: http://localhost:38080 (Monitor Hazelcast Clusters)
+### 3. Running Without Docker
 
-## Deploying on k8s cluster
-* [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
-* [Install kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+Provide PostgreSQL and RabbitMQ locally, override via environment variables:
+
+```shell
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/bookstore
+export SPRING_RABBITMQ_HOST=localhost
+./mvnw spring-boot:run
+```
+
+### Application URLs
+
+**Local Development:**
+- Application: http://localhost:8080
+- Actuator: http://localhost:8080/actuator
+- Modulith Info: http://localhost:8080/actuator/modulith
+- RabbitMQ Admin: http://localhost:15672 (guest/guest)
+- Zipkin Tracing: http://localhost:9411
+- Hazelcast Management Center: http://localhost:38080
+
+## Kubernetes Deployment
+
+### Install Required Tools
 
 ```shell
 $ brew install kubectl
 $ brew install kind
 ```
 
-Create a KinD cluster and deploy an app.
+Documentation:
+- [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/)
+- [kind Installation Guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
+
+### Deployment Steps
 
 ```shell
 # Create KinD cluster
 $ task kind_create
 
-# deploy app to kind cluster 
+# Deploy app to K8s cluster
 $ task k8s_deploy
 
-# undeploy app
+# Undeploy app
 $ task k8s_undeploy
 
 # Destroy KinD cluster
 $ task kind_destroy
 ```
 
-* Application URL: http://localhost:30090
-* RabbitMQ Admin URL: http://localhost:30091 (Credentials: guest/guest)
-* Zipkin URL: http://localhost:30092
-* Hazelcast Management Center URL: http://localhost:30093 (Monitor Hazelcast Clusters)
+**K8s Environment URLs:**
+- Application: http://localhost:30090
+- RabbitMQ Admin: http://localhost:30091 (guest/guest)
+- Zipkin Tracing: http://localhost:30092
+- Hazelcast Management Center: http://localhost:30093
+
+## Development Guide
+
+### Code Structure
+
+```
+src/main/java/com/sivalabs/bookstore/
+├── common/          # Shared module (open module)
+├── catalog/         # Product catalog module
+├── orders/          # Order management module
+├── inventory/       # Inventory management module
+├── notifications/   # Notification module
+└── config/          # Configuration files
+```
+
+### Database Migration
+
+- Location: `src/main/resources/db/migration/`
+- Uses Liquibase for version control
+- Each module uses independent schema
+
+### Module Boundary Guidelines
+
+- Respect `@ApplicationModule` defined boundaries
+- Cross-module access requires explicit APIs (e.g., `catalog.ProductApi`)
+- Inter-module communication prioritizes event-driven patterns
+
+### Troubleshooting
+
+**Port Conflicts:**
+- Stop conflicting services or modify port mappings in `compose.yml`
+
+**Hazelcast/Cache Issues:**
+- Tune `bookstore.cache.*` settings
+- Check `/actuator/health` and `/actuator/modulith`
+
+**Tracing Not Visible:**
+- Confirm Zipkin service is running
+- Verify tracing endpoint configuration

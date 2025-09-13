@@ -147,7 +147,7 @@ class OrderCacheServiceTests {
             // Given
             given(errorHandler.executeVoidOperation(
                             org.mockito.ArgumentMatchers.any(),
-                            org.mockito.ArgumentMatchers.eq("cacheOrder"),
+                            org.mockito.ArgumentMatchers.eq("cacheOrders"),
                             org.mockito.ArgumentMatchers.eq(orderNumber)))
                     .willReturn(true);
 
@@ -159,7 +159,7 @@ class OrderCacheServiceTests {
             verify(errorHandler)
                     .executeVoidOperation(
                             org.mockito.ArgumentMatchers.any(),
-                            org.mockito.ArgumentMatchers.eq("cacheOrder"),
+                            org.mockito.ArgumentMatchers.eq("cacheOrders"),
                             org.mockito.ArgumentMatchers.eq(orderNumber));
         }
 
@@ -184,7 +184,7 @@ class OrderCacheServiceTests {
             // Given
             given(errorHandler.executeVoidOperation(
                             org.mockito.ArgumentMatchers.any(),
-                            org.mockito.ArgumentMatchers.eq("updateCachedOrder"),
+                            org.mockito.ArgumentMatchers.eq("updateCachedOrders"),
                             org.mockito.ArgumentMatchers.eq(orderNumber)))
                     .willReturn(true);
 
@@ -196,7 +196,7 @@ class OrderCacheServiceTests {
             verify(errorHandler)
                     .executeVoidOperation(
                             org.mockito.ArgumentMatchers.any(),
-                            org.mockito.ArgumentMatchers.eq("updateCachedOrder"),
+                            org.mockito.ArgumentMatchers.eq("updateCachedOrders"),
                             org.mockito.ArgumentMatchers.eq(orderNumber));
         }
 
@@ -414,7 +414,7 @@ class OrderCacheServiceTests {
             // Given
             given(errorHandler.executeVoidOperation(
                             org.mockito.ArgumentMatchers.any(),
-                            org.mockito.ArgumentMatchers.eq("cacheOrder"),
+                            org.mockito.ArgumentMatchers.eq("cacheOrders"),
                             org.mockito.ArgumentMatchers.eq(orderNumber)))
                     .willReturn(false); // Simulate error
 

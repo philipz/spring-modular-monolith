@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 
 @TestConfiguration
-@Import(HazelcastTestInstanceConfig.class)
+@Import(CommonCacheTestConfig.class)
 public class OrdersCacheTestConfig {
 
     @Bean("ordersCache")

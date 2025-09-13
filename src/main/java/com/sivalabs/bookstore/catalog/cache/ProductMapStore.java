@@ -6,6 +6,7 @@ import com.hazelcast.map.MapStore;
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import com.sivalabs.bookstore.catalog.domain.ProductRepository;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -142,29 +143,27 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
     public Map<String, ProductEntity> loadAll(Collection<String> productCodes) {
         logger.debug("Loading {} products from database", productCodes.size());
 
-        try {
-            // Load products by codes using repository's findByCode method
-            Map<String, ProductEntity> loadedProducts = productCodes.stream()
-                    .map(productCode -> {
-                        Optional<ProductEntity> productOpt = productRepository.findByCode(productCode);
-                        return productOpt
-                                .map(product -> Map.entry(productCode, product))
-                                .orElse(null);
-                    })
-                    .filter(entry -> entry != null)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // Handle individual exceptions to allow partial success
+        Map<String, ProductEntity> loadedProducts = new HashMap<>();
 
-            logger.debug(
-                    "Successfully loaded {} out of {} requested products from database",
-                    loadedProducts.size(),
-                    productCodes.size());
-
-            return loadedProducts;
-
-        } catch (Exception e) {
-            logger.warn("LoadAll operation error for {} products: {}", productCodes.size(), e.getMessage());
-            return java.util.Collections.emptyMap();
+        for (String productCode : productCodes) {
+            try {
+                Optional<ProductEntity> productOpt = productRepository.findByCode(productCode);
+                if (productOpt.isPresent()) {
+                    loadedProducts.put(productCode, productOpt.get());
+                }
+            } catch (Exception e) {
+                logger.warn("Error loading product {}: {}", productCode, e.getMessage());
+                // Continue with other products
+            }
         }
+
+        logger.debug(
+                "Successfully loaded {} out of {} requested products from database",
+                loadedProducts.size(),
+                productCodes.size());
+
+        return loadedProducts;
     }
 
     /**
