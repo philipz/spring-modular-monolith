@@ -1,7 +1,7 @@
 package com.sivalabs.bookstore.orders.web;
 
-import com.sivalabs.bookstore.catalog.ProductApi;
-import com.sivalabs.bookstore.catalog.ProductDto;
+import com.sivalabs.bookstore.catalog.api.ProductApi;
+import com.sivalabs.bookstore.catalog.api.ProductDto;
 import com.sivalabs.bookstore.orders.domain.models.Customer;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HtmxRefreshView;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HxRequest;

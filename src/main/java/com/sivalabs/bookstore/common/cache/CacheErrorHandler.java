@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,9 +29,9 @@ public class CacheErrorHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheErrorHandler.class);
 
-    // Circuit breaker configuration
-    private static final int FAILURE_THRESHOLD = 5;
-    private static final Duration CIRCUIT_OPEN_DURATION = Duration.ofMinutes(2);
+    // Circuit breaker configuration (externalized via properties)
+    private final int failureThreshold;
+    private final Duration circuitOpenDuration;
 
     // Error tracking
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
@@ -40,6 +41,23 @@ public class CacheErrorHandler {
     // Error metrics tracking
     private final ConcurrentHashMap<String, AtomicInteger> errorCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, LocalDateTime> lastErrorTimes = new ConcurrentHashMap<>();
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public CacheErrorHandler(
+            @Value("${bookstore.cache.circuit-breaker-failure-threshold:5}") int failureThreshold,
+            @Value("${bookstore.cache.circuit-breaker-recovery-timeout-ms:30000}") long circuitOpenMs) {
+        this.failureThreshold = failureThreshold;
+        this.circuitOpenDuration = Duration.ofMillis(circuitOpenMs);
+    }
+
+    /**
+     * Default constructor for manual instantiation in places where Spring injection
+     * is not available. Uses sensible defaults aligned with configuration defaults.
+     */
+    public CacheErrorHandler() {
+        this.failureThreshold = 5;
+        this.circuitOpenDuration = Duration.ofMillis(30_000L);
+    }
 
     /**
      * Execute a cache operation with error handling.
@@ -133,7 +151,7 @@ public class CacheErrorHandler {
 
         // Update circuit breaker state
         int failures = consecutiveFailures.incrementAndGet();
-        if (failures >= FAILURE_THRESHOLD && !circuitOpen) {
+        if (failures >= failureThreshold && !circuitOpen) {
             openCircuit();
         }
     }
@@ -150,7 +168,7 @@ public class CacheErrorHandler {
 
         // Check if circuit should be closed (recovery attempt)
         LocalDateTime openedAt = circuitOpenedAt;
-        if (openedAt != null && Duration.between(openedAt, LocalDateTime.now()).compareTo(CIRCUIT_OPEN_DURATION) > 0) {
+        if (openedAt != null && Duration.between(openedAt, LocalDateTime.now()).compareTo(circuitOpenDuration) > 0) {
             // Time to try again - half-open state
             logger.info("Circuit breaker entering half-open state - attempting cache recovery");
             return false;
@@ -263,7 +281,7 @@ public class CacheErrorHandler {
         circuitOpenedAt = LocalDateTime.now();
         logger.warn(
                 "Circuit breaker OPENED - Cache operations will be bypassed for {} seconds",
-                CIRCUIT_OPEN_DURATION.getSeconds());
+                circuitOpenDuration.getSeconds());
     }
 
     private void closeCircuit() {

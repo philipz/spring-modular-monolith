@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Sort;
@@ -20,4 +21,6 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
         where o.orderNumber = :orderNumber
         """)
     Optional<OrderEntity> findByOrderNumber(String orderNumber);
+
+    List<OrderEntity> findByOrderNumberIn(Collection<String> orderNumbers);
 }

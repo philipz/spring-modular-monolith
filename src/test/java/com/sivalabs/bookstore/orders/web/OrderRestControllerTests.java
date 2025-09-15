@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sivalabs.bookstore.TestcontainersConfiguration;
-import com.sivalabs.bookstore.catalog.ProductApi;
-import com.sivalabs.bookstore.catalog.ProductDto;
+import com.sivalabs.bookstore.catalog.api.ProductApi;
+import com.sivalabs.bookstore.catalog.api.ProductDto;
 import com.sivalabs.bookstore.orders.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderService;

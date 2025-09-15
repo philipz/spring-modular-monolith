@@ -36,6 +36,12 @@ import org.springframework.stereotype.Component;
 public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryMapStore.class);
+    private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
+    private final long initTimestamp = System.currentTimeMillis();
+
+    private boolean withinStartupWindow() {
+        return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
+    }
 
     @Autowired
     private InventoryRepository inventoryRepository;
@@ -82,7 +88,12 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             logger.debug("Inventory store operation completed for inventoryId={}", inventoryId);
 
         } catch (Exception e) {
-            logger.warn("Store operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Store operation error during startup for inventoryId={}: {}", inventoryId, e.getMessage());
+            } else {
+                logger.warn("Store operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            }
         }
     }
 
@@ -101,7 +112,14 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             logger.debug("StoreAll operation completed for {} inventory records", entries.size());
 
         } catch (Exception e) {
-            logger.warn("StoreAll operation error for {} inventory records: {}", entries.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "StoreAll operation error during startup for {} inventory records: {}",
+                        entries.size(),
+                        e.getMessage());
+            } else {
+                logger.warn("StoreAll operation error for {} inventory records: {}", entries.size(), e.getMessage());
+            }
         }
     }
 
@@ -131,7 +149,11 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
                 return null;
             }
         } catch (Exception e) {
-            logger.warn("Load operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug("Load operation error during startup for inventoryId={}: {}", inventoryId, e.getMessage());
+            } else {
+                logger.warn("Load operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            }
             return null;
         }
     }
@@ -160,7 +182,15 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             return loadedInventory;
 
         } catch (Exception e) {
-            logger.warn("LoadAll operation error for {} inventory records: {}", inventoryIds.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "LoadAll operation error during startup for {} inventory records: {}",
+                        inventoryIds.size(),
+                        e.getMessage());
+            } else {
+                logger.warn(
+                        "LoadAll operation error for {} inventory records: {}", inventoryIds.size(), e.getMessage());
+            }
             return java.util.Collections.emptyMap();
         }
     }
@@ -184,7 +214,11 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             return allInventoryIds;
 
         } catch (Exception e) {
-            logger.warn("LoadAllKeys operation error: {}", e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug("LoadAllKeys operation error during startup: {}", e.getMessage());
+            } else {
+                logger.warn("LoadAllKeys operation error: {}", e.getMessage());
+            }
             return java.util.Collections.emptySet();
         }
     }
@@ -206,7 +240,12 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             logger.debug("Delete operation called for inventoryId={} - delegating to service layer", inventoryId);
 
         } catch (Exception e) {
-            logger.warn("Delete operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Delete operation error during startup for inventoryId={}: {}", inventoryId, e.getMessage());
+            } else {
+                logger.warn("Delete operation error for inventoryId={}: {}", inventoryId, e.getMessage());
+            }
         }
     }
 
@@ -229,7 +268,15 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
             logger.debug("Successfully deleted {} inventory records from database", inventoryIds.size());
 
         } catch (Exception e) {
-            logger.warn("DeleteAll operation error for {} inventory records: {}", inventoryIds.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "DeleteAll operation error during startup for {} inventory records: {}",
+                        inventoryIds.size(),
+                        e.getMessage());
+            } else {
+                logger.warn(
+                        "DeleteAll operation error for {} inventory records: {}", inventoryIds.size(), e.getMessage());
+            }
         }
     }
 }

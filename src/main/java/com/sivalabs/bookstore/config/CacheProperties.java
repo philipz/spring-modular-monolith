@@ -30,6 +30,11 @@ public class CacheProperties {
     @Min(0) private int timeToLiveSeconds = 3600;
 
     /**
+     * Time-to-live for inventory cache entries in seconds. Default is 1800 (30 minutes).
+     */
+    @Min(0) private int inventoryTimeToLiveSeconds = 1800;
+
+    /**
      * Whether write-through mode is enabled. Default is true.
      */
     private boolean writeThrough = true;
@@ -55,6 +60,17 @@ public class CacheProperties {
     private boolean readBackupData = true;
 
     /**
+     * When true, health check basic operations run in read-only mode (no put/remove),
+     * using only get operations to avoid triggering MapStore writes. Default is false.
+     */
+    private boolean basicOperationsReadOnly = false;
+
+    /**
+     * Enable/disable health check basic operations block. Default is true.
+     */
+    private boolean testBasicOperationsEnabled = true;
+
+    /**
      * Maximum idle time for cache entries in seconds. Default is 0 (disabled).
      */
     @Min(0) private int maxIdleSeconds = 0;
@@ -63,6 +79,16 @@ public class CacheProperties {
      * Number of backup replicas for cache entries. Default is 1.
      */
     @Min(0) private int backupCount = 1;
+
+    /**
+     * Circuit breaker failure threshold before opening the circuit. Default is 5 failures.
+     */
+    @Min(1) private int circuitBreakerFailureThreshold = 5;
+
+    /**
+     * Circuit breaker recovery timeout in milliseconds. Default is 30000 ms (30 seconds).
+     */
+    @Min(0) private long circuitBreakerRecoveryTimeoutMs = 30_000L;
 
     public CacheProperties() {}
 
@@ -88,6 +114,14 @@ public class CacheProperties {
 
     public void setTimeToLiveSeconds(int timeToLiveSeconds) {
         this.timeToLiveSeconds = timeToLiveSeconds;
+    }
+
+    public int getInventoryTimeToLiveSeconds() {
+        return inventoryTimeToLiveSeconds;
+    }
+
+    public void setInventoryTimeToLiveSeconds(int inventoryTimeToLiveSeconds) {
+        this.inventoryTimeToLiveSeconds = inventoryTimeToLiveSeconds;
     }
 
     public boolean isWriteThrough() {
@@ -130,6 +164,22 @@ public class CacheProperties {
         this.readBackupData = readBackupData;
     }
 
+    public boolean isBasicOperationsReadOnly() {
+        return basicOperationsReadOnly;
+    }
+
+    public void setBasicOperationsReadOnly(boolean basicOperationsReadOnly) {
+        this.basicOperationsReadOnly = basicOperationsReadOnly;
+    }
+
+    public boolean isTestBasicOperationsEnabled() {
+        return testBasicOperationsEnabled;
+    }
+
+    public void setTestBasicOperationsEnabled(boolean testBasicOperationsEnabled) {
+        this.testBasicOperationsEnabled = testBasicOperationsEnabled;
+    }
+
     public int getMaxIdleSeconds() {
         return maxIdleSeconds;
     }
@@ -146,18 +196,39 @@ public class CacheProperties {
         this.backupCount = backupCount;
     }
 
+    public int getCircuitBreakerFailureThreshold() {
+        return circuitBreakerFailureThreshold;
+    }
+
+    public void setCircuitBreakerFailureThreshold(int circuitBreakerFailureThreshold) {
+        this.circuitBreakerFailureThreshold = circuitBreakerFailureThreshold;
+    }
+
+    public long getCircuitBreakerRecoveryTimeoutMs() {
+        return circuitBreakerRecoveryTimeoutMs;
+    }
+
+    public void setCircuitBreakerRecoveryTimeoutMs(long circuitBreakerRecoveryTimeoutMs) {
+        this.circuitBreakerRecoveryTimeoutMs = circuitBreakerRecoveryTimeoutMs;
+    }
+
     @Override
     public String toString() {
         return "CacheProperties{" + "enabled="
                 + enabled + ", maxSize="
                 + maxSize + ", timeToLiveSeconds="
-                + timeToLiveSeconds + ", writeThrough="
+                + timeToLiveSeconds + ", inventoryTimeToLiveSeconds="
+                + inventoryTimeToLiveSeconds + ", writeThrough="
                 + writeThrough + ", writeBatchSize="
                 + writeBatchSize + ", writeDelaySeconds="
                 + writeDelaySeconds + ", metricsEnabled="
                 + metricsEnabled + ", readBackupData="
-                + readBackupData + ", maxIdleSeconds="
+                + readBackupData + ", basicOperationsReadOnly="
+                + basicOperationsReadOnly + ", testBasicOperationsEnabled="
+                + testBasicOperationsEnabled + ", maxIdleSeconds="
                 + maxIdleSeconds + ", backupCount="
-                + backupCount + '}';
+                + backupCount + ", circuitBreakerFailureThreshold="
+                + circuitBreakerFailureThreshold + ", circuitBreakerRecoveryTimeoutMs="
+                + circuitBreakerRecoveryTimeoutMs + '}';
     }
 }

@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.orders.cache;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.MapLoaderLifecycleSupport;
 import com.hazelcast.map.MapStore;
+import com.hazelcast.spring.context.SpringAware;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderRepository;
 import java.util.Collection;
@@ -10,7 +11,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +31,16 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Lazy
+@SpringAware
 public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderMapStore.class);
+    private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
+    private final long initTimestamp = System.currentTimeMillis();
+
+    private boolean withinStartupWindow() {
+        return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
+    }
 
     @Autowired
     private OrderRepository orderRepository;
@@ -82,7 +89,12 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             logger.debug("Order store operation completed for orderNumber={}", orderNumber);
 
         } catch (Exception e) {
-            logger.warn("Store operation error for orderNumber={}: {}", orderNumber, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Store operation error during startup for orderNumber={}: {}", orderNumber, e.getMessage());
+            } else {
+                logger.warn("Store operation error for orderNumber={}: {}", orderNumber, e.getMessage());
+            }
         }
     }
 
@@ -101,7 +113,12 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             logger.debug("StoreAll operation completed for {} orders", entries.size());
 
         } catch (Exception e) {
-            logger.warn("StoreAll operation error for {} orders: {}", entries.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "StoreAll operation error during startup for {} orders: {}", entries.size(), e.getMessage());
+            } else {
+                logger.warn("StoreAll operation error for {} orders: {}", entries.size(), e.getMessage());
+            }
         }
     }
 
@@ -143,27 +160,41 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
      */
     @Override
     public Map<String, OrderEntity> loadAll(Collection<String> orderNumbers) {
-        logger.debug("Loading {} orders from database", orderNumbers.size());
+        logger.debug(
+                "Loading {} orders from database (batch + fallback)", orderNumbers != null ? orderNumbers.size() : 0);
 
-        try {
-            // Note: OrderRepository doesn't have a findByOrderNumberIn method,
-            // so we'll load them one by one. For better performance, consider
-            // adding a bulk query method to OrderRepository.
-            Map<String, OrderEntity> result = orderNumbers.stream()
-                    .map(orderRepository::findByOrderNumber)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toMap(OrderEntity::getOrderNumber, order -> order));
-
-            logger.debug("Successfully loaded {} out of {} requested orders", result.size(), orderNumbers.size());
-
-            return result;
-
-        } catch (Exception e) {
-            logger.error("Failed to load orders from database", e);
-            // Return empty map on failure
+        if (orderNumbers == null || orderNumbers.isEmpty()) {
             return Map.of();
         }
+
+        Map<String, OrderEntity> result = new java.util.HashMap<>();
+
+        // Try batch query first
+        try {
+            var orders = orderRepository.findByOrderNumberIn(orderNumbers);
+            for (OrderEntity o : orders) {
+                if (o != null && o.getOrderNumber() != null) {
+                    result.put(o.getOrderNumber(), o);
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Batch loadAll error for {} orders: {}", orderNumbers.size(), e.getMessage());
+        }
+
+        // Fallback: for any missing keys, attempt individual lookups
+        for (String num : orderNumbers) {
+            if (!result.containsKey(num)) {
+                try {
+                    Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(num);
+                    orderOpt.ifPresent(order -> result.put(num, order));
+                } catch (Exception e) {
+                    logger.warn("Error loading order individually {}: {}", num, e.getMessage());
+                }
+            }
+        }
+
+        logger.debug("Loaded {} out of {} requested orders", result.size(), orderNumbers.size());
+        return result;
     }
 
     /**
@@ -186,6 +217,7 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             return orderNumbers;
 
         } catch (Exception e) {
+            // Keep unexpected exceptions at ERROR for visibility
             logger.error("Failed to load all order keys from database", e);
             // Return empty set on failure
             return Set.of();
@@ -209,7 +241,12 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             logger.debug("Delete operation called for orderNumber={} - delegating to service layer", orderNumber);
 
         } catch (Exception e) {
-            logger.warn("Delete operation error for orderNumber={}: {}", orderNumber, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Delete operation error during startup for orderNumber={}: {}", orderNumber, e.getMessage());
+            } else {
+                logger.warn("Delete operation error for orderNumber={}: {}", orderNumber, e.getMessage());
+            }
         }
     }
 
@@ -230,7 +267,14 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             logger.debug("Successfully deleted {} orders from database", orderNumbers.size());
 
         } catch (Exception e) {
-            logger.warn("DeleteAll operation error for {} orders: {}", orderNumbers.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "DeleteAll operation error during startup for {} orders: {}",
+                        orderNumbers.size(),
+                        e.getMessage());
+            } else {
+                logger.warn("DeleteAll operation error for {} orders: {}", orderNumbers.size(), e.getMessage());
+            }
         }
     }
 }

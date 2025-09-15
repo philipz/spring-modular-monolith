@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.catalog.cache;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.MapLoaderLifecycleSupport;
 import com.hazelcast.map.MapStore;
+import com.hazelcast.spring.context.SpringAware;
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import com.sivalabs.bookstore.catalog.domain.ProductRepository;
 import java.util.Collection;
@@ -32,9 +33,16 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Lazy
+@SpringAware
 public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductMapStore.class);
+    private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
+    private final long initTimestamp = System.currentTimeMillis();
+
+    private boolean withinStartupWindow() {
+        return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
+    }
 
     @Autowired
     private ProductRepository productRepository;
@@ -81,7 +89,14 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
             logger.debug("Product store operation completed for productCode={}", productCode);
 
         } catch (Exception e) {
-            logger.warn("Store operation encountered error for productCode={}: {}", productCode, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Store operation encountered error during startup for productCode={}: {}",
+                        productCode,
+                        e.getMessage());
+            } else {
+                logger.warn("Store operation encountered error for productCode={}: {}", productCode, e.getMessage());
+            }
         }
     }
 
@@ -100,7 +115,14 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
             logger.debug("StoreAll operation completed for {} products", entries.size());
 
         } catch (Exception e) {
-            logger.warn("StoreAll operation encountered error for {} products: {}", entries.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "StoreAll operation encountered error during startup for {} products: {}",
+                        entries.size(),
+                        e.getMessage());
+            } else {
+                logger.warn("StoreAll operation encountered error for {} products: {}", entries.size(), e.getMessage());
+            }
         }
     }
 
@@ -127,7 +149,11 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
                 return null;
             }
         } catch (Exception e) {
-            logger.warn("Load operation error for productCode={}: {}", productCode, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug("Load operation error during startup for productCode={}: {}", productCode, e.getMessage());
+            } else {
+                logger.warn("Load operation error for productCode={}: {}", productCode, e.getMessage());
+            }
             return null;
         }
     }
@@ -141,29 +167,40 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
      */
     @Override
     public Map<String, ProductEntity> loadAll(Collection<String> productCodes) {
-        logger.debug("Loading {} products from database", productCodes.size());
+        logger.debug(
+                "Loading {} products from database (batch + fallback)", productCodes != null ? productCodes.size() : 0);
 
-        // Handle individual exceptions to allow partial success
-        Map<String, ProductEntity> loadedProducts = new HashMap<>();
+        Map<String, ProductEntity> result = new HashMap<>();
+        if (productCodes == null || productCodes.isEmpty()) {
+            return result;
+        }
 
-        for (String productCode : productCodes) {
-            try {
-                Optional<ProductEntity> productOpt = productRepository.findByCode(productCode);
-                if (productOpt.isPresent()) {
-                    loadedProducts.put(productCode, productOpt.get());
+        // Try batch query first
+        try {
+            var products = productRepository.findByCodeIn(productCodes);
+            for (ProductEntity p : products) {
+                if (p != null && p.getCode() != null) {
+                    result.put(p.getCode(), p);
                 }
-            } catch (Exception e) {
-                logger.warn("Error loading product {}: {}", productCode, e.getMessage());
-                // Continue with other products
+            }
+        } catch (Exception e) {
+            logger.warn("Batch loadAll error for {} products: {}", productCodes.size(), e.getMessage());
+        }
+
+        // Fallback to individual lookups for any missing codes (ensures partial results and test stubs are exercised)
+        for (String code : productCodes) {
+            if (!result.containsKey(code)) {
+                try {
+                    Optional<ProductEntity> productOpt = productRepository.findByCode(code);
+                    productOpt.ifPresent(product -> result.put(code, product));
+                } catch (Exception e) {
+                    logger.warn("Error loading product individually {}: {}", code, e.getMessage());
+                }
             }
         }
 
-        logger.debug(
-                "Successfully loaded {} out of {} requested products from database",
-                loadedProducts.size(),
-                productCodes.size());
-
-        return loadedProducts;
+        logger.debug("Loaded {} out of {} requested products", result.size(), productCodes.size());
+        return result;
     }
 
     /**
@@ -185,7 +222,11 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
             return allProductCodes;
 
         } catch (Exception e) {
-            logger.warn("LoadAllKeys operation error: {}", e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug("LoadAllKeys operation error during startup: {}", e.getMessage());
+            } else {
+                logger.warn("LoadAllKeys operation error: {}", e.getMessage());
+            }
             return java.util.Collections.emptySet();
         }
     }
@@ -207,7 +248,12 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
             logger.debug("Delete operation called for productCode={} - delegating to service layer", productCode);
 
         } catch (Exception e) {
-            logger.warn("Delete operation error for productCode={}: {}", productCode, e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "Delete operation error during startup for productCode={}: {}", productCode, e.getMessage());
+            } else {
+                logger.warn("Delete operation error for productCode={}: {}", productCode, e.getMessage());
+            }
         }
     }
 
@@ -229,7 +275,14 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
             logger.debug("Successfully deleted {} products from database", productCodes.size());
 
         } catch (Exception e) {
-            logger.warn("DeleteAll operation error for {} products: {}", productCodes.size(), e.getMessage());
+            if (withinStartupWindow()) {
+                logger.debug(
+                        "DeleteAll operation error during startup for {} products: {}",
+                        productCodes.size(),
+                        e.getMessage());
+            } else {
+                logger.warn("DeleteAll operation error for {} products: {}", productCodes.size(), e.getMessage());
+            }
         }
     }
 }

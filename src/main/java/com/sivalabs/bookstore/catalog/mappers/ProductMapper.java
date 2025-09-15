@@ -1,6 +1,6 @@
 package com.sivalabs.bookstore.catalog.mappers;
 
-import com.sivalabs.bookstore.catalog.ProductDto;
+import com.sivalabs.bookstore.catalog.api.ProductDto;
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import org.springframework.stereotype.Component;
 
