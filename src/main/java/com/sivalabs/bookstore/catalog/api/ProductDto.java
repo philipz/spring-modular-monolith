@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.catalog;
+package com.sivalabs.bookstore.catalog.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;

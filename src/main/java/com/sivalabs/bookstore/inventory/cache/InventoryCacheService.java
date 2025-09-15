@@ -5,6 +5,7 @@ import com.sivalabs.bookstore.common.cache.AbstractCacheService;
 import com.sivalabs.bookstore.common.cache.CacheErrorHandler;
 import com.sivalabs.bookstore.inventory.domain.InventoryEntity;
 import java.util.Optional;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,10 +29,14 @@ import org.springframework.stereotype.Service;
 @Lazy
 public class InventoryCacheService extends AbstractCacheService<Long, InventoryEntity> {
 
+    private final InventoryByProductCodeIndex index;
+
     public InventoryCacheService(
             @Qualifier("inventoryCache") IMap<Long, Object> inventoryCache,
-            @Autowired(required = false) CacheErrorHandler errorHandler) {
+            @Autowired(required = false) CacheErrorHandler errorHandler,
+            ObjectProvider<InventoryByProductCodeIndex> indexProvider) {
         super(inventoryCache, errorHandler != null ? errorHandler : new CacheErrorHandler(), InventoryEntity.class);
+        this.index = indexProvider != null ? indexProvider.getIfAvailable() : null;
     }
 
     @Override
@@ -70,7 +75,11 @@ public class InventoryCacheService extends AbstractCacheService<Long, InventoryE
      * @return true if caching was successful, false otherwise
      */
     public boolean cacheInventory(Long inventoryId, InventoryEntity inventory) {
-        return cacheEntity(inventoryId, inventory);
+        boolean cached = cacheEntity(inventoryId, inventory);
+        if (cached && index != null && inventory != null && inventory.getProductCode() != null) {
+            index.updateIndex(inventory.getProductCode(), inventoryId);
+        }
+        return cached;
     }
 
     /**
@@ -81,7 +90,11 @@ public class InventoryCacheService extends AbstractCacheService<Long, InventoryE
      * @return true if update was successful, false otherwise
      */
     public boolean updateCachedInventory(Long inventoryId, InventoryEntity inventory) {
-        return updateCachedEntity(inventoryId, inventory);
+        boolean updated = updateCachedEntity(inventoryId, inventory);
+        if (updated && index != null && inventory != null && inventory.getProductCode() != null) {
+            index.updateIndex(inventory.getProductCode(), inventoryId);
+        }
+        return updated;
     }
 
     /**
@@ -96,14 +109,21 @@ public class InventoryCacheService extends AbstractCacheService<Long, InventoryE
 
         return errorHandler.executeWithFallback(
                 () -> {
-                    // Since cache is keyed by Long ID but we need to search by productCode,
-                    // we need to iterate through cache values (this is not optimal for large caches)
-                    // In a production system, consider using a separate cache with productCode as key
+                    if (index != null) {
+                        Optional<Long> idOpt = index.findInventoryIdByProductCode(productCode);
+                        if (idOpt.isPresent()) {
+                            return findById(idOpt.get());
+                        }
+                        logger.debug("Index miss for product code: {}", productCode);
+                        return Optional.empty();
+                    }
+
+                    // Fallback legacy scan when index not available
                     for (Object value : cache.values()) {
                         if (valueType.isInstance(value)) {
                             InventoryEntity inventoryEntity = (InventoryEntity) value;
                             if (productCode.equals(inventoryEntity.getProductCode())) {
-                                logger.debug("Inventory found in cache by product code: {}", productCode);
+                                logger.debug("Inventory found in cache by product code via scan: {}", productCode);
                                 return Optional.of(inventoryEntity);
                             }
                         }

@@ -27,6 +27,16 @@
         <spotless.version>2.46.1</spotless.version>
         <palantir-java-format.version>2.72.0</palantir-java-format.version>
         <hazelcast.version>5.5.6</hazelcast.version>
+        <!-- Liquibase connection properties are externalized. Prefer environment variables or -D properties.
+             Example environment variables (Maven reads as ${env.*}):
+               LIQUIBASE_URL, LIQUIBASE_USERNAME, LIQUIBASE_PASSWORD
+             These are wired as default values below; you can also override with
+               -Dliquibase.url=..., -Dliquibase.username=..., -Dliquibase.password=...
+             Runtime configuration should rely on Spring properties (application.properties or env):
+               spring.liquibase.url, spring.liquibase.user, spring.liquibase.password -->
+        <liquibase.url>${env.LIQUIBASE_URL}</liquibase.url>
+        <liquibase.username>${env.LIQUIBASE_USERNAME}</liquibase.username>
+        <liquibase.password>${env.LIQUIBASE_PASSWORD}</liquibase.password>
     </properties>
 
     <dependencyManagement>
@@ -302,9 +312,12 @@
                 <artifactId>liquibase-maven-plugin</artifactId>
                 <configuration>
                     <changeLogFile>src/main/resources/db/db.changelog-master.xml</changeLogFile>
-                    <url>jdbc:postgresql://localhost:5432/postgres</url>
-                    <username>postgres</username>
-                    <password>postgres</password>
+                    <!-- Externalized: provide via -Dliquibase.url or env LIQUIBASE_URL -->
+                    <url>${liquibase.url}</url>
+                    <!-- Externalized: provide via -Dliquibase.username or env LIQUIBASE_USERNAME -->
+                    <username>${liquibase.username}</username>
+                    <!-- Externalized: provide via -Dliquibase.password or env LIQUIBASE_PASSWORD -->
+                    <password>${liquibase.password}</password>
                     <driver>org.postgresql.Driver</driver>
                 </configuration>
             </plugin>

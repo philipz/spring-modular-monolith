@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.catalog;
+package com.sivalabs.bookstore.catalog.api;
 
 import com.sivalabs.bookstore.catalog.domain.ProductService;
 import com.sivalabs.bookstore.catalog.mappers.ProductMapper;

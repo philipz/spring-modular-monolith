@@ -1,6 +1,6 @@
 package com.sivalabs.bookstore.catalog.web;
 
-import com.sivalabs.bookstore.catalog.ProductDto;
+import com.sivalabs.bookstore.catalog.api.ProductDto;
 import com.sivalabs.bookstore.catalog.domain.ProductNotFoundException;
 import com.sivalabs.bookstore.catalog.domain.ProductService;
 import com.sivalabs.bookstore.catalog.mappers.ProductMapper;

@@ -1,7 +1,10 @@
 package com.sivalabs.bookstore.catalog.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
@@ -157,6 +160,43 @@ class ProductMapStoreTests extends AbstractMapStoreTest<String, ProductEntity, P
         assertThat(actual.getId()).isEqualTo(expected.getId());
         assertThat(actual.getName()).isEqualTo(expected.getName());
         assertThat(actual.getPrice()).isEqualByComparingTo(expected.getPrice());
+    }
+
+    @Test
+    @DisplayName("Should use batch query for loadAll when available")
+    void shouldUseBatchQueryForLoadAllWhenAvailable() {
+        var keys = java.util.Arrays.asList(getTestEntity1Key(), getTestEntity2Key());
+        given(productRepository.findByCodeIn(keys)).willReturn(java.util.Arrays.asList(testEntity1, testEntity2));
+
+        Map<String, ProductEntity> result = mapStore.loadAll(keys);
+
+        assertThat(result)
+                .hasSize(2)
+                .containsEntry(getTestEntity1Key(), testEntity1)
+                .containsEntry(getTestEntity2Key(), testEntity2);
+
+        verify(productRepository, times(1)).findByCodeIn(keys);
+        verify(productRepository, never()).findByCode(anyString());
+    }
+
+    @Test
+    @DisplayName("Should fallback to per-key for missing entries after batch")
+    void shouldFallbackToPerKeyAfterBatch() {
+        var keys = java.util.Arrays.asList(getTestEntity1Key(), getTestEntity2Key());
+        // Batch returns only first entity
+        given(productRepository.findByCodeIn(keys)).willReturn(java.util.Arrays.asList(testEntity1));
+        // Fallback per-key for the second
+        given(productRepository.findByCode(getTestEntity2Key())).willReturn(java.util.Optional.of(testEntity2));
+
+        Map<String, ProductEntity> result = mapStore.loadAll(keys);
+
+        assertThat(result)
+                .hasSize(2)
+                .containsEntry(getTestEntity1Key(), testEntity1)
+                .containsEntry(getTestEntity2Key(), testEntity2);
+
+        verify(productRepository, times(1)).findByCodeIn(keys);
+        verify(productRepository, times(1)).findByCode(getTestEntity2Key());
     }
 
     // Additional product-specific tests

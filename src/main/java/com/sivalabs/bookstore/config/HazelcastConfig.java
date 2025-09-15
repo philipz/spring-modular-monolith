@@ -36,6 +36,7 @@ public class HazelcastConfig {
     private static final String ORDERS_CACHE_NAME = "orders-cache";
     private static final String PRODUCTS_CACHE_NAME = "products-cache";
     private static final String INVENTORY_CACHE_NAME = "inventory-cache";
+    private static final String INVENTORY_BY_PRODUCT_CODE_CACHE_NAME = "inventory-by-product-code-cache";
 
     /**
      * Creates and configures the main Hazelcast configuration.
@@ -71,13 +72,15 @@ public class HazelcastConfig {
         ordersCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
         ordersCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
 
-        // Configure MapStore for orders cache - temporarily disabled due to Spring injection timing
-        // MapStoreConfig ordersMapStoreConfig = new MapStoreConfig();
-        // ordersMapStoreConfig.setEnabled(true);
-        // ordersMapStoreConfig.setClassName("com.sivalabs.bookstore.orders.cache.OrderMapStore");
-        // ordersMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        // ordersMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        // ordersCacheMapConfig.setMapStoreConfig(ordersMapStoreConfig);
+        // Configure MapStore for orders cache
+        MapStoreConfig ordersMapStoreConfig = new MapStoreConfig();
+        ordersMapStoreConfig.setEnabled(true);
+        ordersMapStoreConfig.setClassName("com.sivalabs.bookstore.orders.cache.OrderMapStore");
+        // Use LAZY initial load to avoid triggering loadAllKeys() during startup
+        ordersMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
+        ordersMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        ordersMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        ordersCacheMapConfig.setMapStoreConfig(ordersMapStoreConfig);
 
         ordersCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
@@ -99,13 +102,15 @@ public class HazelcastConfig {
 
         productsCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
-        // Configure MapStore for products cache - temporarily disabled due to Spring injection timing
-        // MapStoreConfig productsMapStoreConfig = new MapStoreConfig();
-        // productsMapStoreConfig.setEnabled(true);
-        // productsMapStoreConfig.setClassName("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
-        // productsMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        // productsMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        // productsCacheMapConfig.setMapStoreConfig(productsMapStoreConfig);
+        // Configure MapStore for products cache
+        MapStoreConfig productsMapStoreConfig = new MapStoreConfig();
+        productsMapStoreConfig.setEnabled(true);
+        productsMapStoreConfig.setClassName("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
+        // Use LAZY initial load to avoid triggering loadAllKeys() during startup
+        productsMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
+        productsMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+        productsMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+        productsCacheMapConfig.setMapStoreConfig(productsMapStoreConfig);
 
         config.addMapConfig(productsCacheMapConfig);
 
@@ -119,7 +124,8 @@ public class HazelcastConfig {
         inventoryCacheMapConfig.setEvictionConfig(inventoryEvictionConfig);
 
         // Use shorter TTL for inventory data due to volatility
-        inventoryCacheMapConfig.setTimeToLiveSeconds(1800); // 30 minutes instead of default
+        // Use externalized TTL for inventory cache instead of hardcoded value
+        inventoryCacheMapConfig.setTimeToLiveSeconds(cacheProperties.getInventoryTimeToLiveSeconds());
         inventoryCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
         inventoryCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
         inventoryCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
@@ -130,11 +136,32 @@ public class HazelcastConfig {
         MapStoreConfig inventoryMapStoreConfig = new MapStoreConfig();
         inventoryMapStoreConfig.setEnabled(true);
         inventoryMapStoreConfig.setClassName("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
+        inventoryMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
         inventoryMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
         inventoryMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
         inventoryCacheMapConfig.setMapStoreConfig(inventoryMapStoreConfig);
 
         config.addMapConfig(inventoryCacheMapConfig);
+
+        // Configure the inventory-by-product-code index cache (String -> Long)
+        MapConfig inventoryByProductCodeMapConfig = new MapConfig(INVENTORY_BY_PRODUCT_CODE_CACHE_NAME);
+
+        EvictionConfig indexEvictionConfig = new EvictionConfig();
+        indexEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
+        indexEvictionConfig.setSize(cacheProperties.getMaxSize());
+        indexEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        inventoryByProductCodeMapConfig.setEvictionConfig(indexEvictionConfig);
+
+        // Align TTL with inventory cache TTL for consistency
+        inventoryByProductCodeMapConfig.setTimeToLiveSeconds(cacheProperties.getInventoryTimeToLiveSeconds());
+        inventoryByProductCodeMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
+        inventoryByProductCodeMapConfig.setBackupCount(cacheProperties.getBackupCount());
+        inventoryByProductCodeMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
+        inventoryByProductCodeMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
+
+        // No MapStore for index cache (derived data)
+
+        config.addMapConfig(inventoryByProductCodeMapConfig);
 
         // Enable metrics if requested
         if (cacheProperties.isMetricsEnabled()) {
@@ -262,5 +289,29 @@ public class HazelcastConfig {
     @Bean("inventoryCacheName")
     public String inventoryCacheName() {
         return INVENTORY_CACHE_NAME;
+    }
+
+    /**
+     * Creates the inventory-by-product-code index cache IMap bean.
+     * Keys are product codes (String), values are inventory IDs (Long) stored as Object.
+     *
+     * @param hazelcastInstance the Hazelcast instance
+     * @return IMap for inventory-by-product-code index
+     */
+    @Bean("inventoryByProductCodeCache")
+    @Lazy
+    public IMap<String, Object> inventoryByProductCodeCache(HazelcastInstance hazelcastInstance) {
+        logger.info("Creating inventory-by-product-code index cache map");
+        IMap<String, Object> indexMap = hazelcastInstance.getMap(INVENTORY_BY_PRODUCT_CODE_CACHE_NAME);
+        logger.info("Inventory by product code cache map created: {}", INVENTORY_BY_PRODUCT_CODE_CACHE_NAME);
+        return indexMap;
+    }
+
+    /**
+     * Provides inventory-by-product-code cache name constant for other components.
+     */
+    @Bean("inventoryByProductCodeCacheName")
+    public String inventoryByProductCodeCacheName() {
+        return INVENTORY_BY_PRODUCT_CODE_CACHE_NAME;
     }
 }

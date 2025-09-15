@@ -186,8 +186,12 @@ public class HealthConfig implements HealthIndicator {
                 return false;
             }
 
-            int size = ordersCache.size();
+            long size = 0;
             String name = ordersCache.getName();
+
+            if (ordersCache.getLocalMapStats() != null) {
+                size = ordersCache.getLocalMapStats().getOwnedEntryCount();
+            }
 
             Map<String, Object> stats = new HashMap<>();
             stats.put("status", "AVAILABLE");
@@ -222,8 +226,12 @@ public class HealthConfig implements HealthIndicator {
                 return false;
             }
 
-            int size = productsCache.size();
+            long size = 0;
             String name = productsCache.getName();
+
+            if (productsCache.getLocalMapStats() != null) {
+                size = productsCache.getLocalMapStats().getOwnedEntryCount();
+            }
 
             Map<String, Object> stats = new HashMap<>();
             stats.put("status", "AVAILABLE");
@@ -258,8 +266,12 @@ public class HealthConfig implements HealthIndicator {
                 return false;
             }
 
-            int size = inventoryCache.size();
+            long size = 0;
             String name = inventoryCache.getName();
+
+            if (inventoryCache.getLocalMapStats() != null) {
+                size = inventoryCache.getLocalMapStats().getOwnedEntryCount();
+            }
 
             Map<String, Object> stats = new HashMap<>();
             stats.put("status", "AVAILABLE");
@@ -316,17 +328,32 @@ public class HealthConfig implements HealthIndicator {
         boolean allOperationsSuccessful = true;
 
         try {
+            // Respect configuration flags
+            if (!cacheProperties.isTestBasicOperationsEnabled()) {
+                details.put("basicOperations", Map.of("enabled", false, "mode", "DISABLED"));
+                details.put("operationsOverall", "SKIPPED");
+                return true; // Do not fail health when disabled
+            }
+
+            boolean readOnly = cacheProperties.isBasicOperationsReadOnly();
+            details.put("basicOperationsConfig", Map.of("enabled", true, "mode", readOnly ? "READ_ONLY" : "FULL"));
+
             String testKey = HEALTH_CHECK_KEY_PREFIX + System.currentTimeMillis();
             String testValue = "health-test-value";
             Long testLongKey = System.currentTimeMillis();
 
             // Test orders cache operations
             try {
-                ordersCache.put(testKey, testValue);
-                String retrieved = (String) ordersCache.get(testKey);
-                boolean ordersSuccess = testValue.equals(retrieved);
-                ordersCache.remove(testKey);
-
+                boolean ordersSuccess;
+                if (readOnly) {
+                    ordersCache.get(testKey);
+                    ordersSuccess = true; // success if no exception
+                } else {
+                    ordersCache.put(testKey, testValue);
+                    String retrieved = (String) ordersCache.get(testKey);
+                    ordersSuccess = testValue.equals(retrieved);
+                    ordersCache.remove(testKey);
+                }
                 operationResults.put("ordersCache", ordersSuccess ? "OK" : "FAILED");
                 allOperationsSuccessful &= ordersSuccess;
             } catch (Exception e) {
@@ -336,11 +363,16 @@ public class HealthConfig implements HealthIndicator {
 
             // Test products cache operations
             try {
-                productsCache.put(testKey + "_product", testValue);
-                String retrieved = (String) productsCache.get(testKey + "_product");
-                boolean productsSuccess = testValue.equals(retrieved);
-                productsCache.remove(testKey + "_product");
-
+                boolean productsSuccess;
+                if (readOnly) {
+                    productsCache.get(testKey + "_product");
+                    productsSuccess = true; // success if no exception
+                } else {
+                    productsCache.put(testKey + "_product", testValue);
+                    String retrieved = (String) productsCache.get(testKey + "_product");
+                    productsSuccess = testValue.equals(retrieved);
+                    productsCache.remove(testKey + "_product");
+                }
                 operationResults.put("productsCache", productsSuccess ? "OK" : "FAILED");
                 allOperationsSuccessful &= productsSuccess;
             } catch (Exception e) {
@@ -350,11 +382,16 @@ public class HealthConfig implements HealthIndicator {
 
             // Test inventory cache operations (Long keys)
             try {
-                inventoryCache.put(testLongKey, testValue);
-                String retrieved = (String) inventoryCache.get(testLongKey);
-                boolean inventorySuccess = testValue.equals(retrieved);
-                inventoryCache.remove(testLongKey);
-
+                boolean inventorySuccess;
+                if (readOnly) {
+                    inventoryCache.get(testLongKey);
+                    inventorySuccess = true; // success if no exception
+                } else {
+                    inventoryCache.put(testLongKey, testValue);
+                    String retrieved = (String) inventoryCache.get(testLongKey);
+                    inventorySuccess = testValue.equals(retrieved);
+                    inventoryCache.remove(testLongKey);
+                }
                 operationResults.put("inventoryCache", inventorySuccess ? "OK" : "FAILED");
                 allOperationsSuccessful &= inventorySuccess;
             } catch (Exception e) {
@@ -375,15 +412,15 @@ public class HealthConfig implements HealthIndicator {
 
     private void addAggregateStatistics(Map<String, Object> details) {
         try {
-            int totalCacheSize = 0;
+            long totalCacheSize = 0;
             long totalHits = 0;
             long totalGets = 0;
             long totalPuts = 0;
 
             // Aggregate orders cache stats
             if (ordersCache != null) {
-                totalCacheSize += ordersCache.size();
                 if (ordersCache.getLocalMapStats() != null) {
+                    totalCacheSize += ordersCache.getLocalMapStats().getOwnedEntryCount();
                     var stats = ordersCache.getLocalMapStats();
                     totalHits += stats.getHits();
                     totalGets += stats.getGetOperationCount();
@@ -393,8 +430,8 @@ public class HealthConfig implements HealthIndicator {
 
             // Aggregate products cache stats
             if (productsCache != null) {
-                totalCacheSize += productsCache.size();
                 if (productsCache.getLocalMapStats() != null) {
+                    totalCacheSize += productsCache.getLocalMapStats().getOwnedEntryCount();
                     var stats = productsCache.getLocalMapStats();
                     totalHits += stats.getHits();
                     totalGets += stats.getGetOperationCount();
@@ -404,8 +441,8 @@ public class HealthConfig implements HealthIndicator {
 
             // Aggregate inventory cache stats
             if (inventoryCache != null) {
-                totalCacheSize += inventoryCache.size();
                 if (inventoryCache.getLocalMapStats() != null) {
+                    totalCacheSize += inventoryCache.getLocalMapStats().getOwnedEntryCount();
                     var stats = inventoryCache.getLocalMapStats();
                     totalHits += stats.getHits();
                     totalGets += stats.getGetOperationCount();

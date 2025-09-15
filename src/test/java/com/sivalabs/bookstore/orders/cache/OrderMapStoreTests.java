@@ -1,7 +1,10 @@
 package com.sivalabs.bookstore.orders.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hazelcast.core.HazelcastInstance;
@@ -171,6 +174,37 @@ class OrderMapStoreTests {
         Map<String, OrderEntity> result = orderMapStore.loadAll(emptyOrderNumbers);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should use batch query for loadAll when available")
+    void shouldUseBatchQueryForLoadAllWhenAvailable() {
+        Collection<String> numbers = Arrays.asList("ORD-001", "ORD-002");
+        given(orderRepository.findByOrderNumberIn(numbers)).willReturn(Arrays.asList(testOrder, anotherTestOrder));
+
+        Map<String, OrderEntity> result = orderMapStore.loadAll(numbers);
+
+        assertThat(result).hasSize(2).containsEntry("ORD-001", testOrder).containsEntry("ORD-002", anotherTestOrder);
+
+        verify(orderRepository, times(1)).findByOrderNumberIn(numbers);
+        verify(orderRepository, never()).findByOrderNumber(anyString());
+    }
+
+    @Test
+    @DisplayName("Should fallback to per-key for missing orders after batch")
+    void shouldFallbackToPerKeyAfterBatch() {
+        Collection<String> numbers = Arrays.asList("ORD-001", "ORD-002");
+        // Batch returns only first
+        given(orderRepository.findByOrderNumberIn(numbers)).willReturn(Arrays.asList(testOrder));
+        // Per-key fallback for the second
+        given(orderRepository.findByOrderNumber("ORD-002")).willReturn(Optional.of(anotherTestOrder));
+
+        Map<String, OrderEntity> result = orderMapStore.loadAll(numbers);
+
+        assertThat(result).hasSize(2).containsEntry("ORD-001", testOrder).containsEntry("ORD-002", anotherTestOrder);
+
+        verify(orderRepository, times(1)).findByOrderNumberIn(numbers);
+        verify(orderRepository, times(1)).findByOrderNumber("ORD-002");
     }
 
     @Test
