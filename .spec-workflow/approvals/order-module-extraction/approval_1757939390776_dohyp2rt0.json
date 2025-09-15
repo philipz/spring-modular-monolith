@@ -1,0 +1,27 @@
+{
+  "id": "approval_1757939390776_dohyp2rt0",
+  "title": "Order Module Extraction Design Document",
+  "filePath": ".spec-workflow/specs/order-module-extraction/design.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-15T12:29:50.776Z",
+  "category": "spec",
+  "categoryName": "order-module-extraction",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"15\": 17\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"17\",\n      \"timestamp\": \"2025-09-15T12:34:38.864Z\",\n      \"selectedText\": \"15\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1757939678864_sefib19r7\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"15\\\": 17\\n\",\n  \"timestamp\": \"2025-09-15T12:37:46.298Z\"\n}",
+  "respondedAt": "2025-09-15T12:37:46.323Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "17",
+      "timestamp": "2025-09-15T12:34:38.864Z",
+      "selectedText": "15",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1757939678864_sefib19r7"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "approval_1757942230103_b7lj0519e",
+  "title": "Order Module Extraction Task Breakdown (Revised)",
+  "filePath": ".spec-workflow/specs/order-module-extraction/tasks.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-15T13:17:10.103Z",
+  "category": "spec",
+  "categoryName": "order-module-extraction",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. 深入審視，相關任務項目編號與內容是否正確，且都有對應到需求和任務先後順序\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"深入審視，相關任務項目編號與內容是否正確，且都有對應到需求和任務先後順序\",\n      \"timestamp\": \"2025-09-15T13:45:59.096Z\",\n      \"id\": \"comment_1757943959096_97droenh6\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. 深入審視，相關任務項目編號與內容是否正確，且都有對應到需求和任務先後順序\\n\\n\",\n  \"timestamp\": \"2025-09-15T13:46:08.513Z\"\n}",
+  "respondedAt": "2025-09-15T13:46:08.536Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "深入審視，相關任務項目編號與內容是否正確，且都有對應到需求和任務先後順序",
+      "timestamp": "2025-09-15T13:45:59.096Z",
+      "id": "comment_1757943959096_97droenh6"
+    }
+  ]
+}
