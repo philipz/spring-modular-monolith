@@ -176,7 +176,7 @@
   - _Requirements: 1.4, 1.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Spring MVC Expert with REST API design expertise | Task: Migrate REST API controllers and DTOs following requirements 1.4, 1.5, maintaining API contracts and endpoint functionality | Restrictions: Must preserve exact API contracts, maintain request/response formats, ensure endpoint behavior consistency | _Leverage: existing OrderRestController, OrderDto, CreateOrderRequest, CreateOrderResponse_ | _Requirements: 1.4, 1.5_ | Success: REST API migrated with complete functionality, all endpoints operational, API contracts preserved, response formats consistent | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 19. Generate OpenAPI specification for new service
+- [x] 19. Generate OpenAPI specification for new service
   - File: orders/pom.xml, orders/src/main/resources/application.properties
   - Add springdoc-openapi dependency and expose OpenAPI at standard endpoint
   - Ensure schemas match existing request/response DTOs
