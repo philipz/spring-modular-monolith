@@ -13,6 +13,7 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.spring.context.SpringManagedContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -44,7 +45,7 @@ public class HazelcastConfig {
      * @return configured Hazelcast Config instance
      */
     @Bean
-    public Config hazelcastConfiguration(CacheProperties cacheProperties) {
+    public Config hazelcastConfiguration(CacheProperties cacheProperties, ObjectProvider<MapConfig> mapConfigs) {
         logger.info("Initializing Hazelcast configuration");
 
         Config config = new Config();
@@ -55,28 +56,6 @@ public class HazelcastConfig {
         config.getJetConfig().setEnabled(true);
         // Allow Hazelcast to inject Spring-managed dependencies into components like MapStore
         config.setManagedContext(new SpringManagedContext());
-
-        // Configure the orders cache map
-        MapConfig ordersCacheMapConfig = new MapConfig(ORDERS_CACHE_NAME);
-
-        // Configure eviction policy and max size
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
-        evictionConfig.setSize(cacheProperties.getMaxSize());
-        evictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        ordersCacheMapConfig.setEvictionConfig(evictionConfig);
-
-        ordersCacheMapConfig.setTimeToLiveSeconds(cacheProperties.getTimeToLiveSeconds());
-        ordersCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
-        ordersCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
-        ordersCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
-
-        // Configure MapStore for orders cache (lazy to avoid circular dependency)
-        configureMapStore(ordersCacheMapConfig, "com.sivalabs.bookstore.orders.cache.OrderMapStore", cacheProperties);
-
-        ordersCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
-
-        config.addMapConfig(ordersCacheMapConfig);
 
         // Configure the products cache map (same configuration as orders cache)
         MapConfig productsCacheMapConfig = new MapConfig(PRODUCTS_CACHE_NAME);
@@ -143,6 +122,9 @@ public class HazelcastConfig {
         // No MapStore for index cache (derived data)
 
         config.addMapConfig(inventoryByProductCodeMapConfig);
+
+        // Allow other modules (e.g., orders) to contribute additional map configurations
+        mapConfigs.orderedStream().forEach(config::addMapConfig);
 
         // Enable metrics if requested
         if (cacheProperties.isMetricsEnabled()) {

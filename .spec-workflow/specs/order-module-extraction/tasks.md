@@ -69,7 +69,7 @@
   - _Requirements: 1.4, 2.2_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Domain Event Architect with Modulith event design expertise | Task: Move OrderCreatedEvent into orders.api.events and update all references while preserving externalized routing | Restrictions: Do not change event payload shape or routing; ensure consumers remain functional | _Leverage: existing event class and handlers_ | _Requirements: 1.4, 2.2_ | Success: Event class available under orders.api.events, handlers compile and tests pass | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 8. Decouple orders-specific Hazelcast MapStore config from global config
+- [x] 8. Decouple orders-specific Hazelcast MapStore config from global config
   - File: src/main/java/com/sivalabs/bookstore/config/HazelcastConfig.java, src/main/java/com/sivalabs/bookstore/orders/config/HazelcastOrderCacheConfig.java
   - Move orders MapStore and map configuration into the orders module to avoid config → orders internal dependency
   - Keep cluster/base config in config module; expose only necessary types via orders API if needed
@@ -118,7 +118,7 @@
   - _Requirements: 2.2, 2.4_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Eventing Engineer with Outbox pattern experience | Task: Configure Modulith event externalization and JDBC outbox in the new orders service matching existing routing | Restrictions: Keep routing keys stable; ensure idempotent republish on restart | _Leverage: existing modulith events properties and event definitions_ | _Requirements: 2.2, 2.4_ | Success: Events persist to outbox and are published to RabbitMQ with correct routing | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 13. Add RabbitMQ topology for new service (exchange/queue/DLX)
+- [x] 13. Add RabbitMQ topology for new service (exchange/queue/DLX)
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/config/RabbitMQConfig.java
   - Replicate exchange, queue, DLX/DLQ bindings for orders events with feature-flag binding control
   - Ensure message converter uses Jackson2JsonMessageConverter
@@ -129,7 +129,7 @@
 
 ## Phase 6: Code Migration and Service Implementation
 
-- [ ] 14. Migrate core domain entities and value objects
+- [x] 14. Migrate core domain entities and value objects
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/domain/OrderEntity.java, domain/models/
   - Copy and adapt all domain entities, value objects, and domain events
   - Ensure proper JPA configuration for independent database operation
