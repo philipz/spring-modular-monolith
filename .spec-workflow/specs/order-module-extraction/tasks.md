@@ -185,7 +185,7 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API Documentation Engineer with SpringDoc experience | Task: Configure OpenAPI generation for the orders service with accurate schemas | Restrictions: Do not change endpoint contracts; document as-is | _Leverage: existing controllers and DTOs_ | _Requirements: 1.5_ | Success: OpenAPI UI/JSON available; schema reflects DTOs accurately | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 20. Migrate web UI controllers and templates
+- [x] 20. Migrate web UI controllers and templates
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/web/OrderWebController.java, templates
   - Copy web controllers, cart functionality, and Thymeleaf templates
   - Ensure web UI maintains complete user experience
