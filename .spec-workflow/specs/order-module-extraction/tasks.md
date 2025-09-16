@@ -60,7 +60,7 @@
   - _Requirements: 1.4, 1.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API Governance Engineer with Modulith boundary enforcement expertise | Task: Enforce that only orders.api is imported by other modules; update OrdersApi and @NamedInterface as needed | Restrictions: Preserve backward compatible API contracts; do not expose internal implementations | _Leverage: src/test/java/com/sivalabs/bookstore/ModularityTests.java_ | _Requirements: 1.4, 1.5_ | Success: No cross-module imports of orders internals; ApplicationModules.verify() passes | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 7. Move OrderCreatedEvent to Orders API and update consumers
+- [x] 7. Move OrderCreatedEvent to Orders API and update consumers
   - File: src/main/java/com/sivalabs/bookstore/orders/api/events/OrderCreatedEvent.java, src/main/java/com/sivalabs/bookstore/orders/domain/models/OrderCreatedEvent.java (remove/migrate)
   - Relocate OrderCreatedEvent to orders.api.events, keep @Externalized routing key intact, update imports in publishers/consumers
   - Add/adjust @NamedInterface to expose events package as part of public API
