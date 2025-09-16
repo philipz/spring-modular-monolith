@@ -1,3 +1,3 @@
-package com.sivalabs.bookstore.orders;
+package com.sivalabs.bookstore.orders.api;
 
 public record CreateOrderResponse(String orderNumber) {}

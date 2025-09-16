@@ -241,7 +241,7 @@ class CatalogIntegrationTests {
 - Use `@EventListener` for consuming events within the same module
 - Events are automatically published externally via RabbitMQ configuration
 - Events are persisted and can be replayed on application restart
-- Design events as immutable data structures (see `orders.domain.models.OrderCreatedEvent`)
+- Design events as immutable data structures (see `orders.api.events.OrderCreatedEvent`)
 
 ### Database Schema Management
 - Each module manages its own Liquibase migrations in `db/migration/[module]/`

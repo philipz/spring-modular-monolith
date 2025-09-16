@@ -12,12 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.sivalabs.bookstore.TestcontainersConfiguration;
 import com.sivalabs.bookstore.catalog.api.ProductApi;
 import com.sivalabs.bookstore.catalog.api.ProductDto;
-import com.sivalabs.bookstore.orders.CreateOrderRequest;
+import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
+import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderService;
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderCreatedEvent;
-import com.sivalabs.bookstore.orders.domain.models.OrderItem;
 import com.sivalabs.bookstore.orders.mappers.OrderMapper;
 import java.math.BigDecimal;
 import java.util.Optional;

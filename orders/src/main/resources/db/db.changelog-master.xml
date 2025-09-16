@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- Orders service master changelog -->
+
+    <changeSet id="orders-1" author="orders" labels="schema" context="all">
+        <comment>Create dedicated schemas for orders service</comment>
+        <sqlFile path="db/migration/V1__create_orders_and_events_schemas.sql"/>
+        <rollback>
+            DROP SCHEMA IF EXISTS events CASCADE;
+            DROP SCHEMA IF EXISTS orders CASCADE;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="orders-2" author="orders" labels="orders" context="all">
+        <comment>Create orders table and supporting sequence</comment>
+        <sqlFile path="db/migration/V2__orders_create_orders_table.sql"/>
+        <rollback>
+            DROP TABLE IF EXISTS orders.orders CASCADE;
+            DROP SEQUENCE IF EXISTS orders.order_id_seq CASCADE;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="orders-3" author="orders" labels="orders,data" context="all">
+        <comment>Seed sample order data for local environments</comment>
+        <sqlFile path="db/migration/V3__orders_add_orders_data.sql"/>
+        <rollback>
+            DELETE FROM orders.orders WHERE id IN (1, 2, 3);
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

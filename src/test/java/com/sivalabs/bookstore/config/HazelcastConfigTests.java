@@ -8,9 +8,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.sivalabs.bookstore.TestcontainersConfiguration;
-import com.sivalabs.bookstore.catalog.cache.ProductMapStore;
-import com.sivalabs.bookstore.inventory.cache.InventoryMapStore;
-import com.sivalabs.bookstore.orders.cache.OrderMapStore;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -74,14 +71,8 @@ class HazelcastConfigTests {
     @Autowired
     @Qualifier("inventoryCacheName") private String inventoryCacheName;
 
-    @Autowired
-    private OrderMapStore orderMapStore;
-
-    @Autowired
-    private ProductMapStore productMapStore;
-
-    @Autowired
-    private InventoryMapStore inventoryMapStore;
+    // Note: MapStore beans are tested in their respective module tests
+    // to maintain proper module boundaries and avoid cross-module dependencies
 
     @Nested
     @DisplayName("Hazelcast Configuration")
@@ -160,16 +151,16 @@ class HazelcastConfigTests {
         }
 
         @Test
-        @DisplayName("Should integrate OrderMapStore correctly")
-        void shouldIntegrateOrderMapStoreCorrectly() {
-            assertThat(orderMapStore).isNotNull();
+        @DisplayName("Should verify orders cache MapStore integration through configuration")
+        void shouldVerifyOrdersCacheMapStoreIntegrationThroughConfiguration() {
+            // Verify orders cache MapStore is configured through Hazelcast configuration
+            // We don't access OrderMapStore directly to respect module boundaries
+            Config config = hazelcastInstance.getConfig();
+            MapConfig ordersMapConfig = config.getMapConfig("orders-cache");
 
-            // Test basic MapStore functionality
-            String testKey = "TEST-ORDER-" + System.currentTimeMillis();
-            assertThat(orderMapStore.load(testKey)).isNull(); // Should return null for non-existent
-
-            // Test store operation (validation only)
-            orderMapStore.store(testKey, null);
+            assertThat(ordersMapConfig).isNotNull();
+            assertThat(ordersMapConfig.getMapStoreConfig()).isNotNull();
+            assertThat(ordersMapConfig.getMapStoreConfig().isEnabled()).isTrue();
         }
     }
 
@@ -214,16 +205,18 @@ class HazelcastConfigTests {
         }
 
         @Test
-        @DisplayName("Should integrate ProductMapStore correctly")
-        void shouldIntegrateProductMapStoreCorrectly() {
-            assertThat(productMapStore).isNotNull();
+        @DisplayName("Should verify ProductMapStore configuration through Hazelcast config")
+        void shouldVerifyProductMapStoreConfigurationThroughHazelcastConfig() {
+            // Verify products cache MapStore is configured through Hazelcast configuration
+            // We don't access ProductMapStore directly to respect module boundaries
+            Config config = hazelcastInstance.getConfig();
+            MapConfig productsMapConfig = config.getMapConfig("products-cache");
 
-            // Test basic MapStore functionality
-            String testKey = "TEST-PRODUCT-" + System.currentTimeMillis();
-            assertThat(productMapStore.load(testKey)).isNull(); // Should return null for non-existent
-
-            // Test store operation (validation only)
-            productMapStore.store(testKey, null);
+            assertThat(productsMapConfig).isNotNull();
+            assertThat(productsMapConfig.getMapStoreConfig()).isNotNull();
+            assertThat(productsMapConfig.getMapStoreConfig().isEnabled()).isTrue();
+            assertThat(productsMapConfig.getMapStoreConfig().getClassName())
+                    .isEqualTo("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
         }
 
         @Test
@@ -300,16 +293,18 @@ class HazelcastConfigTests {
         }
 
         @Test
-        @DisplayName("Should integrate InventoryMapStore correctly")
-        void shouldIntegrateInventoryMapStoreCorrectly() {
-            assertThat(inventoryMapStore).isNotNull();
+        @DisplayName("Should verify InventoryMapStore configuration through Hazelcast config")
+        void shouldVerifyInventoryMapStoreConfigurationThroughHazelcastConfig() {
+            // Verify inventory cache MapStore is configured through Hazelcast configuration
+            // We don't access InventoryMapStore directly to respect module boundaries
+            Config config = hazelcastInstance.getConfig();
+            MapConfig inventoryMapConfig = config.getMapConfig("inventory-cache");
 
-            // Test basic MapStore functionality with Long key
-            Long testKey = System.currentTimeMillis();
-            assertThat(inventoryMapStore.load(testKey)).isNull(); // Should return null for non-existent
-
-            // Test store operation (validation only)
-            inventoryMapStore.store(testKey, null);
+            assertThat(inventoryMapConfig).isNotNull();
+            assertThat(inventoryMapConfig.getMapStoreConfig()).isNotNull();
+            assertThat(inventoryMapConfig.getMapStoreConfig().isEnabled()).isTrue();
+            assertThat(inventoryMapConfig.getMapStoreConfig().getClassName())
+                    .isEqualTo("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
         }
 
         @Test

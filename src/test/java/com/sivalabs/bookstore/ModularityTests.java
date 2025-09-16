@@ -17,7 +17,7 @@ class ModularityTests {
 
     @Test
     void createModuleDocumentation() {
-        new Documenter(modules).writeDocumentation();
+        new Documenter(modules).writeDocumentation().writeModulesAsPlantUml().writeIndividualModulesAsPlantUml();
     }
 
     @Test

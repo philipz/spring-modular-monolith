@@ -1,7 +1,7 @@
-package com.sivalabs.bookstore.orders;
+package com.sivalabs.bookstore.orders.api;
 
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderItem;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 

@@ -1,9 +1,9 @@
-package com.sivalabs.bookstore.orders;
+package com.sivalabs.bookstore.orders.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderItem;
-import com.sivalabs.bookstore.orders.domain.models.OrderStatus;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

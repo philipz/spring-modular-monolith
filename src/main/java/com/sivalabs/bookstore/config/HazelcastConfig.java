@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -45,7 +44,7 @@ public class HazelcastConfig {
      * @return configured Hazelcast Config instance
      */
     @Bean
-    public Config hazelcastConfiguration(CacheProperties cacheProperties, ApplicationContext applicationContext) {
+    public Config hazelcastConfiguration(CacheProperties cacheProperties) {
         logger.info("Initializing Hazelcast configuration");
 
         Config config = new Config();
@@ -55,7 +54,7 @@ public class HazelcastConfig {
         config.setClusterName("bookstore-cluster");
         config.getJetConfig().setEnabled(true);
         // Allow Hazelcast to inject Spring-managed dependencies into components like MapStore
-        config.setManagedContext(new SpringManagedContext(applicationContext));
+        config.setManagedContext(new SpringManagedContext());
 
         // Configure the orders cache map
         MapConfig ordersCacheMapConfig = new MapConfig(ORDERS_CACHE_NAME);
@@ -72,15 +71,8 @@ public class HazelcastConfig {
         ordersCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
         ordersCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
 
-        // Configure MapStore for orders cache
-        MapStoreConfig ordersMapStoreConfig = new MapStoreConfig();
-        ordersMapStoreConfig.setEnabled(true);
-        ordersMapStoreConfig.setClassName("com.sivalabs.bookstore.orders.cache.OrderMapStore");
-        // Use LAZY initial load to avoid triggering loadAllKeys() during startup
-        ordersMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
-        ordersMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        ordersMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        ordersCacheMapConfig.setMapStoreConfig(ordersMapStoreConfig);
+        // Configure MapStore for orders cache (lazy to avoid circular dependency)
+        configureMapStore(ordersCacheMapConfig, "com.sivalabs.bookstore.orders.cache.OrderMapStore", cacheProperties);
 
         ordersCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
@@ -102,15 +94,9 @@ public class HazelcastConfig {
 
         productsCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
-        // Configure MapStore for products cache
-        MapStoreConfig productsMapStoreConfig = new MapStoreConfig();
-        productsMapStoreConfig.setEnabled(true);
-        productsMapStoreConfig.setClassName("com.sivalabs.bookstore.catalog.cache.ProductMapStore");
-        // Use LAZY initial load to avoid triggering loadAllKeys() during startup
-        productsMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
-        productsMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        productsMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        productsCacheMapConfig.setMapStoreConfig(productsMapStoreConfig);
+        // Configure MapStore for products cache (lazy to avoid circular dependency)
+        configureMapStore(
+                productsCacheMapConfig, "com.sivalabs.bookstore.catalog.cache.ProductMapStore", cacheProperties);
 
         config.addMapConfig(productsCacheMapConfig);
 
@@ -132,14 +118,9 @@ public class HazelcastConfig {
 
         inventoryCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
 
-        // Configure MapStore for inventory cache
-        MapStoreConfig inventoryMapStoreConfig = new MapStoreConfig();
-        inventoryMapStoreConfig.setEnabled(true);
-        inventoryMapStoreConfig.setClassName("com.sivalabs.bookstore.inventory.cache.InventoryMapStore");
-        inventoryMapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
-        inventoryMapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-        inventoryMapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-        inventoryCacheMapConfig.setMapStoreConfig(inventoryMapStoreConfig);
+        // Configure MapStore for inventory cache (lazy to avoid circular dependency)
+        configureMapStore(
+                inventoryCacheMapConfig, "com.sivalabs.bookstore.inventory.cache.InventoryMapStore", cacheProperties);
 
         config.addMapConfig(inventoryCacheMapConfig);
 
@@ -193,6 +174,34 @@ public class HazelcastConfig {
                 config.getClusterName());
 
         return config;
+    }
+
+    /**
+     * Configures MapStore for a cache map using class name to avoid circular dependency.
+     */
+    private void configureMapStore(MapConfig mapConfig, String mapStoreClassName, CacheProperties cacheProperties) {
+        try {
+            MapStoreConfig mapStoreConfig = new MapStoreConfig();
+            mapStoreConfig.setEnabled(true);
+            mapStoreConfig.setClassName(mapStoreClassName);
+            mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
+
+            if (cacheProperties.isWriteThrough()) {
+                mapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
+                mapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
+            }
+
+            mapConfig.setMapStoreConfig(mapStoreConfig);
+
+            logger.debug("MapStore {} configured for cache {}", mapStoreClassName, mapConfig.getName());
+        } catch (Exception e) {
+            logger.warn(
+                    "Failed to configure MapStore {} for cache {}: {}",
+                    mapStoreClassName,
+                    mapConfig.getName(),
+                    e.getMessage());
+            // Continue without MapStore if configuration fails
+        }
     }
 
     /**

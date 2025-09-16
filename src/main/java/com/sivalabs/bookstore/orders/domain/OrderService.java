@@ -1,7 +1,7 @@
 package com.sivalabs.bookstore.orders.domain;
 
+import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
 import com.sivalabs.bookstore.orders.cache.OrderCacheService;
-import com.sivalabs.bookstore.orders.domain.models.OrderCreatedEvent;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

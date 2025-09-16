@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.inventory.cache;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.MapLoaderLifecycleSupport;
 import com.hazelcast.map.MapStore;
+import com.hazelcast.spring.context.SpringAware;
 import com.sivalabs.bookstore.inventory.domain.InventoryEntity;
 import com.sivalabs.bookstore.inventory.domain.InventoryRepository;
 import java.util.Collection;
@@ -14,8 +15,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 
 /**
  * Hazelcast MapStore implementation for InventoryEntity.
@@ -31,8 +30,7 @@ import org.springframework.stereotype.Component;
  *
  * Note: Uses Long keys for inventory ID-based operations, following inventory domain patterns.
  */
-@Component
-@Lazy
+@SpringAware
 public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryMapStore.class);

@@ -1,14 +1,11 @@
 package com.sivalabs.bookstore.orders.web;
 
-import com.sivalabs.bookstore.orders.CreateOrderRequest;
-import com.sivalabs.bookstore.orders.OrderDto;
 import com.sivalabs.bookstore.orders.OrderNotFoundException;
-import com.sivalabs.bookstore.orders.OrderView;
-import com.sivalabs.bookstore.orders.domain.OrderEntity;
-import com.sivalabs.bookstore.orders.domain.OrderService;
-import com.sivalabs.bookstore.orders.domain.ProductServiceClient;
-import com.sivalabs.bookstore.orders.domain.models.*;
-import com.sivalabs.bookstore.orders.mappers.OrderMapper;
+import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
+import com.sivalabs.bookstore.orders.api.OrderDto;
+import com.sivalabs.bookstore.orders.api.OrderView;
+import com.sivalabs.bookstore.orders.api.OrdersApi;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HtmxRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -27,12 +24,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 class OrderWebController {
     private static final Logger log = LoggerFactory.getLogger(OrderWebController.class);
 
-    private final OrderService orderService;
-    private final ProductServiceClient productServiceClient;
+    private final OrdersApi ordersApi;
 
-    OrderWebController(OrderService orderService, ProductServiceClient productServiceClient) {
-        this.orderService = orderService;
-        this.productServiceClient = productServiceClient;
+    OrderWebController(OrdersApi ordersApi) {
+        this.ordersApi = ordersApi;
     }
 
     @PostMapping("/orders")
@@ -44,15 +39,12 @@ class OrderWebController {
             return "cart";
         }
         Cart.LineItem lineItem = cart.getItem();
-        OrderItem orderItem = new OrderItem(
-                lineItem.getCode(), lineItem.getName(),
-                lineItem.getPrice(), lineItem.getQuantity());
+        OrderItem orderItem =
+                new OrderItem(lineItem.getCode(), lineItem.getName(), lineItem.getPrice(), lineItem.getQuantity());
         var request = new CreateOrderRequest(orderForm.customer(), orderForm.deliveryAddress(), orderItem);
-        productServiceClient.validate(request.item().code(), request.item().price());
-        OrderEntity newOrder = OrderMapper.convertToEntity(request);
-        var savedOrder = orderService.createOrder(newOrder);
+        var savedOrder = ordersApi.createOrder(request);
         session.removeAttribute("cart");
-        return "redirect:/orders/" + savedOrder.getOrderNumber();
+        return "redirect:/orders/" + savedOrder.orderNumber();
     }
 
     @GetMapping("/orders")
@@ -65,17 +57,14 @@ class OrderWebController {
     }
 
     private void fetchOrders(Model model) {
-        List<OrderView> orders = OrderMapper.convertToOrderViews(orderService.findOrders());
+        List<OrderView> orders = ordersApi.findOrders();
         model.addAttribute("orders", orders);
     }
 
     @GetMapping("/orders/{orderNumber}")
     String getOrder(@PathVariable String orderNumber, Model model) {
         log.info("Fetching order by orderNumber: {}", orderNumber);
-        OrderDto orderDto = orderService
-                .findOrder(orderNumber)
-                .map(OrderMapper::convertToDto)
-                .orElseThrow(() -> new OrderNotFoundException(orderNumber));
+        OrderDto orderDto = ordersApi.findOrder(orderNumber).orElseThrow(() -> new OrderNotFoundException(orderNumber));
         model.addAttribute("order", orderDto);
         return "order_details";
     }

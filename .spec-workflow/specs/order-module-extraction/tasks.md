@@ -2,7 +2,7 @@
 
 ## Phase 1: Architecture Verification and Documentation
 
-- [ ] 1. Verify and document modules in monolith
+- [x] 1. Verify and document modules in monolith
   - File: src/test/java/com/sivalabs/bookstore/ModularityTests.java
   - Ensure ApplicationModules.verify() runs and add PlantUML documentation generation via Documenter
   - Generate module diagrams into target/modulith-docs for baseline architecture
@@ -11,7 +11,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Architecture Test Engineer with Spring Modulith expertise | Task: Update ModularityTests to verify modules and write PlantUML docs, ensuring reproducible architecture documentation | Restrictions: Do not remove existing tests; only add Documenter calls and keep tests green | _Leverage: src/test/java/com/sivalabs/bookstore/ModularityTests.java_ | _Requirements: 1.1_ | Success: modules.verify() passes and PlantUML docs are generated under target/modulith-docs | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 2. Add architecture test template to new orders service
+- [x] 2. Add architecture test template to new orders service
   - File: orders/src/test/java/com/sivalabs/bookstore/ModularityTests.java
   - Create ApplicationModules.of(OrdersApplication.class).verify() test and Documenter docs generation
   - Align package with new service main class (e.g., com.sivalabs.bookstore.orders.OrdersApplication)
@@ -22,7 +22,7 @@
 
 ## Phase 2: Pre-Migration Analysis and Preparation
 
-- [ ] 3. Analyze and validate module boundaries and coupling
+- [x] 3. Analyze and validate module boundaries and coupling
   - File: analysis documentation and module boundary validation
   - Analyze current module dependencies, public APIs, and coupling levels
   - Validate that Orders module has low coupling and high cohesion suitable for extraction
@@ -31,7 +31,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Software Architect specializing in module boundary analysis and coupling assessment | Task: Perform comprehensive analysis of Orders module boundaries, dependencies, and coupling levels following requirement 1.1, validating extraction feasibility and risk assessment | Restrictions: Must analyze actual code dependencies, measure coupling metrics, identify all integration points without making changes | _Leverage: Spring Modulith verification tests, dependency analysis tools_ | _Requirements: 1.1_ | Success: Module boundary analysis complete with coupling metrics, risk assessment documented, extraction feasibility confirmed with low-risk profile | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 4. Refactor and strengthen module API boundaries
+- [x] 4. Refactor and strengthen module API boundaries
   - File: src/main/java/com/sivalabs/bookstore/orders/OrdersApi.java, package-info.java
   - Review and strengthen the public API contract for the Orders module
   - Ensure clean separation between public API and internal implementation
@@ -40,7 +40,7 @@
   - _Requirements: 1.4, 1.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API Design Architect with module boundary expertise | Task: Review and strengthen Orders module API boundaries following requirements 1.4, 1.5, ensuring clean separation and stable contracts for extraction | Restrictions: Must preserve existing API contracts, strengthen boundaries without breaking compatibility, improve encapsulation | _Leverage: existing OrdersApi and API design patterns_ | _Requirements: 1.4, 1.5_ | Success: API boundaries strengthened with clear contracts, public/private separation enforced, API documentation complete and stable | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 5. Implement data encapsulation and ownership validation
+- [x] 5. Implement data encapsulation and ownership validation
   - File: database analysis, schema validation, data access review
   - Validate complete data ownership within Orders module and identify shared data concerns
   - Ensure Orders module has exclusive ownership of its data entities and relationships
@@ -51,7 +51,7 @@
 
 ### Phase 3: Additions
 
-- [ ] 6. Enforce port usage and NamedInterface compliance across modules
+- [x] 6. Enforce port usage and NamedInterface compliance across modules
   - File: src/main/java/com/sivalabs/bookstore/orders/api/package-info.java, src/main/java/com/sivalabs/bookstore/orders/OrdersApi.java
   - Audit cross-module imports to ensure only orders.api is consumed externally; expand OrdersApi if new ports are needed
   - Strengthen @NamedInterface exposure to include API packages actually consumed externally
@@ -80,7 +80,7 @@
 
 ## Phase 4: Infrastructure Preparation and New Service Setup
 
-- [ ] 9. Create new microservice project structure with proper Maven setup
+- [x] 9. Create new microservice project structure with proper Maven setup
   - File: orders/pom.xml, orders/src/main/java/com/sivalabs/bookstore/orders/, orders/src/main/resources/
   - Create complete Spring Boot project structure in /orders directory
   - Configure Maven with appropriate dependencies and independent build system
@@ -89,7 +89,7 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Spring Boot Project Architect with Maven build system expertise | Task: Create new microservice project structure following requirements 1.1, 1.2, 1.3, establishing independent Spring Boot application with proper Maven configuration | Restrictions: Must use compatible versions with existing stack, create independent build system, do not interfere with existing project structure | _Leverage: existing pom.xml structure and Spring Boot configuration patterns_ | _Requirements: 1.1, 1.2, 1.3_ | Success: Complete project structure created, Maven build functional, dependencies properly configured, independent build system operational | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 10. Set up independent database and migration infrastructure
+- [x] 10. Set up independent database and migration infrastructure
   - File: orders/src/main/resources/db/migration/, database configuration
   - Create dedicated PostgreSQL 17 database setup with Liquibase migrations
   - Establish complete schema creation and data migration scripts
@@ -98,7 +98,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Database Administrator with PostgreSQL and Liquibase migration expertise | Task: Set up independent database infrastructure following requirements 3.1, 3.2, 3.3, 3.4, creating dedicated PostgreSQL 17 database with complete migration scripts | Restrictions: Must maintain exact schema structure, preserve data integrity, use independent database instance without cross-references | _Leverage: existing Liquibase migration scripts V4 and V5_ | _Requirements: 3.1, 3.2, 3.3, 3.4_ | Success: Independent database created, migration scripts functional, schema creates properly, connection configuration complete | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 11. Configure messaging infrastructure for event publishing
+- [x] 11. Configure messaging infrastructure for event publishing
   - File: orders/src/main/resources/application.properties, messaging configuration classes
   - Set up RabbitMQ configuration for OrderCreatedEvent publishing
   - Ensure events maintain compatibility with existing downstream consumers
@@ -109,7 +109,7 @@
 
 ### Phase 5: Additions
 
-- [ ] 12. Configure Modulith Outbox and event externalization in new service
+- [x] 12. Configure Modulith Outbox and event externalization in new service
   - File: orders/pom.xml, orders/src/main/resources/application.properties
   - Add spring-modulith-events dependencies and enable JDBC outbox with schema initialization and replay on restart
   - Configure externalized routing (exchange/topic) matching monolith for seamless event flow
