@@ -194,7 +194,7 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Spring MVC and Thymeleaf Expert with web UI expertise | Task: Migrate web UI controllers and templates following requirement 1.5, maintaining complete user interface functionality | Restrictions: Must preserve UI behavior, maintain template structure, ensure cart functionality works correctly | _Leverage: existing OrderWebController, CartController, Thymeleaf templates_ | _Requirements: 1.5_ | Success: Web UI migrated with complete functionality, templates render correctly, cart operations functional, user experience maintained | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 21. Implement exception handling and error responses
+- [x] 21. Implement exception handling and error responses
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/web/OrdersExceptionHandler.java, exception classes
   - Copy exception handling infrastructure and error response formatting
   - Ensure proper error propagation and user-friendly error messages
