@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.orders.domain;
+package com.sivalabs.bookstore.orders.infrastructure.catalog;
 
 public class CatalogServiceException extends RuntimeException {
 

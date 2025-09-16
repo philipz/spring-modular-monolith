@@ -156,7 +156,7 @@
   - _Requirements: 1.2, 6.1, 6.2, 6.4, 6.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior Spring Developer with business logic, caching, and transaction management expertise | Task: Migrate business service layer following requirements 1.2, 6.1, 6.2, 6.4, 6.5, implementing OrderService with caching and transaction support | Restrictions: Must preserve business logic integrity, maintain transactional behavior, ensure cache consistency and circuit breaker functionality | _Leverage: existing OrderService, OrderCacheService, OrderMapStore_ | _Requirements: 1.2, 6.1, 6.2, 6.4, 6.5_ | Success: Business service migrated with complete functionality, caching operational, transactions work correctly, event publishing functional | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 17. Migrate data access layer and repository infrastructure
+- [x] 17. Migrate data access layer and repository infrastructure
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/domain/OrderRepository.java
   - Copy repository interfaces and ensure proper JPA configuration
   - Validate all query methods work with independent database

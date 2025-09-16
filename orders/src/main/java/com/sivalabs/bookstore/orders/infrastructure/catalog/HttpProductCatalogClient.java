@@ -1,6 +1,7 @@
-package com.sivalabs.bookstore.orders.domain;
+package com.sivalabs.bookstore.orders.infrastructure.catalog;
 
 import com.sivalabs.bookstore.orders.InvalidOrderException;
+import com.sivalabs.bookstore.orders.domain.ProductCatalogPort;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.math.BigDecimal;
@@ -12,17 +13,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-public class ProductServiceClient {
+public class HttpProductCatalogClient implements ProductCatalogPort {
 
-    private static final Logger log = LoggerFactory.getLogger(ProductServiceClient.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpProductCatalogClient.class);
     private static final String CATALOG_CIRCUIT_BREAKER = "catalogApi";
 
     private final RestClient catalogRestClient;
 
-    public ProductServiceClient(RestClient catalogRestClient) {
+    public HttpProductCatalogClient(RestClient catalogRestClient) {
         this.catalogRestClient = catalogRestClient;
     }
 
+    @Override
     public void validate(String productCode, BigDecimal price) {
         CatalogProductResponse product = fetchProduct(productCode);
         if (product.price().compareTo(price) != 0) {
