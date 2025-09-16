@@ -205,7 +205,7 @@
 
 ## Phase 8: Testing and Quality Assurance
 
-- [ ] 22. Migrate and adapt unit tests
+- [x] 22. Migrate and adapt unit tests
   - File: orders/src/test/java/com/sivalabs/bookstore/orders/cache/, web/, domain/
   - Copy existing unit tests and adapt for microservice testing environment
   - Ensure test coverage is maintained and all tests pass
