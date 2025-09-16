@@ -147,7 +147,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Developer with HTTP client and resilience pattern expertise | Task: Implement HTTP client for Catalog API following requirements 4.1, 4.2, 4.3, 4.4, replacing in-process calls with resilient HTTP integration | Restrictions: Must maintain exact validation logic, implement proper error handling, use circuit breaker and retry patterns | _Leverage: existing ProductServiceClient logic and validation requirements_ | _Requirements: 4.1, 4.2, 4.3, 4.4_ | Success: HTTP client implemented with resilience patterns, product validation functional, circuit breaker operational, error handling complete | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 16. Migrate business service layer with caching integration
+- [x] 16. Migrate business service layer with caching integration
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/domain/OrderService.java, cache infrastructure
   - Copy core OrderService business logic and integrate caching infrastructure
   - Ensure transaction management and event publishing work correctly
