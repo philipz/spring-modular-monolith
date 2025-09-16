@@ -167,7 +167,7 @@
 
 ## Phase 7: API and Web Layer Migration
 
-- [ ] 18. Migrate REST API controllers and DTOs
+- [x] 18. Migrate REST API controllers and DTOs
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/web/OrderRestController.java, DTOs
   - Copy REST controllers and data transfer objects maintaining API contracts
   - Ensure all endpoints work with new service infrastructure
