@@ -138,7 +138,7 @@
   - _Requirements: 1.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Domain Modeling Expert with JPA and Spring Modulith events expertise | Task: Migrate core domain entities and value objects following requirements 1.2, 5.1, 5.2, adapting for independent database while preserving domain logic | Restrictions: Must preserve exact domain logic, maintain event schema compatibility, adapt only infrastructure concerns | _Leverage: existing domain entities OrderEntity, Customer, OrderItem, OrderStatus, OrderCreatedEvent_ | _Requirements: 1.2, 5.1, 5.2_ | Success: Domain model migrated with full functionality, JPA configuration operational, event schema preserved, domain logic intact | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 15. Implement HTTP client for external Catalog API integration
+- [x] 15. Implement HTTP client for external Catalog API integration
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/infrastructure/CatalogServiceClient.java
   - Create HTTP REST client to replace in-process ProductServiceClient calls
   - Implement resilience patterns: circuit breaker, retry logic, timeouts
