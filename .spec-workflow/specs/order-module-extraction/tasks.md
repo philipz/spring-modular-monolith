@@ -223,7 +223,7 @@
   - _Requirements: 7.2, 7.3_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Test Specialist with TestContainers and Spring Boot testing expertise | Task: Create integration tests following requirements 7.2, 7.3, using TestContainers for complete system validation | Restrictions: Must test complete application stack, use TestContainers for realistic integration testing, validate all major functionality | _Leverage: existing integration test patterns and TestContainers setup_ | _Requirements: 7.2, 7.3_ | Success: Integration tests created with TestContainers, complete application tested, all major functionality validated | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 24. Add REST contract tests (consumer-driven)
+- [-] 24. Add REST contract tests (consumer-driven)
   - File: orders/pom.xml, orders/src/test/java/com/sivalabs/bookstore/orders/contract/
   - Configure Spring Cloud Contract (or Pact) for critical REST endpoints used by consumers
   - Validate request/response shape and backward compatibility

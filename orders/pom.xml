@@ -29,6 +29,7 @@
         <spotless.version>2.46.1</spotless.version>
         <palantir-java-format.version>2.72.0</palantir-java-format.version>
         <resilience4j.version>2.2.0</resilience4j.version>
+        <spring-cloud-contract.version>4.1.5</spring-cloud-contract.version>
     </properties>
 
     <dependencyManagement>
@@ -211,6 +212,12 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+            <version>${spring-cloud-contract.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -257,6 +264,32 @@
                         <phase>compile</phase>
                         <goals>
                             <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <version>${spring-cloud-contract.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <testFramework>JUNIT5</testFramework>
+                    <baseClassForTests>com.sivalabs.bookstore.orders.web.BaseOrderContractTest</baseClassForTests>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-contract-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>generateTests</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-stubs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>generateStubs</goal>
                         </goals>
                     </execution>
                 </executions>
