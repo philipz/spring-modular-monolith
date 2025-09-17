@@ -28,6 +28,7 @@ Key environment bindings:
 - RabbitMQ management UI on `http://localhost:15673`
 - Zipkin UI on `http://localhost:9412`
 - Orders REST API on `http://localhost:8091`
+- `PRODUCT_API_BASE_URL` defaults to `http://monolith:8080`; override it if your catalog service is reachable elsewhere.
 
 Stop the stack with `docker compose down` (add `-v` to prune volumes if needed).
 

@@ -5,11 +5,11 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
-@ConfigurationProperties(prefix = "catalog.api")
-public record CatalogApiProperties(
+@ConfigurationProperties(prefix = "product.api")
+public record ProductApiProperties(
         URI baseUrl, @DefaultValue("PT1S") Duration connectTimeout, @DefaultValue("PT2S") Duration readTimeout) {
 
-    public CatalogApiProperties {
+    public ProductApiProperties {
         if (baseUrl == null) {
             baseUrl = URI.create("http://localhost:8080");
         }

@@ -263,7 +263,7 @@
 
 ### Phase 10: Additions
 
-- [ ] 28. Add orders service to docker-compose for local integration
+- [x] 28. Add orders service to docker-compose for local integration
   - File: compose.yml
   - Add orders-service container with environment config, dependencies on postgres/rabbitmq, and network wiring
   - Expose port and healthcheck; reuse Zipkin tracing if applicable

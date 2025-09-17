@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
-class OrderWebController {
+public class OrderWebController {
     private static final Logger log = LoggerFactory.getLogger(OrderWebController.class);
 
     private final OrdersApi ordersApi;

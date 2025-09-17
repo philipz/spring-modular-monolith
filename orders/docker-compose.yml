@@ -67,6 +67,7 @@ services:
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://orders-zipkin:9411/api/v2/spans
       SERVER_PORT: 8091
       SPRING_MODULITH_EVENTS_SCHEMA: orders_events
+      PRODUCT_API_BASE_URL: http://localhost:8080
     ports:
       - "8091:8091"
     networks:

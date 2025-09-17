@@ -20,10 +20,10 @@ public class ProductApiAdapter {
     private static final Logger log = LoggerFactory.getLogger(ProductApiAdapter.class);
     private static final String CATALOG_CIRCUIT_BREAKER = "catalogApi";
 
-    private final RestClient catalogRestClient;
+    private final RestClient productRestClient;
 
-    public ProductApiAdapter(RestClient catalogRestClient) {
-        this.catalogRestClient = catalogRestClient;
+    public ProductApiAdapter(RestClient productRestClient) {
+        this.productRestClient = productRestClient;
     }
 
     /**
@@ -45,7 +45,7 @@ public class ProductApiAdapter {
     @CircuitBreaker(name = CATALOG_CIRCUIT_BREAKER, fallbackMethod = "handleFetchFailure")
     @Retry(name = CATALOG_CIRCUIT_BREAKER)
     ProductDto fetchProduct(String productCode) {
-        return catalogRestClient
+        return productRestClient
                 .get()
                 .uri("/api/products/{code}", productCode)
                 .retrieve()

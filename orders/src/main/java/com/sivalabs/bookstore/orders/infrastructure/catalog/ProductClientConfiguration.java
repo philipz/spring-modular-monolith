@@ -9,12 +9,12 @@ import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-@EnableConfigurationProperties(CatalogApiProperties.class)
-public class CatalogClientConfiguration {
+@EnableConfigurationProperties(ProductApiProperties.class)
+public class ProductClientConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(name = "catalogRestClient")
-    RestClient catalogRestClient(RestClient.Builder builder, CatalogApiProperties properties) {
+    @ConditionalOnMissingBean(name = "productRestClient")
+    RestClient productRestClient(RestClient.Builder builder, ProductApiProperties properties) {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(properties.connectTimeout())
                 .build();
