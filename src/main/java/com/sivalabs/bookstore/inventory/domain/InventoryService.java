@@ -107,6 +107,33 @@ public class InventoryService {
             inventoryOpt = inventoryRepository.findByProductCode(productCode);
         }
 
+        if (isCacheAvailable() && inventoryOpt.isPresent()) {
+            InventoryEntity inventory = inventoryOpt.get();
+            try {
+                boolean cached = inventoryCacheService.cacheInventory(inventory.getId(), inventory);
+                if (cached) {
+                    log.debug(
+                            "Inventory cached after lookup for product code {} with inventory id {}",
+                            productCode,
+                            inventory.getId());
+                } else {
+                    log.debug(
+                            "Inventory cache operation skipped or returned false for product code {} with inventory id {}",
+                            productCode,
+                            inventory.getId());
+                }
+            } catch (Exception cacheException) {
+                log.warn(
+                        "Failed to cache inventory for product code {} after lookup: {}",
+                        productCode,
+                        cacheException.getMessage());
+                log.debug(
+                        "Cache exception details while caching inventory for product code {}",
+                        productCode,
+                        cacheException);
+            }
+        }
+
         Long stock = inventoryOpt.map(InventoryEntity::getQuantity).orElse(0L);
         log.info("Stock level for product code {} is: {}", productCode, stock);
         return stock;
