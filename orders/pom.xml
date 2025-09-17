@@ -234,7 +234,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <image>
-                        <name>sivaprasadreddy/${project.artifactId}</name>
+                        <name>philipz/${project.artifactId}</name>
                     </image>
                 </configuration>
                 <executions>

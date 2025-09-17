@@ -1,0 +1,68 @@
+# Orders Service Deployment Guide
+
+This document explains how to containerize and deploy the `orders-service` independently using Docker Compose or Kubernetes. The service image is produced directly by Spring Boot's buildpacks support, so no custom `Dockerfile` is required.
+
+## 1. Build Container Image
+
+From the repository root run:
+
+```bash
+./mvnw -pl orders spring-boot:build-image \
+  -Dspring-boot.build-image.imageName=philipz/orders-service:latest
+```
+
+The command leverages Cloud Native Buildpacks and the configuration already present in `orders/pom.xml`. After the build completes, the image `philipz/orders-service:latest` is available locally (or pushed to the configured registry if you are logged in).
+
+## 2. Run Locally with Docker Compose
+
+The file `orders/docker-compose.yml` provisions the service together with PostgreSQL, RabbitMQ, and Zipkin:
+
+```bash
+cd orders
+docker compose up
+```
+
+Key environment bindings:
+
+- PostgreSQL `ordersdb` exposed on host port `5433`
+- RabbitMQ management UI on `http://localhost:15673`
+- Zipkin UI on `http://localhost:9412`
+- Orders REST API on `http://localhost:8091`
+
+Stop the stack with `docker compose down` (add `-v` to prune volumes if needed).
+
+## 3. Deploy to Kubernetes
+
+All manifests reside under `orders/k8s/`. Apply them in order:
+
+```bash
+kubectl apply -f orders/k8s/namespace.yaml
+kubectl apply -f orders/k8s/secret.yaml
+kubectl apply -f orders/k8s/configmap.yaml
+kubectl apply -f orders/k8s/postgres.yaml
+kubectl apply -f orders/k8s/rabbitmq.yaml
+kubectl apply -f orders/k8s/zipkin.yaml
+kubectl apply -f orders/k8s/orders-service.yaml
+```
+
+The deployment expects the same container image tag (`philipz/orders-service:latest`). Adjust the tag if you push to a different registry.
+
+### Accessing the Service
+
+- Inside the cluster: `http://orders-service.orders.svc.cluster.local:8091`
+- Zipkin NodePort: `http://<node-ip>:30094`
+- RabbitMQ management NodePort: `http://<node-ip>:30093`
+
+## 4. Configuration Overview
+
+- Database credentials and broker passwords are stored in `orders-service-secrets`
+- Non-secret environment variables (JDBC URL, Rabbit host, profiling flags) are provided via `orders-service-config`
+- Liquibase and Modulith event schemas are assigned (`orders`, `orders_events`)
+
+## 5. Cleanup
+
+```bash
+kubectl delete namespace orders
+```
+
+This removes all resources created for the service.

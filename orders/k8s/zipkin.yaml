@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-zipkin
+  labels:
+    app: orders-zipkin
+  namespace: orders
+spec:
+  selector:
+    app: orders-zipkin
+  ports:
+    - name: http
+      port: 9411
+      targetPort: 9411
+      nodePort: 30094
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-zipkin
+  labels:
+    app: orders-zipkin
+  namespace: orders
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-zipkin
+  template:
+    metadata:
+      labels:
+        app: orders-zipkin
+    spec:
+      containers:
+        - name: zipkin
+          image: openzipkin/zipkin:3.5.1
+          ports:
+            - containerPort: 9411
+          env:
+            - name: STORAGE_TYPE
+              value: mem
