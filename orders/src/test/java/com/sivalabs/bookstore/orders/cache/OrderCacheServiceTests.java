@@ -14,7 +14,6 @@ import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -757,14 +756,13 @@ class OrderCacheServiceTests {
         Customer customer = new Customer("John Doe", "john@example.com", "+1234567890");
         OrderItem orderItem = new OrderItem("PROD-" + id, productName, BigDecimal.valueOf(99.99), quantity);
 
-        return new OrderEntity(
-                id,
-                orderNumber,
-                customer,
-                "123 Test Street, Test City, Test State 12345",
-                orderItem,
-                OrderStatus.NEW,
-                LocalDateTime.now().minusHours(1),
-                LocalDateTime.now());
+        return OrderEntity.builder()
+                .id(id)
+                .orderNumber(orderNumber)
+                .customer(customer)
+                .deliveryAddress("123 Test Street, Test City, Test State 12345")
+                .orderItem(orderItem)
+                .status(OrderStatus.NEW)
+                .build();
     }
 }

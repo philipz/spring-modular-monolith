@@ -14,7 +14,6 @@ import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderRepository;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -295,29 +294,27 @@ class OrderMapStoreTests {
         Customer customer = new Customer("Test Customer", "test@example.com", "123-456-7890");
         OrderItem orderItem = new OrderItem("P001", productName, new BigDecimal("29.99"), quantity);
 
-        return new OrderEntity(
-                id,
-                orderNumber,
-                customer,
-                "123 Test Street, Test City",
-                orderItem,
-                OrderStatus.NEW,
-                LocalDateTime.now(),
-                null);
+        return OrderEntity.builder()
+                .id(id)
+                .orderNumber(orderNumber)
+                .customer(customer)
+                .deliveryAddress("123 Test Street, Test City")
+                .orderItem(orderItem)
+                .status(OrderStatus.NEW)
+                .build();
     }
 
     private OrderEntity createComplexTestOrder() {
         Customer complexCustomer = new Customer("Complex Customer", "complex@example.com", "987-654-3210");
         OrderItem complexItem = new OrderItem("P999", "Complex Product", new BigDecimal("199.99"), 5);
 
-        return new OrderEntity(
-                999L,
-                "ORD-COMPLEX",
-                complexCustomer,
-                "999 Complex Avenue, Complex City, Complex State 99999",
-                complexItem,
-                OrderStatus.IN_PROCESS,
-                LocalDateTime.now().minusDays(1),
-                LocalDateTime.now());
+        return OrderEntity.builder()
+                .id(999L)
+                .orderNumber("ORD-COMPLEX")
+                .customer(complexCustomer)
+                .deliveryAddress("999 Complex Avenue, Complex City, Complex State 99999")
+                .orderItem(complexItem)
+                .status(OrderStatus.IN_PROCESS)
+                .build();
     }
 }

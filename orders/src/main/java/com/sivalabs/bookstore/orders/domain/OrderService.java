@@ -1,116 +1,152 @@
 package com.sivalabs.bookstore.orders.domain;
 
 import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OrderService {
-
-    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final OrderCachePort orderCachePort;
-    private final boolean cacheEnabled;
-
-    public OrderService(
-            OrderRepository orderRepository,
-            ApplicationEventPublisher publisher,
-            @Autowired(required = false) OrderCachePort orderCachePort) {
-        this.orderRepository = orderRepository;
-        this.eventPublisher = publisher;
-        this.orderCachePort = orderCachePort != null ? orderCachePort : OrderCachePort.noop();
-        this.cacheEnabled = orderCachePort != null;
-
-        if (cacheEnabled) {
-            log.info("OrderService initialized with cache support enabled");
-        } else {
-            log.info("OrderService initialized without cache support (cache disabled or unavailable)");
-        }
-    }
-
-    private boolean isCacheAvailable() {
-        return cacheEnabled && !orderCachePort.isCircuitBreakerOpen();
-    }
 
     @Transactional
+    @Caching(
+            put = {@CachePut(value = "orders", key = "#result.orderNumber")},
+            evict = {@CacheEvict(value = "ordersList", allEntries = true)})
     public OrderEntity createOrder(OrderEntity orderEntity) {
         if (orderEntity.getOrderNumber() == null || orderEntity.getOrderNumber().isBlank()) {
             orderEntity.setOrderNumber(UUID.randomUUID().toString());
         }
+
+        if (orderEntity.getStatus() == null) {
+            orderEntity.setStatus(OrderStatus.NEW);
+        }
+
         OrderEntity savedOrder = orderRepository.save(orderEntity);
         log.info("Created Order with orderNumber={}", savedOrder.getOrderNumber());
 
-        if (isCacheAvailable()) {
-            try {
-                orderCachePort.cacheOrder(savedOrder.getOrderNumber(), savedOrder);
-                log.debug("Order cached successfully: {}", savedOrder.getOrderNumber());
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to cache order {} - order creation will continue: {}",
-                        savedOrder.getOrderNumber(),
-                        e.getMessage());
-            }
-        } else {
-            log.debug(
-                    "Cache service unavailable - skipping cache operation for order: {}", savedOrder.getOrderNumber());
-        }
+        // Publish event after transaction commits
+        publishOrderCreatedEvent(savedOrder);
 
+        return savedOrder;
+    }
+
+    private void publishOrderCreatedEvent(OrderEntity savedOrder) {
         OrderCreatedEvent event = new OrderCreatedEvent(
                 savedOrder.getOrderNumber(),
                 savedOrder.getOrderItem().code(),
                 savedOrder.getOrderItem().quantity(),
                 savedOrder.getCustomer());
-        eventPublisher.publishEvent(event);
-        return savedOrder;
-    }
 
-    @Transactional(readOnly = true)
-    public Optional<OrderEntity> findOrder(String orderNumber) {
-        if (isCacheAvailable()) {
-            try {
-                Optional<OrderEntity> cachedOrder = orderCachePort.findByOrderNumber(orderNumber);
-                if (cachedOrder.isPresent()) {
-                    log.debug("Order found in cache: {}", orderNumber);
-                    return cachedOrder;
+        // Register event to be published after transaction commits
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    eventPublisher.publishEvent(event);
+                    log.debug("Published OrderCreatedEvent for order: {}", savedOrder.getOrderNumber());
                 }
-                log.debug("Cache miss for order: {}", orderNumber);
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to read from cache for order {} - falling back to database: {}",
-                        orderNumber,
-                        e.getMessage());
-            }
+            });
         } else {
-            log.debug("Cache service unavailable - querying database directly for order: {}", orderNumber);
+            // If no transaction is active, publish immediately (for testing scenarios)
+            eventPublisher.publishEvent(event);
+            log.debug("Published OrderCreatedEvent immediately for order: {}", savedOrder.getOrderNumber());
         }
-
-        Optional<OrderEntity> order = orderRepository.findByOrderNumber(orderNumber);
-
-        if (order.isPresent() && isCacheAvailable()) {
-            try {
-                orderCachePort.cacheOrder(orderNumber, order.get());
-                log.debug("Order cached after database retrieval: {}", orderNumber);
-            } catch (Exception e) {
-                log.warn("Failed to cache order {} after database retrieval: {}", orderNumber, e.getMessage());
-            }
-        }
-
-        return order;
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "orders", key = "#orderNumber", unless = "#result == null")
+    public Optional<OrderEntity> findOrder(String orderNumber) {
+        log.debug("Fetching order from database: {}", orderNumber);
+        return orderRepository.findByOrderNumber(orderNumber);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "ordersList", key = "'all'", unless = "#result.isEmpty()")
     public List<OrderEntity> findOrders() {
         Sort sort = Sort.by("id").descending();
         return orderRepository.findAllBy(sort);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderEntity> findOrders(Pageable pageable) {
+        return orderRepository.findAllWithItems(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderEntity> findOrdersByStatus(OrderStatus status, Pageable pageable) {
+        return orderRepository.findByStatus(status, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderEntity> findOrdersByCustomerEmail(String email, Pageable pageable) {
+        return orderRepository.findByCustomerEmail(email, pageable);
+    }
+
+    @Transactional
+    @Caching(
+            put = {@CachePut(value = "orders", key = "#orderEntity.orderNumber")},
+            evict = {@CacheEvict(value = "ordersList", allEntries = true)})
+    public OrderEntity updateOrderStatus(String orderNumber, OrderStatus newStatus) {
+        OrderEntity order = orderRepository
+                .findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderNumber));
+
+        OrderStatus oldStatus = order.getStatus();
+        order.setStatus(newStatus);
+        OrderEntity updatedOrder = orderRepository.save(order);
+
+        log.info("Updated order {} status from {} to {}", orderNumber, oldStatus, newStatus);
+        return updatedOrder;
+    }
+
+    @Transactional
+    @Caching(
+            evict = {
+                @CacheEvict(value = "orders", key = "#orderNumber"),
+                @CacheEvict(value = "ordersList", allEntries = true)
+            })
+    public void cancelOrder(String orderNumber) {
+        OrderEntity order = orderRepository
+                .findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderNumber));
+
+        if (!canBeCancelled(order.getStatus())) {
+            throw new IllegalStateException(
+                    "Order " + orderNumber + " cannot be cancelled in status: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+        log.info("Cancelled order: {}", orderNumber);
+    }
+
+    private boolean canBeCancelled(OrderStatus status) {
+        return status == OrderStatus.NEW || status == OrderStatus.PENDING;
+    }
+
+    public static class OrderNotFoundException extends RuntimeException {
+        public OrderNotFoundException(String message) {
+            super(message);
+        }
     }
 }

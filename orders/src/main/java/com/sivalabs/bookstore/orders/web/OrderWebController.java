@@ -47,7 +47,7 @@ public class OrderWebController {
         return "redirect:/orders/" + savedOrder.orderNumber();
     }
 
-    @GetMapping("/orders")
+    @GetMapping({"/orders"})
     String getOrders(Model model, HtmxRequest hxRequest) {
         fetchOrders(model);
         if (hxRequest.isHtmxRequest()) {

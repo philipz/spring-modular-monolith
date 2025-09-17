@@ -7,8 +7,17 @@ public enum OrderStatus {
     @Schema(description = "Order is newly created")
     NEW,
 
+    @Schema(description = "Order is pending confirmation")
+    PENDING,
+
+    @Schema(description = "Order has been confirmed")
+    CONFIRMED,
+
     @Schema(description = "Order is being processed")
     IN_PROCESS,
+
+    @Schema(description = "Order has been shipped")
+    SHIPPED,
 
     @Schema(description = "Order has been delivered")
     DELIVERED,

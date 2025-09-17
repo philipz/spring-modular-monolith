@@ -12,7 +12,6 @@ import com.sivalabs.bookstore.orders.api.model.Customer;
 import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +40,7 @@ class OrderServiceUnitTests {
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, eventPublisher, orderCachePort);
+        orderService = new OrderService(orderRepository, eventPublisher);
     }
 
     @Nested
@@ -190,15 +189,12 @@ class OrderServiceUnitTests {
     private OrderEntity createValidOrderEntity() {
         Customer customer = new Customer("John Doe", "john@example.com", "+1234567890");
         OrderItem orderItem = new OrderItem("PROD-001", "Test Product", BigDecimal.valueOf(99.99), 1);
-        return new OrderEntity(
-                null,
-                null, // Let the service generate the order number
-                customer,
-                "123 Test Street",
-                orderItem,
-                OrderStatus.NEW,
-                LocalDateTime.now(),
-                LocalDateTime.now());
+        return OrderEntity.builder()
+                .customer(customer)
+                .deliveryAddress("123 Test Street")
+                .orderItem(orderItem)
+                .status(OrderStatus.NEW)
+                .build();
     }
 
     private OrderEntity createSavedOrderEntity() {
@@ -208,29 +204,27 @@ class OrderServiceUnitTests {
     private OrderEntity createSavedOrderEntity(String orderNumber, String productCode, int quantity) {
         Customer customer = new Customer("John Doe", "john@example.com", "+1234567890");
         OrderItem orderItem = new OrderItem(productCode, "Test Product", BigDecimal.valueOf(99.99), quantity);
-        return new OrderEntity(
-                1L,
-                orderNumber,
-                customer,
-                "123 Test Street",
-                orderItem,
-                OrderStatus.NEW,
-                LocalDateTime.now(),
-                LocalDateTime.now());
+        return OrderEntity.builder()
+                .id(1L)
+                .orderNumber(orderNumber)
+                .customer(customer)
+                .deliveryAddress("123 Test Street")
+                .orderItem(orderItem)
+                .status(OrderStatus.NEW)
+                .build();
     }
 
     private OrderEntity createOrderEntityWithOrderNumber(String orderNumber) {
         Customer customer = new Customer("John Doe", "john@example.com", "+1234567890");
         OrderItem orderItem = new OrderItem("PROD-001", "Test Product", BigDecimal.valueOf(99.99), 1);
 
-        return new OrderEntity(
-                1L,
-                orderNumber,
-                customer,
-                "123 Test Street",
-                orderItem,
-                OrderStatus.NEW,
-                LocalDateTime.now(),
-                LocalDateTime.now());
+        return OrderEntity.builder()
+                .id(1L)
+                .orderNumber(orderNumber)
+                .customer(customer)
+                .deliveryAddress("123 Test Street")
+                .orderItem(orderItem)
+                .status(OrderStatus.NEW)
+                .build();
     }
 }
