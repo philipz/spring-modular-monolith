@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
 import com.sivalabs.bookstore.orders.api.model.Customer;
 import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
@@ -87,6 +88,31 @@ class OrderServiceUnitTests {
 
             // Then
             verify(eventPublisher).publishEvent(any(com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent.class));
+        }
+
+        @Test
+        @DisplayName("Should publish OrderCreatedEvent with expected payload")
+        void shouldPublishOrderCreatedEventWithExpectedPayload() {
+            // Given
+            OrderEntity orderEntity = createValidOrderEntity();
+            OrderEntity savedOrder = createSavedOrderEntity("ORD-123456", "PROD-001", 3);
+
+            given(orderRepository.save(any(OrderEntity.class))).willReturn(savedOrder);
+
+            // When
+            orderService.createOrder(orderEntity);
+
+            // Then
+            ArgumentCaptor<OrderCreatedEvent> eventCaptor = ArgumentCaptor.forClass(OrderCreatedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+            OrderCreatedEvent publishedEvent = eventCaptor.getValue();
+            assertThat(publishedEvent.orderNumber()).isEqualTo(savedOrder.getOrderNumber());
+            assertThat(publishedEvent.productCode())
+                    .isEqualTo(savedOrder.getOrderItem().code());
+            assertThat(publishedEvent.quantity())
+                    .isEqualTo(savedOrder.getOrderItem().quantity());
+            assertThat(publishedEvent.customer()).isEqualTo(savedOrder.getCustomer());
         }
 
         @Test
@@ -176,11 +202,15 @@ class OrderServiceUnitTests {
     }
 
     private OrderEntity createSavedOrderEntity() {
+        return createSavedOrderEntity(java.util.UUID.randomUUID().toString(), "PROD-001", 1);
+    }
+
+    private OrderEntity createSavedOrderEntity(String orderNumber, String productCode, int quantity) {
         Customer customer = new Customer("John Doe", "john@example.com", "+1234567890");
-        OrderItem orderItem = new OrderItem("PROD-001", "Test Product", BigDecimal.valueOf(99.99), 1);
+        OrderItem orderItem = new OrderItem(productCode, "Test Product", BigDecimal.valueOf(99.99), quantity);
         return new OrderEntity(
                 1L,
-                java.util.UUID.randomUUID().toString(), // Generate proper UUID
+                orderNumber,
                 customer,
                 "123 Test Street",
                 orderItem,
