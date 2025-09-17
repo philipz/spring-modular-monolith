@@ -188,8 +188,37 @@ public class InventoryCacheService extends AbstractCacheService<Long, InventoryE
             }
 
             // Cache miss - always fallback to database for normal operation
-            logger.debug("Cache miss for inventory lookup by product code: {} - using database fallback", productCode);
-            return databaseFallback.get();
+            logger.debug(
+                    "Cache miss for inventory lookup by product code: {} - using database fallback",
+                    productCode);
+            Optional<InventoryEntity> databaseResult = databaseFallback.get();
+            if (databaseResult.isPresent()) {
+                InventoryEntity inventory = databaseResult.get();
+                try {
+                    boolean cached = cacheInventory(inventory.getId(), inventory);
+                    if (cached) {
+                        logger.debug(
+                                "Inventory cached after fallback lookup for product code {} with id {}",
+                                productCode,
+                                inventory.getId());
+                    } else {
+                        logger.debug(
+                                "Inventory cache operation returned false after fallback lookup for product code {} with id {}",
+                                productCode,
+                                inventory.getId());
+                    }
+                } catch (Exception cacheException) {
+                    logger.warn(
+                            "Failed to cache inventory for product code {} after fallback lookup: {}",
+                            productCode,
+                            cacheException.getMessage());
+                    logger.debug(
+                            "Cache exception details while caching fallback inventory for product code {}",
+                            productCode,
+                            cacheException);
+                }
+            }
+            return databaseResult;
         }
 
         // Circuit breaker is open, skip cache and use database directly
