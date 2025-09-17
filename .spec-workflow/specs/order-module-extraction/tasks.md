@@ -252,7 +252,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with Docker and Kubernetes deployment expertise | Task: Create containerization configurations following requirement 2.1, enabling independent deployment with proper service dependencies | Restrictions: Must use independent ports and service names, configure proper networking, avoid conflicts with existing deployments | _Leverage: existing containerization patterns and deployment configurations_ | _Requirements: 2.1_ | Success: Containerization complete, Docker builds successfully, deployment configurations functional, services deploy independently | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 27. Set up monitoring and observability infrastructure
+- [x] 27. Set up monitoring and observability infrastructure
   - File: orders/src/main/resources/application.properties, monitoring configuration
   - Configure Spring Actuator, metrics, health checks, and logging
   - Ensure proper observability for the independent microservice

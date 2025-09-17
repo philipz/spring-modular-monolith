@@ -21,6 +21,8 @@ public class CacheErrorHandler {
     private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
     private volatile LocalDateTime circuitOpenedAt = null;
     private volatile boolean circuitOpen = false;
+    private final AtomicInteger totalCircuitOpenings = new AtomicInteger(0);
+    private final AtomicInteger fallbackRecommendations = new AtomicInteger(0);
 
     private final ConcurrentHashMap<String, AtomicInteger> errorCounts = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, LocalDateTime> lastErrorTimes = new ConcurrentHashMap<>();
@@ -45,6 +47,7 @@ public class CacheErrorHandler {
         if (isCircuitOpen()) {
             logger.debug("Circuit breaker is open, skipping cache operation: {} for key: {}", operationName, key);
             recordError(operationName, "Circuit breaker open");
+            incrementFallbackRecommendation();
             return fallback.get();
         }
 
@@ -54,6 +57,7 @@ public class CacheErrorHandler {
             return result;
         } catch (Exception e) {
             handleCacheError(e, operationName, key);
+            incrementFallbackRecommendation();
             return fallback.get();
         }
     }
@@ -62,6 +66,7 @@ public class CacheErrorHandler {
         if (isCircuitOpen()) {
             logger.debug("Circuit breaker is open, skipping cache operation: {} for key: {}", operationName, key);
             recordError(operationName, "Circuit breaker open");
+            incrementFallbackRecommendation();
             return false;
         }
 
@@ -71,6 +76,7 @@ public class CacheErrorHandler {
             return true;
         } catch (Exception e) {
             handleCacheError(e, operationName, key);
+            incrementFallbackRecommendation();
             return false;
         }
     }
@@ -125,6 +131,7 @@ public class CacheErrorHandler {
         AtomicInteger count = errorCounts.get(operationName);
         if (count != null && count.get() > failureThreshold / 2) {
             logger.debug("Frequent cache errors detected for {} - recommending database fallback", operationName);
+            incrementFallbackRecommendation();
             return true;
         }
         return false;
@@ -155,6 +162,7 @@ public class CacheErrorHandler {
         consecutiveFailures.set(0);
         circuitOpen = false;
         circuitOpenedAt = null;
+        fallbackRecommendations.set(0);
         errorCounts.clear();
         lastErrorTimes.clear();
     }
@@ -162,6 +170,7 @@ public class CacheErrorHandler {
     private void openCircuit() {
         circuitOpen = true;
         circuitOpenedAt = LocalDateTime.now();
+        totalCircuitOpenings.incrementAndGet();
         logger.warn("Cache circuit breaker OPENED after {} consecutive failures", failureThreshold);
     }
 
@@ -169,6 +178,26 @@ public class CacheErrorHandler {
         circuitOpen = false;
         consecutiveFailures.set(0);
         circuitOpenedAt = null;
+    }
+
+    public int getConsecutiveFailureCount() {
+        return consecutiveFailures.get();
+    }
+
+    public int getTotalCircuitOpenings() {
+        return totalCircuitOpenings.get();
+    }
+
+    public int getFallbackRecommendationCount() {
+        return fallbackRecommendations.get();
+    }
+
+    public int getTrackedErrorCount() {
+        return errorCounts.values().stream().mapToInt(AtomicInteger::get).sum();
+    }
+
+    private void incrementFallbackRecommendation() {
+        fallbackRecommendations.incrementAndGet();
     }
 
     private void recordError(String operationName, String errorMessage) {
