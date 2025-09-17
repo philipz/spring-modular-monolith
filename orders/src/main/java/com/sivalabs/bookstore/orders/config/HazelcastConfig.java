@@ -29,7 +29,7 @@ public class HazelcastConfig {
     private static final String ORDERS_CACHE_NAME = "orders-cache";
 
     @Bean
-    public Config hazelcastConfiguration(CacheProperties cacheProperties, OrderMapStore orderMapStore) {
+    public Config hazelcastConfiguration(CacheProperties cacheProperties) {
         Config config = new Config();
         config.setInstanceName("orders-hazelcast-" + System.currentTimeMillis());
         config.setClusterName("orders-cluster");
@@ -51,7 +51,7 @@ public class HazelcastConfig {
 
         MapStoreConfig mapStoreConfig = new MapStoreConfig();
         mapStoreConfig.setEnabled(true);
-        mapStoreConfig.setImplementation(orderMapStore);
+        mapStoreConfig.setClassName(OrderMapStore.class.getName());
         mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
         if (cacheProperties.isWriteThrough()) {
             mapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());

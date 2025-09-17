@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.orders.domain;
 import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class OrderService {
 
     @Transactional
     public OrderEntity createOrder(OrderEntity orderEntity) {
+        if (orderEntity.getOrderNumber() == null || orderEntity.getOrderNumber().isBlank()) {
+            orderEntity.setOrderNumber(UUID.randomUUID().toString());
+        }
         OrderEntity savedOrder = orderRepository.save(orderEntity);
         log.info("Created Order with orderNumber={}", savedOrder.getOrderNumber());
 

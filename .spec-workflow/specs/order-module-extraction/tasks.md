@@ -214,7 +214,7 @@
   - _Requirements: 7.1, 7.4, 7.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Developer with Spring Boot testing and unit test expertise | Task: Migrate unit tests following requirements 7.1, 7.4, 7.5, adapting for microservice environment while maintaining test coverage | Restrictions: Must maintain test coverage levels, preserve test scenarios, adapt only configuration for independent testing | _Leverage: existing unit tests for cache, web controllers, and domain logic_ | _Requirements: 7.1, 7.4, 7.5_ | Success: Unit tests migrated and functional, test coverage maintained, all tests pass in microservice environment | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 23. Create comprehensive integration tests with TestContainers
+- [x] 23. Create comprehensive integration tests with TestContainers
   - File: orders/src/test/java/com/sivalabs/bookstore/orders/OrdersIntegrationTests.java, test configuration
   - Create integration tests using TestContainers for PostgreSQL and RabbitMQ
   - Test complete application functionality including database, caching, and messaging

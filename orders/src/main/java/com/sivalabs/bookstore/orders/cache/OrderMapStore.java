@@ -13,6 +13,7 @@ import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @SpringAware
@@ -22,9 +23,19 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
     private static final Logger logger = LoggerFactory.getLogger(OrderMapStore.class);
     private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
     private final long initTimestamp = System.currentTimeMillis();
-    private final OrderRepository orderRepository;
+
+    private OrderRepository orderRepository;
+
+    public OrderMapStore() {
+        // Default constructor for Hazelcast instantiation
+    }
 
     public OrderMapStore(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
+
+    @Autowired
+    public void setOrderRepository(OrderRepository orderRepository) {
         this.orderRepository = orderRepository;
     }
 
@@ -82,6 +93,10 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
     public OrderEntity load(String orderNumber) {
         logger.debug("Loading order from database: orderNumber={}", orderNumber);
         try {
+            if (orderRepository == null) {
+                logger.warn("OrderRepository not yet injected, skipping load for orderNumber={}", orderNumber);
+                return null;
+            }
             Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(orderNumber);
             return orderOpt.orElse(null);
         } catch (Exception e) {
@@ -95,6 +110,10 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
         logger.debug(
                 "Loading {} orders from database (batch + fallback)", orderNumbers != null ? orderNumbers.size() : 0);
         if (orderNumbers == null || orderNumbers.isEmpty()) {
+            return Map.of();
+        }
+        if (orderRepository == null) {
+            logger.warn("OrderRepository not yet injected, skipping loadAll for {} orders", orderNumbers.size());
             return Map.of();
         }
 
@@ -128,6 +147,10 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
     @Override
     public Set<String> loadAllKeys() {
         try {
+            if (orderRepository == null) {
+                logger.warn("OrderRepository not yet injected, skipping loadAllKeys");
+                return Set.of();
+            }
             return orderRepository.findAll().stream()
                     .map(OrderEntity::getOrderNumber)
                     .collect(java.util.stream.Collectors.toSet());
