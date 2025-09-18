@@ -78,13 +78,12 @@ public class InventoryService {
                         productCode,
                         currentQuantity,
                         quantity);
-                throw new InsufficientInventoryException(
-                        "Insufficient stock for product code "
-                                + productCode
-                                + ". Available: "
-                                + currentQuantity
-                                + ", requested: "
-                                + quantity);
+                throw new InsufficientInventoryException("Insufficient stock for product code "
+                        + productCode
+                        + ". Available: "
+                        + currentQuantity
+                        + ", requested: "
+                        + quantity);
             }
             inventory.setQuantity(newQuantity);
 

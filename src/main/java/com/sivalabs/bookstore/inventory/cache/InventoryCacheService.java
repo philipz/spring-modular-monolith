@@ -188,9 +188,7 @@ public class InventoryCacheService extends AbstractCacheService<Long, InventoryE
             }
 
             // Cache miss - always fallback to database for normal operation
-            logger.debug(
-                    "Cache miss for inventory lookup by product code: {} - using database fallback",
-                    productCode);
+            logger.debug("Cache miss for inventory lookup by product code: {} - using database fallback", productCode);
             Optional<InventoryEntity> databaseResult = databaseFallback.get();
             if (databaseResult.isPresent()) {
                 InventoryEntity inventory = databaseResult.get();
