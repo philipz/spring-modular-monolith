@@ -77,6 +77,7 @@ The service can import legacy orders from the monolith database when it starts.
 
 2. Start the service (`docker compose up orders-service` or deploy to Kubernetes). A single backfill run executes at startup and records its result in the `orders.backfill_audit` table.
 3. Reset `ORDERS_BACKFILL_ENABLED=false` after importing to avoid re-running on subsequent boots.
+4. If a rollback is required, use `orders/scripts/rollback.sql` with the audit id captured in `orders.backfill_audit` to delete the migrated rows safely.
 
 Audit details (start time, limit, processed count, errors) are persisted in `orders.backfill_audit` for traceability.
 

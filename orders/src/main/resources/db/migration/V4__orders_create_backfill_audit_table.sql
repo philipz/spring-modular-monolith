@@ -1,6 +1,4 @@
-SET search_path TO orders;
-
-CREATE TABLE IF NOT EXISTS backfill_audit
+CREATE TABLE IF NOT EXISTS orders.backfill_audit
 (
     id                BIGSERIAL PRIMARY KEY,
     started_at        TIMESTAMP NOT NULL,
@@ -12,4 +10,4 @@ CREATE TABLE IF NOT EXISTS backfill_audit
     error_message     TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_backfill_audit_started_at ON backfill_audit (started_at);
+CREATE INDEX IF NOT EXISTS idx_backfill_audit_started_at ON orders.backfill_audit (started_at);

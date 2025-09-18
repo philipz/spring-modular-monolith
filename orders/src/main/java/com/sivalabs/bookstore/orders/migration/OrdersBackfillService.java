@@ -48,8 +48,17 @@ public class OrdersBackfillService {
             if (existingOrderNumbers.contains(record.orderNumber())) {
                 continue;
             }
-            OrderEntity entity = mapToEntity(record);
+            LocalDateTime sourceCreatedAt = record.createdAt();
+            LocalDateTime sourceUpdatedAt = record.updatedAt();
+
+            LocalDateTime createdAt = sourceCreatedAt != null
+                    ? sourceCreatedAt
+                    : (sourceUpdatedAt != null ? sourceUpdatedAt : LocalDateTime.now());
+            LocalDateTime updatedAt = sourceUpdatedAt != null ? sourceUpdatedAt : createdAt;
+
+            OrderEntity entity = mapToEntity(record, createdAt, updatedAt);
             orderRepository.save(entity);
+            orderRepository.updateTimestamps(entity.getOrderNumber(), createdAt, updatedAt);
             processed++;
         }
 
@@ -57,7 +66,7 @@ public class OrdersBackfillService {
         return processed;
     }
 
-    private OrderEntity mapToEntity(LegacyOrderRecord record) {
+    private OrderEntity mapToEntity(LegacyOrderRecord record, LocalDateTime createdAt, LocalDateTime updatedAt) {
         OrderStatus status = resolveStatus(record.status());
         OrderEntity entity = OrderEntity.builder()
                 .orderNumber(record.orderNumber())
@@ -68,9 +77,8 @@ public class OrdersBackfillService {
                 .status(status)
                 .build();
 
-        LocalDateTime createdAt = record.createdAt() != null ? record.createdAt() : LocalDateTime.now();
         entity.setCreatedAt(createdAt);
-        entity.setUpdatedAt(record.updatedAt() != null ? record.updatedAt() : createdAt);
+        entity.setUpdatedAt(updatedAt);
         return entity;
     }
 

@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS orders
     product_price    TEXT      NOT NULL,
     quantity         INT       NOT NULL,
     status           TEXT      NOT NULL,
-    comments         TEXT,
     created_at       TIMESTAMP NOT NULL,
     updated_at       TIMESTAMP,
     PRIMARY KEY (id)

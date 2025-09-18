@@ -2,21 +2,18 @@ package com.sivalabs.bookstore.orders.migration;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class OrdersBackfillAuditor {
 
     private final JdbcTemplate ordersBackfillJdbcTemplate;
-
-    public OrdersBackfillAuditor(@Qualifier("jdbcTemplate") JdbcTemplate ordersBackfillJdbcTemplate) {
-        this.ordersBackfillJdbcTemplate = ordersBackfillJdbcTemplate;
-    }
 
     public long recordStart(BackfillRequest request) {
         String sql =

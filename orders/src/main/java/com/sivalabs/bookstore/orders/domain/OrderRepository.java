@@ -1,6 +1,7 @@
 package com.sivalabs.bookstore.orders.domain;
 
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSpecificationExecutor<OrderEntity> {
@@ -43,4 +45,13 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
         where o.customer.email = :email
         """)
     Page<OrderEntity> findByCustomerEmail(String email, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            """
+        update OrderEntity o
+        set o.createdAt = :createdAt, o.updatedAt = :updatedAt
+        where o.orderNumber = :orderNumber
+        """)
+    void updateTimestamps(String orderNumber, LocalDateTime createdAt, LocalDateTime updatedAt);
 }

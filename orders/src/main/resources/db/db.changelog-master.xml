@@ -32,4 +32,22 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="orders-4" author="orders" labels="orders,backfill" context="all">
+        <comment>Create backfill audit table</comment>
+        <sqlFile path="db/migration/V4__orders_create_backfill_audit_table.sql"/>
+        <rollback>
+            DROP TABLE IF EXISTS orders.backfill_audit;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="orders-5" author="orders" labels="events" context="all">
+        <comment>Ensure events publication table exists for Modulith JDBC integration</comment>
+        <sqlFile path="db/migration/V5__orders_create_event_publication_table.sql"/>
+        <rollback>
+            DROP INDEX IF EXISTS events.event_publication_serialized_event_hash_idx;
+            DROP INDEX IF EXISTS events.event_publication_by_completion_date_idx;
+            DROP TABLE IF EXISTS events.event_publication;
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>

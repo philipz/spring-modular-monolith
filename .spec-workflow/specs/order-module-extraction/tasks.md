@@ -321,7 +321,7 @@
   - _Requirements: 3.1, 3.5_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Data Migration Engineer | Task: Implement an initial backfill job for orders migrating data into the new DB | Restrictions: Make job idempotent and chunked; do not impact production workload | _Leverage: entity mappings and DB change management_ | _Requirements: 3.1, 3.5_ | Success: Backfill runs successfully on sample data; verifies counts and spot-checks integrity | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 34. Add backfill validation and rollback script
+- [x] 34. Add backfill validation and rollback script
   - File: orders/src/test/java/com/sivalabs/bookstore/orders/migration/BackfillTests.java, orders/scripts/rollback.sql
   - Write tests validating record counts and key invariants after backfill; provide rollback script for partial migrations
   - Purpose: Ensure safe migration with validation and recovery path
