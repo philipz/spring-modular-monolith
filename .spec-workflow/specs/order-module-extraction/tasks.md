@@ -312,7 +312,7 @@
 
 ### Phase 12 Additions
 
-- [ ] 33. Implement initial data backfill job for orders
+- [x] 33. Implement initial data backfill job for orders
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/migration/BackfillRunner.java, orders/src/main/resources/db/migration/
   - Create a runnable backfill job to copy existing orders into the new service database (configurable window/limit)
   - Add SQL migration or tooling to support initial schema prep for backfill

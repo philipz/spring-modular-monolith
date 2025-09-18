@@ -60,7 +60,27 @@ The deployment expects the same container image tag (`philipz/orders-service:lat
 - Non-secret environment variables (JDBC URL, Rabbit host, profiling flags) are provided via `orders-service-config`
 - Liquibase and Modulith event schemas are assigned (`orders`, `orders_events`)
 
-## 5. Cleanup
+## 5. Seed Historical Order Data
+
+The service can import legacy orders from the monolith database when it starts.
+
+1. Provide connection details for the source database (defaults to the service database if omitted):
+
+   ```bash
+   export ORDERS_BACKFILL_ENABLED=true
+   export ORDERS_BACKFILL_LOOKBACK_DAYS=90   # Optional: limit window
+   export ORDERS_BACKFILL_RECORD_LIMIT=500   # Maximum rows to migrate per run
+   export ORDERS_BACKFILL_SOURCE_URL=jdbc:postgresql://monolith-db:5432/postgres
+   export ORDERS_BACKFILL_SOURCE_USERNAME=postgres
+   export ORDERS_BACKFILL_SOURCE_PASSWORD=postgres
+   ```
+
+2. Start the service (`docker compose up orders-service` or deploy to Kubernetes). A single backfill run executes at startup and records its result in the `orders.backfill_audit` table.
+3. Reset `ORDERS_BACKFILL_ENABLED=false` after importing to avoid re-running on subsequent boots.
+
+Audit details (start time, limit, processed count, errors) are persisted in `orders.backfill_audit` for traceability.
+
+## 6. Cleanup
 
 ```bash
 kubectl delete namespace orders
