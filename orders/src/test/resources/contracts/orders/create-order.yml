@@ -1,0 +1,32 @@
+name: createOrder
+description: Create order endpoint must accept valid payload and return generated order number
+request:
+  method: POST
+  url: /api/orders
+  headers:
+    Content-Type: application/json
+  body:
+    customer:
+      name: John Doe
+      email: john@example.com
+      phone: 123-456-7890
+    deliveryAddress: 221B Baker Street
+    item:
+      code: P100
+      name: Domain-Driven Design
+      price: 49.99
+      quantity: 1
+response:
+  status: 201
+  headers:
+    Content-Type: application/json
+  body:
+    orderNumber: OR-123456
+  matchers:
+    headers:
+      - key: Content-Type
+        regex: application/json.*
+    body:
+      - path: $.orderNumber
+        type: by_regex
+        value: '^[A-Z0-9-]+$'

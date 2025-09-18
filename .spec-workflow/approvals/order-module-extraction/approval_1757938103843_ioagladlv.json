@@ -1,0 +1,21 @@
+{
+  "id": "approval_1757938103843_ioagladlv",
+  "title": "Order Module Extraction Requirements",
+  "filePath": ".spec-workflow/specs/order-module-extraction/requirements.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-15T12:08:23.843Z",
+  "category": "spec",
+  "categoryName": "order-module-extraction",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. 建立orders目錄，將Orders module獨立放置在orders目錄下\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"建立orders目錄，將Orders module獨立放置在orders目錄下\",\n      \"timestamp\": \"2025-09-15T12:10:26.567Z\",\n      \"id\": \"comment_1757938226567_4izptq99e\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. 建立orders目錄，將Orders module獨立放置在orders目錄下\\n\\n\",\n  \"timestamp\": \"2025-09-15T12:10:27.904Z\"\n}",
+  "respondedAt": "2025-09-15T12:10:27.925Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "建立orders目錄，將Orders module獨立放置在orders目錄下",
+      "timestamp": "2025-09-15T12:10:26.567Z",
+      "id": "comment_1757938226567_4izptq99e"
+    }
+  ]
+}

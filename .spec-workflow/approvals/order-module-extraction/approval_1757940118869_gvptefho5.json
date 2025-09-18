@@ -1,0 +1,21 @@
+{
+  "id": "approval_1757940118869_gvptefho5",
+  "title": "Order Module Extraction Task Breakdown",
+  "filePath": ".spec-workflow/specs/order-module-extraction/tasks.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-15T12:41:58.869Z",
+  "category": "spec",
+  "categoryName": "order-module-extraction",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. 參考 https://www.milanjovanovic.tech/blog/breaking-it-down-how-to-migrate-your-modular-monolith-to-microservices 內容，優化整個任務\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"參考 https://www.milanjovanovic.tech/blog/breaking-it-down-how-to-migrate-your-modular-monolith-to-microservices 內容，優化整個任務\",\n      \"timestamp\": \"2025-09-15T13:13:25.171Z\",\n      \"id\": \"comment_1757942005171_qwptzitt6\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. 參考 https://www.milanjovanovic.tech/blog/breaking-it-down-how-to-migrate-your-modular-monolith-to-microservices 內容，優化整個任務\\n\\n\",\n  \"timestamp\": \"2025-09-15T13:14:20.782Z\"\n}",
+  "respondedAt": "2025-09-15T13:14:20.805Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "參考 https://www.milanjovanovic.tech/blog/breaking-it-down-how-to-migrate-your-modular-monolith-to-microservices 內容，優化整個任務",
+      "timestamp": "2025-09-15T13:13:25.171Z",
+      "id": "comment_1757942005171_qwptzitt6"
+    }
+  ]
+}

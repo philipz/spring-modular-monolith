@@ -5,12 +5,12 @@ import static org.awaitility.Awaitility.await;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 import com.sivalabs.bookstore.TestcontainersConfiguration;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.cache.OrderCacheService;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderService;
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderItem;
-import com.sivalabs.bookstore.orders.domain.models.OrderStatus;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-service-config
+  labels:
+    app: orders-service
+  namespace: orders
+data:
+  SPRING_PROFILES_ACTIVE: k8s
+  SPRING_DATASOURCE_URL: jdbc:postgresql://orders-postgres:5432/ordersdb
+  SPRING_RABBITMQ_HOST: orders-rabbitmq
+  SPRING_RABBITMQ_PORT: "5672"
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://orders-zipkin:9411/api/v2/spans
+  SERVER_PORT: "8091"
+  SPRING_MODULITH_EVENTS_SCHEMA: orders_events
+  APP_AMQP_NEW_ORDERS_BIND: "true"

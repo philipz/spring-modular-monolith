@@ -4,8 +4,8 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 
 import com.sivalabs.bookstore.TestcontainersConfiguration;
 import com.sivalabs.bookstore.inventory.domain.InventoryService;
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderCreatedEvent;
+import com.sivalabs.bookstore.orders.api.events.OrderCreatedEvent;
+import com.sivalabs.bookstore.orders.api.model.Customer;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

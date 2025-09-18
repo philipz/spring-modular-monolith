@@ -1,8 +1,8 @@
 package com.sivalabs.bookstore.orders.domain;
 
-import com.sivalabs.bookstore.orders.domain.models.Customer;
-import com.sivalabs.bookstore.orders.domain.models.OrderItem;
-import com.sivalabs.bookstore.orders.domain.models.OrderStatus;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;

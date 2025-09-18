@@ -1,10 +1,10 @@
 package com.sivalabs.bookstore.orders.mappers;
 
-import com.sivalabs.bookstore.orders.CreateOrderRequest;
-import com.sivalabs.bookstore.orders.OrderDto;
-import com.sivalabs.bookstore.orders.OrderView;
+import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
+import com.sivalabs.bookstore.orders.api.OrderDto;
+import com.sivalabs.bookstore.orders.api.OrderView;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
-import com.sivalabs.bookstore.orders.domain.models.OrderStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

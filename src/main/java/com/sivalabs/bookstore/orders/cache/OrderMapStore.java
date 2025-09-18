@@ -14,8 +14,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 
 /**
  * Hazelcast MapStore implementation for OrderEntity.
@@ -29,8 +27,6 @@ import org.springframework.stereotype.Component;
  * - delete() removes from database when cache entries are removed
  * - loadAll() provides bulk loading capabilities
  */
-@Component
-@Lazy
 @SpringAware
 public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLifecycleSupport {
 
