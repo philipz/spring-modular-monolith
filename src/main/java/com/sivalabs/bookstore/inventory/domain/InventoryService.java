@@ -40,6 +40,15 @@ public class InventoryService {
     public void decreaseStockLevel(String productCode, int quantity) {
         log.info("Decrease stock level for product code {} and quantity {}", productCode, quantity);
 
+        if (quantity <= 0) {
+            log.warn(
+                    "Rejecting inventory decrease for product code {} due to non-positive quantity: {}",
+                    productCode,
+                    quantity);
+            throw new InvalidInventoryAdjustmentException(
+                    "Quantity to decrease must be greater than zero. Provided: " + quantity);
+        }
+
         // Find inventory record - use cache if available with database fallback
         Optional<InventoryEntity> inventoryOpt;
         if (isCacheAvailable()) {
@@ -60,7 +69,23 @@ public class InventoryService {
 
         if (inventoryOpt.isPresent()) {
             InventoryEntity inventory = inventoryOpt.get();
-            long newQuantity = inventory.getQuantity() - quantity;
+            long currentQuantity = inventory.getQuantity();
+            long newQuantity = currentQuantity - quantity;
+
+            if (newQuantity < 0) {
+                log.warn(
+                        "Insufficient inventory for product code {}. Available: {}, requested decrease: {}",
+                        productCode,
+                        currentQuantity,
+                        quantity);
+                throw new InsufficientInventoryException(
+                        "Insufficient stock for product code "
+                                + productCode
+                                + ". Available: "
+                                + currentQuantity
+                                + ", requested: "
+                                + quantity);
+            }
             inventory.setQuantity(newQuantity);
 
             // Save to database first
