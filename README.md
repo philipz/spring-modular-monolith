@@ -120,6 +120,12 @@ export SPRING_RABBITMQ_HOST=localhost
 - Zipkin Tracing: http://localhost:9411
 - Hazelcast Management Center: http://localhost:38080
 
+### Orders Service Rollout
+
+- Set `ORDERS_SERVICE_PERCENT` (0-100) before running `docker compose up webproxy` to gradually shift `/orders`, `/buy`, and `/cart` requests to the extracted service.
+- Override on a per-request basis with header `X-Orders-Backend: monolith|orders` or cookie `orders_backend=monolith|orders`.
+- Access logs emit `backend=<target>` so you can compare behaviour; see `docs/orders-traffic-migration.md` for the full playbook.
+
 ## Kubernetes Deployment
 
 ### Install Required Tools

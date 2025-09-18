@@ -292,7 +292,7 @@
   - _Requirements: All requirements_
   - _Prompt: Implement the task for spec order-module-extraction, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Quality Assurance Engineer with end-to-end testing and system validation expertise | Task: Perform comprehensive testing covering all requirements, validating complete functionality and performance characteristics | Restrictions: Must test all major functionality, validate performance requirements, ensure error handling works correctly | _Leverage: all migrated components and testing infrastructure_ | _Requirements: All requirements_ | Success: Complete functionality validated, performance requirements met, error handling operational, system ready for production | Instructions: Mark this task as in-progress in tasks.md before starting, mark as complete when finished_
 
-- [ ] 31. Implement gradual traffic migration strategy
+- [x] 31. Implement gradual traffic migration strategy
   - File: traffic routing configuration, feature flags, monitoring setup
   - Set up feature flags or API gateway for gradual traffic migration
   - Implement monitoring to compare old vs new service performance

@@ -98,7 +98,10 @@ services:
   webproxy:
     depends_on:
       - monolith
+      - orders-service
     build: webproxy
+    environment:
+      ORDERS_SERVICE_PERCENT: ${ORDERS_SERVICE_PERCENT:-100}
     networks:
       - proxy
     ports:
