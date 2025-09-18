@@ -27,8 +27,14 @@ public class HttpProductCatalogClient implements ProductCatalogPort {
     @Override
     public void validate(String productCode, BigDecimal price) {
         CatalogProductResponse product = fetchProduct(productCode);
-        if (product.price().compareTo(price) != 0) {
-            throw new InvalidOrderException("Product price mismatch");
+
+        // Validate price with tolerance for floating-point precision issues
+        BigDecimal tolerance = new BigDecimal("0.01"); // 1 cent tolerance
+        BigDecimal difference = product.price().subtract(price).abs();
+
+        if (difference.compareTo(tolerance) > 0) {
+            throw new InvalidOrderException(String.format(
+                    "Product price mismatch for %s. Expected: %s, Provided: %s", productCode, product.price(), price));
         }
     }
 

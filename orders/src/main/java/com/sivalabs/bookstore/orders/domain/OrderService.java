@@ -17,8 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class OrderService {
     @Transactional
     @Caching(
             put = {@CachePut(value = "orders", key = "#result.orderNumber")},
-            evict = {@CacheEvict(value = "ordersList", allEntries = true)})
+            evict = {@CacheEvict(value = "ordersList", key = "'all'")})
     public OrderEntity createOrder(OrderEntity orderEntity) {
         if (orderEntity.getOrderNumber() == null || orderEntity.getOrderNumber().isBlank()) {
             orderEntity.setOrderNumber(UUID.randomUUID().toString());
@@ -44,33 +43,22 @@ public class OrderService {
         OrderEntity savedOrder = orderRepository.save(orderEntity);
         log.info("Created Order with orderNumber={}", savedOrder.getOrderNumber());
 
-        // Publish event after transaction commits
-        publishOrderCreatedEvent(savedOrder);
-
-        return savedOrder;
-    }
-
-    private void publishOrderCreatedEvent(OrderEntity savedOrder) {
+        // Create and publish event - will be handled after transaction commits
         OrderCreatedEvent event = new OrderCreatedEvent(
                 savedOrder.getOrderNumber(),
                 savedOrder.getOrderItem().code(),
                 savedOrder.getOrderItem().quantity(),
                 savedOrder.getCustomer());
+        eventPublisher.publishEvent(event);
 
-        // Register event to be published after transaction commits
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    eventPublisher.publishEvent(event);
-                    log.debug("Published OrderCreatedEvent for order: {}", savedOrder.getOrderNumber());
-                }
-            });
-        } else {
-            // If no transaction is active, publish immediately (for testing scenarios)
-            eventPublisher.publishEvent(event);
-            log.debug("Published OrderCreatedEvent immediately for order: {}", savedOrder.getOrderNumber());
-        }
+        return savedOrder;
+    }
+
+    @TransactionalEventListener
+    public void handleOrderCreatedEvent(OrderCreatedEvent event) {
+        log.debug("Handling OrderCreatedEvent for order: {}", event.orderNumber());
+        // The event will be automatically published to external systems via Spring Modulith
+        // and other modules can listen to this event through their own @EventListener methods
     }
 
     @Transactional(readOnly = true)
@@ -105,7 +93,7 @@ public class OrderService {
     @Transactional
     @Caching(
             put = {@CachePut(value = "orders", key = "#orderEntity.orderNumber")},
-            evict = {@CacheEvict(value = "ordersList", allEntries = true)})
+            evict = {@CacheEvict(value = "ordersList", key = "'all'")})
     public OrderEntity updateOrderStatus(String orderNumber, OrderStatus newStatus) {
         OrderEntity order = orderRepository
                 .findByOrderNumber(orderNumber)
@@ -123,7 +111,7 @@ public class OrderService {
     @Caching(
             evict = {
                 @CacheEvict(value = "orders", key = "#orderNumber"),
-                @CacheEvict(value = "ordersList", allEntries = true)
+                @CacheEvict(value = "ordersList", key = "'all'")
             })
     public void cancelOrder(String orderNumber) {
         OrderEntity order = orderRepository
