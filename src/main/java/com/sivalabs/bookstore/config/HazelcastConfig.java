@@ -11,6 +11,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spring.context.SpringManagedContext;
+import org.springframework.context.ApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -45,7 +46,10 @@ public class HazelcastConfig {
      * @return configured Hazelcast Config instance
      */
     @Bean
-    public Config hazelcastConfiguration(CacheProperties cacheProperties, ObjectProvider<MapConfig> mapConfigs) {
+    public Config hazelcastConfiguration(
+            CacheProperties cacheProperties,
+            ObjectProvider<MapConfig> mapConfigs,
+            SpringManagedContext springManagedContext) {
         logger.info("Initializing Hazelcast configuration");
 
         Config config = new Config();
@@ -55,7 +59,7 @@ public class HazelcastConfig {
         config.setClusterName("bookstore-cluster");
         config.getJetConfig().setEnabled(true);
         // Allow Hazelcast to inject Spring-managed dependencies into components like MapStore
-        config.setManagedContext(new SpringManagedContext());
+        config.setManagedContext(springManagedContext);
 
         // Configure the products cache map (same configuration as orders cache)
         MapConfig productsCacheMapConfig = new MapConfig(PRODUCTS_CACHE_NAME);
@@ -156,6 +160,13 @@ public class HazelcastConfig {
                 config.getClusterName());
 
         return config;
+    }
+
+    @Bean
+    public SpringManagedContext springManagedContext(ApplicationContext applicationContext) {
+        SpringManagedContext springManagedContext = new SpringManagedContext();
+        springManagedContext.setApplicationContext(applicationContext);
+        return springManagedContext;
     }
 
     /**
