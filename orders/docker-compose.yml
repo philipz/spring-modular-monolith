@@ -48,7 +48,7 @@ services:
       - orders-net
 
   orders-service:
-    image: philipz/orders-service:latest
+    image: philipz/orders-service:0.0.1-SNAPSHOT
     container_name: orders-service
     depends_on:
       orders-db:

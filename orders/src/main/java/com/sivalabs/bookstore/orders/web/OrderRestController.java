@@ -18,12 +18,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Orders", description = "Order management operations")
@@ -51,9 +51,9 @@ class OrderRestController {
                 @ApiResponse(responseCode = "400", description = "Invalid order request", content = @Content)
             })
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    CreateOrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return ordersApi.createOrder(request);
+    ResponseEntity<CreateOrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+        CreateOrderResponse response = ordersApi.createOrder(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "Get order by order number", description = "Retrieves an order by its unique order number")
@@ -66,10 +66,12 @@ class OrderRestController {
                 @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
             })
     @GetMapping("/{orderNumber}")
-    OrderDto getOrder(
+    ResponseEntity<OrderDto> getOrder(
             @Parameter(description = "Unique order number", required = true) @PathVariable String orderNumber) {
         log.info("Fetching order by orderNumber: {}", orderNumber);
-        return ordersApi.findOrder(orderNumber).orElseThrow(() -> OrderNotFoundException.forOrderNumber(orderNumber));
+        OrderDto order =
+                ordersApi.findOrder(orderNumber).orElseThrow(() -> OrderNotFoundException.forOrderNumber(orderNumber));
+        return ResponseEntity.ok(order);
     }
 
     @Operation(summary = "Get all orders", description = "Retrieves a list of all orders")
@@ -81,7 +83,8 @@ class OrderRestController {
                         content = @Content(schema = @Schema(implementation = OrderView.class)))
             })
     @GetMapping
-    List<OrderView> getOrders() {
-        return ordersApi.findOrders();
+    ResponseEntity<List<OrderView>> getOrders() {
+        List<OrderView> orders = ordersApi.findOrders();
+        return ResponseEntity.ok(orders);
     }
 }

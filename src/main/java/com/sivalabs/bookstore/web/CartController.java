@@ -1,5 +1,7 @@
-package com.sivalabs.bookstore.orders.web;
+package com.sivalabs.bookstore.web;
 
+import com.sivalabs.bookstore.catalog.api.ProductApi;
+import com.sivalabs.bookstore.catalog.api.ProductDto;
 import com.sivalabs.bookstore.orders.api.model.Customer;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HtmxRefreshView;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HxRequest;
@@ -15,20 +17,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.view.FragmentsRendering;
 
-@Controller
-class CartController {
+public @Controller class CartController {
     private static final Logger log = LoggerFactory.getLogger(CartController.class);
-    private final ProductApiAdapter productApiAdapter;
+    private final ProductApi productApi;
 
-    CartController(ProductApiAdapter productApiAdapter) {
-        this.productApiAdapter = productApiAdapter;
+    CartController(ProductApi productApi) {
+        this.productApi = productApi;
     }
 
     @PostMapping("/buy")
     String addProductToCart(@RequestParam String code, HttpSession session) {
         log.info("Adding product code:{} to cart, sessionId={}", code, session.getId());
         Cart cart = CartUtil.getCart(session);
-        ProductApiAdapter.ProductDto product = productApiAdapter.getByCode(code).orElseThrow();
+        ProductDto product = productApi.getByCode(code).orElseThrow();
         cart.setItem(new Cart.LineItem(product.code(), product.name(), product.price(), 1));
         CartUtil.setCart(session, cart);
         return "redirect:/cart";

@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.orders.web;
+package com.sivalabs.bookstore.web;
 
 import com.sivalabs.bookstore.orders.api.model.Customer;
 import jakarta.validation.Valid;

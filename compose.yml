@@ -57,8 +57,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      ORDERS_SERVICE_UI_URL: http://localhost:8080/orders
-      ORDERS_SERVICE_BUY_URL: http://localhost:8080/buy
+      ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       # Hazelcast JVM optimization for Java modular environment
       JDK_JAVA_OPTIONS: "--add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED"
     depends_on:
@@ -90,8 +89,6 @@ services:
       SERVER_PORT: 8091
       SPRING_MODULITH_EVENTS_SCHEMA: orders_events
       PRODUCT_API_BASE_URL: http://monolith:8080
-    ports:
-      - "8091:8091"
     networks:
       - proxy
 
