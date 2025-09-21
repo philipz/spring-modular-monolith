@@ -1,56 +1,64 @@
 <form class="row g-3" method="post" th:action="@{/orders}"
                         th:object="${orderForm}">
     <div class="col-md-6">
-        <label for="customerName" class="form-label">Customer Name</label>
+        <label for="customerName" class="form-label">Customer Name <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="text" class="form-control"
                id="customerName"
                name="customer.name"
                th:field="*{customer.name}"
-               th:classappend="${#fields.hasErrors('customer.name')} ? 'is-invalid' : ''"
-               />
+               required
+               aria-required="true"
+               th:classappend="${#fields.hasErrors('customer.name')} ? 'is-invalid' : ''"/>
         <div class="invalid-feedback"
+             id="customerNameError"
              th:if="${#fields.hasErrors('customer.name')}"
              th:errors="*{customer.name}">
             Incorrect data
         </div>
     </div>
     <div class="col-md-6">
-        <label for="customerEmail" class="form-label">Customer Email</label>
+        <label for="customerEmail" class="form-label">Customer Email <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="email" class="form-control"
                id="customerEmail"
                name="customer.email"
                th:field="*{customer.email}"
-               th:classappend="${#fields.hasErrors('customer.email')} ? 'is-invalid' : ''"
-                >
+               required
+               aria-required="true"
+               th:classappend="${#fields.hasErrors('customer.email')} ? 'is-invalid' : ''"/>
         <div class="invalid-feedback"
+             id="customerEmailError"
              th:if="${#fields.hasErrors('customer.email')}"
              th:errors="*{customer.email}">
             Incorrect data
         </div>
     </div>
     <div class="col-md-6">
-        <label for="customerPhone" class="form-label">Customer Phone</label>
+        <label for="customerPhone" class="form-label">Customer Phone <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="text" class="form-control"
                id="customerPhone"
                name="customer.phone"
                th:field="*{customer.phone}"
-               th:classappend="${#fields.hasErrors('customer.phone')} ? 'is-invalid' : ''"
-                >
+               required
+               aria-required="true"
+               th:classappend="${#fields.hasErrors('customer.phone')} ? 'is-invalid' : ''"/>
         <div class="invalid-feedback"
+             id="customerPhoneError"
              th:if="${#fields.hasErrors('customer.phone')}"
              th:errors="*{customer.phone}">
             Incorrect data
         </div>
     </div>
     <div class="col-6">
-        <label for="deliveryAddress" class="form-label">Delivery Address</label>
+        <label for="deliveryAddress" class="form-label">Delivery Address <span class="text-danger" aria-hidden="true">*</span></label>
         <input class="form-control"
                id="deliveryAddress"
                name="deliveryAddress"
                th:field="*{deliveryAddress}"
-               th:classappend="${#fields.hasErrors('deliveryAddress')} ? 'is-invalid' : ''"
-        />
+               required
+               aria-required="true"
+               th:classappend="${#fields.hasErrors('deliveryAddress')} ? 'is-invalid' : ''"/>
         <div class="invalid-feedback"
+             id="deliveryAddressError"
              th:if="${#fields.hasErrors('deliveryAddress')}"
              th:errors="*{deliveryAddress}">
             Incorrect data

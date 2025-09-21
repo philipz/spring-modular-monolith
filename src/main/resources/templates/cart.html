@@ -6,10 +6,10 @@
       layout:decorate="~{layout}">
 <body>
 <div layout:fragment="content">
-    <div th:insert="~{partials/cart}"> </div>
-    <div th:if="${cart.item != null }">
+    <div th:insert="~{partials/cart}"></div>
+    <div th:if="${cart != null and cart.item != null}">
         <div class="col-md-8 offset-md-2">
-        <div th:insert="~{partials/order-form}"> </div>
+            <div th:insert="~{partials/order-form}"></div>
         </div>
     </div>
 </div>

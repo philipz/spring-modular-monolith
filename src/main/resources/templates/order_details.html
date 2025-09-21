@@ -6,8 +6,12 @@
       layout:decorate="~{layout}">
 <body>
 <div layout:fragment="content">
-    <div>
-        <h2>Your Order placed successfully</h2>
+    <div th:if="${order == null}">
+        <h2>We couldn't find that order.</h2>
+        <p><a th:href="@{/orders}">Return to your orders</a> or <a th:href="@{/}">keep shopping</a>.</p>
+    </div>
+    <div th:if="${order != null}">
+        <h2>Your order was placed successfully</h2>
         <h4>Order Number: <span th:text="${order.orderNumber}">orderNumber</span></h4>
         <h4>Order Status: <span th:text="${order.status}">status</span></h4>
         <hr/>
@@ -22,12 +26,12 @@
                 </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td th:text="${order.item.name}">name</td>
-                        <td th:text="${order.item.price}">price</td>
-                        <td th:text="${order.item.quantity}">quantity</td>
-                        <td th:text="${order.item.quantity * order.item.price}">SubTotal</td>
-                    </tr>
+                <tr>
+                    <td th:text="${order.item.name}">name</td>
+                    <td th:text="${order.item.price}">price</td>
+                    <td th:text="${order.item.quantity}">quantity</td>
+                    <td th:text="${order.item.quantity * order.item.price}">SubTotal</td>
+                </tr>
                 </tbody>
                 <tfoot>
                 <tr>
@@ -46,8 +50,8 @@
                            id="customerName"
                            name="customerName"
                            readonly
-                           th:value="${order.customer.name}"
-                    />
+                           aria-readonly="true"
+                           th:value="${order.customer.name}"/>
                 </div>
                 <div class="col-md-6">
                     <label for="customerEmail" class="form-label">Customer Email</label>
@@ -55,7 +59,8 @@
                            id="customerEmail"
                            name="customerEmail"
                            readonly
-                           th:value="${order.customer.email}">
+                           aria-readonly="true"
+                           th:value="${order.customer.email}"/>
                 </div>
                 <div class="col-md-6">
                     <label for="customerPhone" class="form-label">Customer Phone</label>
@@ -63,7 +68,8 @@
                            id="customerPhone"
                            name="customerPhone"
                            readonly
-                           th:value="${order.customer.phone}">
+                           aria-readonly="true"
+                           th:value="${order.customer.phone}"/>
                 </div>
                 <div class="col-6">
                     <label for="deliveryAddress" class="form-label">Delivery Address</label>
@@ -71,6 +77,7 @@
                            id="deliveryAddress"
                            name="deliveryAddress"
                            readonly
+                           aria-readonly="true"
                            th:value="${order.deliveryAddress}"/>
                 </div>
 
