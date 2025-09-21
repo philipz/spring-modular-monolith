@@ -89,8 +89,6 @@ services:
       SERVER_PORT: 8091
       SPRING_MODULITH_EVENTS_SCHEMA: orders_events
       PRODUCT_API_BASE_URL: http://monolith:8080
-    ports:
-      - "8091:8091"
     networks:
       - proxy
 

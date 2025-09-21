@@ -1,3 +1,7 @@
-FROM nginx:alpine
-RUN rm /etc/nginx/conf.d/*
-COPY 10-generate-proxy-conf.sh /docker-entrypoint.d/10-generate-proxy-conf.sh
+FROM opentracing/nginx-opentracing:0.41.0-alpine
+
+
+RUN rm -rf /etc/nginx/conf.d/*
+
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY zipkin.json /etc/nginx/zipkin.json
