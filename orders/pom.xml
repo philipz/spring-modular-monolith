@@ -144,22 +144,6 @@
             <version>${datasource-micrometer-spring-boot.version}</version>
         </dependency>
 
-        <!-- Web UI -->
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>webjars-locator-lite</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>${bootstrap.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars.npm</groupId>
-            <artifactId>htmx.org</artifactId>
-            <version>${htmx.version}</version>
-        </dependency>
-
         <!-- API Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
