@@ -75,6 +75,7 @@ public class OrdersWebController {
             if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
                 CreateOrderResponse savedOrder = response.getBody();
                 session.removeAttribute("cart");
+                CartUtil.setCart(session, new Cart());
                 String orderNumber = savedOrder.orderNumber();
                 log.info("Successfully created order: {}", orderNumber);
                 return "redirect:/orders/" + orderNumber;
