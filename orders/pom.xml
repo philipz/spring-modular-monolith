@@ -23,7 +23,6 @@
         <spring-modulith.version>1.4.3</spring-modulith.version>
         <datasource-micrometer-spring-boot.version>1.1.2</datasource-micrometer-spring-boot.version>
         <hazelcast.version>5.5.6</hazelcast.version>
-        <htmx-spring-boot-thymeleaf.version>4.0.1</htmx-spring-boot-thymeleaf.version>
         <bootstrap.version>5.3.7</bootstrap.version>
         <htmx.version>2.0.6</htmx.version>
         <spotless.version>2.46.1</spotless.version>
@@ -146,19 +145,6 @@
         </dependency>
 
         <!-- Web UI -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>nz.net.ultraq.thymeleaf</groupId>
-            <artifactId>thymeleaf-layout-dialect</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.wimdeblauwe</groupId>
-            <artifactId>htmx-spring-boot-thymeleaf</artifactId>
-            <version>${htmx-spring-boot-thymeleaf.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>webjars-locator-lite</artifactId>

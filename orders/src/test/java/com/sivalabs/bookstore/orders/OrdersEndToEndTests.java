@@ -149,9 +149,18 @@ class OrdersEndToEndTests {
             }
         });
 
-        ResponseEntity<String> webPage = restTemplate.getForEntity("/orders", String.class);
-        assertThat(webPage.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(webPage.getBody()).contains(orderNumber);
+        ResponseEntity<java.util.List<com.sivalabs.bookstore.orders.api.OrderView>> ordersResponse =
+                restTemplate.exchange(
+                        "/api/orders",
+                        org.springframework.http.HttpMethod.GET,
+                        null,
+                        new org.springframework.core.ParameterizedTypeReference<
+                                java.util.List<com.sivalabs.bookstore.orders.api.OrderView>>() {});
+        assertThat(ordersResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(ordersResponse.getBody()).isNotNull();
+        assertThat(ordersResponse.getBody())
+                .extracting(com.sivalabs.bookstore.orders.api.OrderView::orderNumber)
+                .contains(orderNumber);
     }
 
     @Test
