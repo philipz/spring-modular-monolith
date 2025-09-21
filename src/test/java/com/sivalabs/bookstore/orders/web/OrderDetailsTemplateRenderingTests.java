@@ -6,10 +6,14 @@ import java.math.BigDecimal;
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockServletContext;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
+import org.thymeleaf.context.WebContext;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
+import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 class OrderDetailsTemplateRenderingTests {
 
@@ -31,7 +35,7 @@ class OrderDetailsTemplateRenderingTests {
 
     @Test
     void rendersFallbackWhenOrderMissing() {
-        Context context = new Context();
+        WebContext context = createWebContext();
         context.setVariable("order", null);
 
         String html = templateEngine.process("order_details", context);
@@ -41,30 +45,25 @@ class OrderDetailsTemplateRenderingTests {
 
     @Test
     void escapesOrderFieldsAndMarksInputsReadonlyForAccessibility() {
-        TestOrderItem item =
-                new TestOrderItem(
-                        "<script>item()</script>", new BigDecimal("12.50"), 1);
-        TestCustomer customer =
-                new TestCustomer(
-                        "<script>name()</script>",
-                        "customer@example.com",
-                        "1234567890");
-        Context context = new Context();
+        TestOrderItem item = new TestOrderItem("<script>item()</script>", new BigDecimal("12.50"), 1);
+        TestCustomer customer = new TestCustomer("<script>name()</script>", "customer@example.com", "1234567890");
+        WebContext context = createWebContext();
         context.setVariable(
-                "order",
-                new TestOrder(
-                        "ORD-1",
-                        "PLACED",
-                        item,
-                        customer,
-                        "123 Main St",
-                        new BigDecimal("12.50")));
+                "order", new TestOrder("ORD-1", "PLACED", item, customer, "123 Main St", new BigDecimal("12.50")));
 
         String html = templateEngine.process("order_details", context);
 
         assertThat(html).contains("&lt;script&gt;item()&lt;/script&gt;");
         assertThat(html).doesNotContain("<script>item()</script>");
         assertThat(html).contains("aria-readonly=\"true\"");
+    }
+
+    private static WebContext createWebContext() {
+        MockServletContext servletContext = new MockServletContext();
+        MockHttpServletRequest request = new MockHttpServletRequest(servletContext);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(servletContext);
+        return new WebContext(application.buildExchange(request, response));
     }
 
     private static final class TestOrder {

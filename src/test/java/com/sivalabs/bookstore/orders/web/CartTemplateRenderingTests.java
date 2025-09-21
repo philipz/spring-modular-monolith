@@ -6,10 +6,14 @@ import java.math.BigDecimal;
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockServletContext;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
+import org.thymeleaf.context.WebContext;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
+import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 class CartTemplateRenderingTests {
 
@@ -31,7 +35,7 @@ class CartTemplateRenderingTests {
 
     @Test
     void rendersEmptyCartMessageWhenNoItem() {
-        Context context = new Context();
+        WebContext context = createWebContext();
         context.setVariable("cart", new TestCart(null, BigDecimal.ZERO));
 
         String html = templateEngine.process("partials/cart", context);
@@ -41,16 +45,9 @@ class CartTemplateRenderingTests {
 
     @Test
     void escapesCartItemFields() {
-        TestCartItem item =
-                new TestCartItem(
-                        "P-123",
-                        "<script>alert('xss')</script>",
-                        new BigDecimal("10.00"),
-                        2);
-        Context context = new Context();
-        context.setVariable(
-                "cart",
-                new TestCart(item, new BigDecimal("20.00")));
+        TestCartItem item = new TestCartItem("P-123", "<script>alert('xss')</script>", new BigDecimal("10.00"), 2);
+        WebContext context = createWebContext();
+        context.setVariable("cart", new TestCart(item, new BigDecimal("20.00")));
 
         String html = templateEngine.process("partials/cart", context);
 
@@ -60,12 +57,20 @@ class CartTemplateRenderingTests {
 
     @Test
     void rendersFallbackWhenCartMissing() {
-        Context context = new Context();
+        WebContext context = createWebContext();
         context.setVariable("cart", null);
 
         String html = templateEngine.process("partials/cart", context);
 
         assertThat(html).contains("We couldn't load your cart right now");
+    }
+
+    private static WebContext createWebContext() {
+        MockServletContext servletContext = new MockServletContext();
+        MockHttpServletRequest request = new MockHttpServletRequest(servletContext);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(servletContext);
+        return new WebContext(application.buildExchange(request, response));
     }
 
     private static final class TestCart {
