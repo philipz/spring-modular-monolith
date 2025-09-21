@@ -6,7 +6,12 @@
       layout:decorate="~{layout}">
 <body>
 <div layout:fragment="content">
-    <div th:if="${order == null}">
+    <!-- Error message display -->
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <span th:text="${error}">Error message</span>
+    </div>
+
+    <div th:if="${order == null and error == null}">
         <h2>We couldn't find that order.</h2>
         <p><a th:href="@{/orders}">Return to your orders</a> or <a th:href="@{/}">keep shopping</a>.</p>
     </div>

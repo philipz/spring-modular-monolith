@@ -2,6 +2,7 @@ package com.sivalabs.bookstore.orders.web;
 
 import com.sivalabs.bookstore.orders.InvalidOrderException;
 import com.sivalabs.bookstore.orders.OrderNotFoundException;
+import com.sivalabs.bookstore.orders.infrastructure.catalog.CatalogServiceException;
 import com.sivalabs.bookstore.orders.web.exception.CartNotFoundException;
 import com.sivalabs.bookstore.orders.web.exception.InvalidCartOperationException;
 import java.time.Instant;
@@ -42,6 +43,14 @@ public class OrdersExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handle(InvalidCartOperationException e) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
         problemDetail.setTitle("Invalid Cart Operation");
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler({CatalogServiceException.class, ProductApiAdapter.CatalogServiceException.class})
+    ProblemDetail handleCatalogServiceUnavailable(RuntimeException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
+        problemDetail.setTitle("Catalog Service Unavailable");
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }

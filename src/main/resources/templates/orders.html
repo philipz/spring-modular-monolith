@@ -10,6 +10,12 @@
     <div>
         <h2>All Orders</h2>
         <hr/>
+
+        <!-- Error message display -->
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <span th:text="${error}">Error message</span>
+        </div>
+
         <div class="pb-3">
             <table class="table">
                 <thead>

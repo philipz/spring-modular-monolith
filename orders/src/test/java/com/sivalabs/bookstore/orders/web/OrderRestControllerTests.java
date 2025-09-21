@@ -17,6 +17,7 @@ import com.sivalabs.bookstore.orders.api.OrdersApi;
 import com.sivalabs.bookstore.orders.api.model.Customer;
 import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
+import com.sivalabs.bookstore.orders.infrastructure.catalog.CatalogServiceException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -81,6 +82,21 @@ class OrderRestControllerTests {
                 .andExpect(jsonPath("$.orderNumber").value("BK-123456"))
                 .andExpect(jsonPath("$.item.name").value("Domain-Driven Design"))
                 .andExpect(jsonPath("$.customer.email").value("buyer@example.com"));
+    }
+
+    @Test
+    @DisplayName("Should surface catalog service outage as 503 problem detail")
+    void shouldReturnServiceUnavailableWhenCatalogUnavailable() throws Exception {
+        CreateOrderRequest request = createOrderRequest();
+        given(ordersApi.createOrder(any(CreateOrderRequest.class)))
+                .willThrow(new CatalogServiceException("Unable to fetch product details from catalog service", null));
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.title").value("Catalog Service Unavailable"))
+                .andExpect(jsonPath("$.detail").value("Unable to fetch product details from catalog service"));
     }
 
     @Test
