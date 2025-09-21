@@ -249,7 +249,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <image>
-                        <name>philipz/${project.artifactId}</name>
+                        <name>philipz/${project.artifactId}:${project.version}</name>
                     </image>
                 </configuration>
                 <executions>

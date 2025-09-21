@@ -71,7 +71,7 @@ services:
       - proxy
 
   orders-service:
-    image: philipz/orders-service:latest
+    image: philipz/orders-service:0.0.1-SNAPSHOT
     depends_on:
       postgres:
         condition: service_healthy
