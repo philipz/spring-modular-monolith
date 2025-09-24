@@ -120,7 +120,7 @@ Tasks follow Spring Boot project structure conventions:
   - _Leverage: orders/src/main/java/com/sivalabs/bookstore/orders/OrdersApiService.java_
   - _Requirements: 2.1, 2.2_
 
-- [ ] 9. Add gRPC service error handling to OrdersGrpcService
+- [x] 9. Add gRPC service error handling to OrdersGrpcService
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/infrastructure/grpc/OrdersGrpcService.java (continue from task 8)
   - Wrap all delegated calls with try-catch blocks
   - Use GrpcExceptionMapper to convert exceptions to gRPC StatusRuntimeException

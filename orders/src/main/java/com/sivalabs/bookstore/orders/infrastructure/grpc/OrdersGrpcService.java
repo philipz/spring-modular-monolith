@@ -13,6 +13,8 @@ import com.sivalabs.bookstore.orders.grpc.OrdersServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import java.util.List;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @GrpcService
 public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
@@ -20,6 +22,7 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
     private final OrdersApiService ordersApiService;
     private final GrpcOrderMapper mapper;
     private final GrpcExceptionMapper exceptionMapper;
+    private static final Logger log = LoggerFactory.getLogger(OrdersGrpcService.class);
 
     public OrdersGrpcService(
             OrdersApiService ordersApiService, GrpcOrderMapper mapper, GrpcExceptionMapper exceptionMapper) {
@@ -36,6 +39,11 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
             responseObserver.onNext(mapper.toProto(response));
             responseObserver.onCompleted();
         } catch (Exception ex) {
+            log.error(
+                    "gRPC createOrder failed for customerEmail={} productCode={}",
+                    request.getCustomer().getEmail(),
+                    request.getItem().getCode(),
+                    ex);
             responseObserver.onError(exceptionMapper.map(ex));
         }
     }
@@ -53,6 +61,7 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
                             () -> responseObserver.onError(exceptionMapper.map(
                                     OrderNotFoundException.forOrderNumber(request.getOrderNumber()))));
         } catch (Exception ex) {
+            log.error("gRPC findOrder failed for orderNumber={}", request.getOrderNumber(), ex);
             responseObserver.onError(exceptionMapper.map(ex));
         }
     }
@@ -67,6 +76,7 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception ex) {
+            log.error("gRPC findOrders failed", ex);
             responseObserver.onError(exceptionMapper.map(ex));
         }
     }
