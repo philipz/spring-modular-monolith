@@ -101,7 +101,7 @@ Tasks follow Spring Boot project structure conventions:
 
 ### Phase 3: gRPC Server Implementation
 
-- [-] 7. Create Protocol Buffer to domain object mapper
+- [x] 7. Create Protocol Buffer to domain object mapper
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/infrastructure/grpc/GrpcOrderMapper.java
   - Convert Proto CreateOrderRequest to domain CreateOrderRequest
   - Convert domain OrderDto to Proto OrderDto with proper type conversions (BigDecimal → double)
@@ -110,7 +110,7 @@ Tasks follow Spring Boot project structure conventions:
   - _Leverage: orders/src/main/java/com/sivalabs/bookstore/orders/mappers/OrderMapper.java_
   - _Requirements: 1.3, 2.2_
 
-- [ ] 8. Create Orders gRPC service implementation
+- [x] 8. Create Orders gRPC service implementation
   - File: orders/src/main/java/com/sivalabs/bookstore/orders/infrastructure/grpc/OrdersGrpcService.java
   - Extend OrdersServiceGrpc.OrdersServiceImplBase from generated code
   - Delegate createOrder RPC to existing OrdersApiService.createOrder method
