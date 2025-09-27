@@ -3,7 +3,7 @@ syntax = "proto3";
 package com.sivalabs.bookstore.orders.v1;
 
 option java_multiple_files = true;
-option java_package = "com.sivalabs.bookstore.orders.grpc";
+option java_package = "com.sivalabs.grpc.orders";
 option java_outer_classname = "OrdersProto";
 
 import "google/protobuf/timestamp.proto";

@@ -11,6 +11,7 @@ import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.cache.OrderCacheService;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderService;
+import com.sivalabs.bookstore.testsupport.EnabledIfDockerAvailable;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -47,11 +48,13 @@ import org.springframework.transaction.annotation.Transactional;
             "bookstore.cache.write-delay-seconds=0", // Immediate write-through
             "bookstore.cache.metrics-enabled=true",
             "logging.level.com.sivalabs.bookstore.orders.cache=DEBUG",
-            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG"
+            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG",
+            "grpc.server.port=-1" // Disable gRPC server in tests
         })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("Orders Cache Integration Tests")
 @org.junit.jupiter.api.Disabled("Temporarily disabled due to Spring Test Context cache issue")
+@EnabledIfDockerAvailable
 class OrdersCacheIntegrationTests {
 
     @Autowired

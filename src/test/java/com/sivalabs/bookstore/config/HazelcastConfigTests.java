@@ -8,6 +8,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.sivalabs.bookstore.TestcontainersConfiguration;
+import com.sivalabs.bookstore.testsupport.EnabledIfDockerAvailable;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,10 +40,12 @@ import org.springframework.test.context.TestPropertySource;
             "bookstore.cache.time-to-live-seconds=3600",
             "bookstore.cache.write-delay-seconds=1",
             "bookstore.cache.metrics-enabled=true",
-            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG"
+            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG",
+            "grpc.server.port=-1" // Disable gRPC server in tests
         })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("HazelcastConfig Integration Tests")
+@EnabledIfDockerAvailable
 class HazelcastConfigTests {
 
     @Autowired

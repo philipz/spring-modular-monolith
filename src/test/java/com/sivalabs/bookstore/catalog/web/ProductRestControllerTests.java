@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sivalabs.bookstore.TestcontainersConfiguration;
+import com.sivalabs.bookstore.testsupport.EnabledIfDockerAvailable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({TestcontainersConfiguration.class, com.sivalabs.bookstore.testsupport.cache.ProductsCacheTestConfig.class})
 @AutoConfigureMockMvc
 @Sql("/test-products-data.sql")
+@EnabledIfDockerAvailable
 class ProductRestControllerTests {
     @Autowired
     private MockMvc mockMvc;

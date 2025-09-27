@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GrpcOrderMapper {
 
-    public CreateOrderRequest toDomain(com.sivalabs.bookstore.orders.grpc.CreateOrderRequest request) {
+    public CreateOrderRequest toDomain(com.sivalabs.grpc.orders.CreateOrderRequest request) {
         Customer customer = new Customer(
                 request.getCustomer().getName(),
                 request.getCustomer().getEmail(),
@@ -33,14 +33,14 @@ public class GrpcOrderMapper {
         return new CreateOrderRequest(customer, request.getDeliveryAddress(), item);
     }
 
-    public com.sivalabs.bookstore.orders.grpc.CreateOrderResponse toProto(CreateOrderResponse response) {
-        return com.sivalabs.bookstore.orders.grpc.CreateOrderResponse.newBuilder()
+    public com.sivalabs.grpc.orders.CreateOrderResponse toProto(CreateOrderResponse response) {
+        return com.sivalabs.grpc.orders.CreateOrderResponse.newBuilder()
                 .setOrderNumber(response.orderNumber())
                 .build();
     }
 
-    public com.sivalabs.bookstore.orders.grpc.OrderDto toProto(OrderDto orderDto) {
-        var builder = com.sivalabs.bookstore.orders.grpc.OrderDto.newBuilder()
+    public com.sivalabs.grpc.orders.OrderDto toProto(OrderDto orderDto) {
+        var builder = com.sivalabs.grpc.orders.OrderDto.newBuilder()
                 .setOrderNumber(orderDto.orderNumber())
                 .setCustomer(toProto(orderDto.customer()))
                 .setItem(toProto(orderDto.item()))
@@ -54,23 +54,23 @@ public class GrpcOrderMapper {
         return builder.build();
     }
 
-    public com.sivalabs.bookstore.orders.grpc.OrderView toProto(OrderView orderView) {
-        return com.sivalabs.bookstore.orders.grpc.OrderView.newBuilder()
+    public com.sivalabs.grpc.orders.OrderView toProto(OrderView orderView) {
+        return com.sivalabs.grpc.orders.OrderView.newBuilder()
                 .setOrderNumber(orderView.orderNumber())
                 .setStatus(toProto(orderView.status()))
                 .setCustomer(toProto(orderView.customer()))
                 .build();
     }
 
-    public List<com.sivalabs.bookstore.orders.grpc.OrderView> toProtoOrderViews(List<OrderView> orderViews) {
+    public List<com.sivalabs.grpc.orders.OrderView> toProtoOrderViews(List<OrderView> orderViews) {
         return orderViews.stream().map(this::toProto).toList();
     }
 
-    public List<com.sivalabs.bookstore.orders.grpc.OrderDto> toProtoOrderDtos(List<OrderDto> orderDtos) {
+    public List<com.sivalabs.grpc.orders.OrderDto> toProtoOrderDtos(List<OrderDto> orderDtos) {
         return orderDtos.stream().map(this::toProto).toList();
     }
 
-    public OrderDto toDomain(com.sivalabs.bookstore.orders.grpc.OrderDto orderDto) {
+    public OrderDto toDomain(com.sivalabs.grpc.orders.OrderDto orderDto) {
         OrderItem item = new OrderItem(
                 orderDto.getItem().getCode(),
                 orderDto.getItem().getName(),
@@ -93,7 +93,7 @@ public class GrpcOrderMapper {
                 createdAt);
     }
 
-    public OrderView toDomain(com.sivalabs.bookstore.orders.grpc.OrderView orderView) {
+    public OrderView toDomain(com.sivalabs.grpc.orders.OrderView orderView) {
         Customer customer = new Customer(
                 orderView.getCustomer().getName(),
                 orderView.getCustomer().getEmail(),
@@ -102,16 +102,16 @@ public class GrpcOrderMapper {
         return new OrderView(orderView.getOrderNumber(), toDomain(orderView.getStatus()), customer);
     }
 
-    private com.sivalabs.bookstore.orders.grpc.Customer toProto(Customer customer) {
-        return com.sivalabs.bookstore.orders.grpc.Customer.newBuilder()
+    private com.sivalabs.grpc.orders.Customer toProto(Customer customer) {
+        return com.sivalabs.grpc.orders.Customer.newBuilder()
                 .setName(customer.name())
                 .setEmail(customer.email())
                 .setPhone(customer.phone())
                 .build();
     }
 
-    private com.sivalabs.bookstore.orders.grpc.OrderItem toProto(OrderItem item) {
-        return com.sivalabs.bookstore.orders.grpc.OrderItem.newBuilder()
+    private com.sivalabs.grpc.orders.OrderItem toProto(OrderItem item) {
+        return com.sivalabs.grpc.orders.OrderItem.newBuilder()
                 .setCode(item.code())
                 .setName(item.name())
                 .setPrice(item.price().doubleValue())
@@ -119,20 +119,20 @@ public class GrpcOrderMapper {
                 .build();
     }
 
-    private com.sivalabs.bookstore.orders.grpc.OrderStatus toProto(OrderStatus status) {
+    private com.sivalabs.grpc.orders.OrderStatus toProto(OrderStatus status) {
         return switch (status) {
-            case NEW -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_NEW;
-            case PENDING -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_PENDING;
-            case CONFIRMED -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_CONFIRMED;
-            case IN_PROCESS -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_IN_PROCESS;
-            case SHIPPED -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_SHIPPED;
-            case DELIVERED -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_DELIVERED;
-            case CANCELLED -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_CANCELLED;
-            case ERROR -> com.sivalabs.bookstore.orders.grpc.OrderStatus.ORDER_STATUS_ERROR;
+            case NEW -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_NEW;
+            case PENDING -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_PENDING;
+            case CONFIRMED -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_CONFIRMED;
+            case IN_PROCESS -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_IN_PROCESS;
+            case SHIPPED -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_SHIPPED;
+            case DELIVERED -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_DELIVERED;
+            case CANCELLED -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_CANCELLED;
+            case ERROR -> com.sivalabs.grpc.orders.OrderStatus.ORDER_STATUS_ERROR;
         };
     }
 
-    private OrderStatus toDomain(com.sivalabs.bookstore.orders.grpc.OrderStatus status) {
+    private OrderStatus toDomain(com.sivalabs.grpc.orders.OrderStatus status) {
         return switch (status) {
             case ORDER_STATUS_PENDING -> OrderStatus.PENDING;
             case ORDER_STATUS_CONFIRMED -> OrderStatus.CONFIRMED;

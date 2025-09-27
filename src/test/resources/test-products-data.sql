@@ -1,4 +1,5 @@
 truncate table catalog.products;
+truncate table inventory.inventory;
 
 insert into catalog.products(code, name, description, image_url, price) values
 ('P100','The Hunger Games','Winning will make you famous. Losing means certain death...','https://images.gr-assets.com/books/1447303603l/2767052.jpg', 34.0),
@@ -16,4 +17,22 @@ insert into catalog.products(code, name, description, image_url, price) values
 ('P112','The Book Thief','Nazi Germany. The country is holding its breath. Death has never been busier, and will be busier still.By her brother''s graveside, Liesel''s life is changed when she picks up a single object, partially hidden in the snow.','https://images.gr-assets.com/books/1522157426l/19063.jpg',30.0),
 ('P113','One Flew Over the Cuckoo''s Nest','Tyrannical Nurse Ratched rules her ward in an Oregon State mental hospital with a strict and unbending routine, unopposed by her patients, who remain cowed by mind-numbing medication and the threat of electric shock therapy.','https://images.gr-assets.com/books/1516211014l/332613.jpg',23.0),
 ('P114','Fifty Shades of Grey','When literature student Anastasia Steele goes to interview young entrepreneur Christian Grey, she encounters a man who is beautiful, brilliant, and intimidating.','https://images.gr-assets.com/books/1385207843l/10818853.jpg', 27.0)
+;
+
+insert into inventory.inventory(product_code, quantity) values
+('P100', 1000),
+('P101', 5000),
+('P102', 3000),
+('P103', 2000),
+('P104', 8000),
+('P105', 1000),
+('P106', 5000),
+('P107', 3000),
+('P108', 2000),
+('P109', 8000),
+('P110', 100),
+('P111', 4500),
+('P112', 4300),
+('P113', 700),
+('P114', 600)
 ;

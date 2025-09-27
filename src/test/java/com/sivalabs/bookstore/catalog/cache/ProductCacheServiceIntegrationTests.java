@@ -6,6 +6,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import com.sivalabs.bookstore.TestcontainersConfiguration;
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import com.sivalabs.bookstore.catalog.domain.ProductRepository;
+import com.sivalabs.bookstore.testsupport.EnabledIfDockerAvailable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.springframework.test.context.jdbc.Sql;
 @Import({TestcontainersConfiguration.class, com.sivalabs.bookstore.testsupport.cache.ProductsCacheTestConfig.class})
 @Sql("/test-products-data.sql")
 @DisplayName("ProductCacheService Integration Tests")
+@EnabledIfDockerAvailable
 class ProductCacheServiceIntegrationTests {
 
     @Autowired

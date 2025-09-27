@@ -94,7 +94,7 @@ public class InventoryService {
             // Update cache after successful database save
             if (isCacheAvailable()) {
                 try {
-                    inventoryCacheService.updateCachedInventory(savedInventory.getId(), savedInventory);
+                    inventoryCacheService.cacheInventory(savedInventory.getId(), savedInventory);
                     log.debug("Inventory updated in cache: product code {}", productCode);
                 } catch (Exception e) {
                     log.warn(

@@ -131,7 +131,7 @@ Tasks follow Spring Boot project structure conventions:
 
 ### Phase 4: gRPC Client Configuration
 
-- [ ] 10. Create gRPC client configuration properties class
+- [x] 10. Create gRPC client configuration properties class
   - File: src/main/java/com/sivalabs/bookstore/config/GrpcClientProperties.java
   - Define @ConfigurationProperties with server address, timeouts, and retry settings
   - Include nested RetryConfig and SecurityConfig records
@@ -139,7 +139,7 @@ Tasks follow Spring Boot project structure conventions:
   - _Leverage: orders/src/main/java/com/sivalabs/bookstore/orders/infrastructure/catalog/ProductApiProperties.java_
   - _Requirements: 3.2, 5.1_
 
-- [ ] 11. Create gRPC client configuration class
+- [x] 11. Create gRPC client configuration class
   - File: src/main/java/com/sivalabs/bookstore/config/GrpcClientConfiguration.java
   - Create OrdersServiceGrpc.OrdersServiceStub bean with ManagedChannel
   - Configure channel builder with address, keep-alive, and timeout settings

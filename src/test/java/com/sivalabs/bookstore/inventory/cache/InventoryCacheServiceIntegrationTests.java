@@ -6,6 +6,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import com.sivalabs.bookstore.TestcontainersConfiguration;
 import com.sivalabs.bookstore.inventory.domain.InventoryEntity;
 import com.sivalabs.bookstore.inventory.domain.InventoryRepository;
+import com.sivalabs.bookstore.testsupport.EnabledIfDockerAvailable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import org.springframework.test.context.jdbc.Sql;
 @Import({TestcontainersConfiguration.class, com.sivalabs.bookstore.testsupport.cache.InventoryCacheTestConfig.class})
 @Sql("/test-products-data.sql") // This should load inventory test data as well
 @DisplayName("InventoryCacheService Integration Tests")
+@EnabledIfDockerAvailable
 class InventoryCacheServiceIntegrationTests {
 
     @Autowired
