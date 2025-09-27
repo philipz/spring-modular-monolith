@@ -35,7 +35,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "bookstore.cache.enabled=false",
             "app.amqp.new-orders.bind=false",
             "spring.rabbitmq.listener.direct.auto-startup=false",
-            "spring.rabbitmq.listener.simple.auto-startup=false"
+            "spring.rabbitmq.listener.simple.auto-startup=false",
+            "grpc.client.orders.enabled=false"
         })
 @DisplayName("Orders Lightweight Integration Tests")
 class OrdersLightweightIntegrationTests {

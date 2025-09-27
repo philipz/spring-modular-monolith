@@ -15,8 +15,10 @@ import java.util.List;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 
 @GrpcService
+@ConditionalOnClass(OrdersServiceGrpc.class)
 public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
 
     private final OrdersApiService ordersApiService;

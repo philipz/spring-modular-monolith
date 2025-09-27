@@ -33,10 +33,22 @@ public class GrpcOrderMapper {
         return new CreateOrderRequest(customer, request.getDeliveryAddress(), item);
     }
 
+    public com.sivalabs.grpc.orders.CreateOrderRequest toProto(CreateOrderRequest request) {
+        return com.sivalabs.grpc.orders.CreateOrderRequest.newBuilder()
+                .setCustomer(toProto(request.customer()))
+                .setItem(toProto(request.item()))
+                .setDeliveryAddress(request.deliveryAddress())
+                .build();
+    }
+
     public com.sivalabs.grpc.orders.CreateOrderResponse toProto(CreateOrderResponse response) {
         return com.sivalabs.grpc.orders.CreateOrderResponse.newBuilder()
                 .setOrderNumber(response.orderNumber())
                 .build();
+    }
+
+    public CreateOrderResponse toDomain(com.sivalabs.grpc.orders.CreateOrderResponse response) {
+        return new CreateOrderResponse(response.getOrderNumber());
     }
 
     public com.sivalabs.grpc.orders.OrderDto toProto(OrderDto orderDto) {

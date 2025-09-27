@@ -42,7 +42,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "orders.backfill.record-limit=50",
             "spring.liquibase.drop-first=true",
             "spring.liquibase.contexts=",
-            "spring.autoconfigure.exclude=org.springframework.modulith.events.jdbc.JdbcEventPublicationAutoConfiguration"
+            "spring.autoconfigure.exclude=org.springframework.modulith.events.jdbc.JdbcEventPublicationAutoConfiguration",
+            "grpc.client.orders.enabled=false"
         })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OrdersBackfillIntegrationTests {
