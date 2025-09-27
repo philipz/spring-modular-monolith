@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.config;
 
+import com.sivalabs.bookstore.catalog.grpc.ProductCatalogServiceGrpc;
 import com.sivalabs.grpc.orders.OrdersServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -99,6 +100,59 @@ public class GrpcClientConfiguration {
             ManagedChannel channel, GrpcClientProperties properties) {
 
         OrdersServiceGrpc.OrdersServiceBlockingStub stub = OrdersServiceGrpc.newBlockingStub(channel);
+
+        // Apply deadline if configured
+        Duration deadline = properties.getDeadline();
+        if (deadline != null && !deadline.isZero()) {
+            stub = stub.withDeadlineAfter(deadline.toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        return stub;
+    }
+
+    /**
+     * Creates a blocking stub for Product Catalog gRPC service.
+     *
+     * <p>This stub is used for synchronous product validation calls and includes
+     * the same timeout and deadline configuration as other service stubs. It reuses
+     * the same managed channel for efficient connection pooling.</p>
+     *
+     * @param channel the managed channel for gRPC communication
+     * @param properties gRPC client configuration properties
+     * @return configured {@link ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub}
+     */
+    @Bean
+    public ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogServiceBlockingStub(
+            ManagedChannel channel, GrpcClientProperties properties) {
+
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub stub =
+                ProductCatalogServiceGrpc.newBlockingStub(channel);
+
+        // Apply deadline if configured
+        Duration deadline = properties.getDeadline();
+        if (deadline != null && !deadline.isZero()) {
+            stub = stub.withDeadlineAfter(deadline.toMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        return stub;
+    }
+
+    /**
+     * Creates an asynchronous stub for Product Catalog gRPC service.
+     *
+     * <p>The async stub can be used for non-blocking product validation calls
+     * when needed. Currently used primarily by the blocking implementation but
+     * available for future async operations.</p>
+     *
+     * @param channel the managed channel for gRPC communication
+     * @param properties gRPC client configuration properties
+     * @return configured {@link ProductCatalogServiceGrpc.ProductCatalogServiceStub}
+     */
+    @Bean
+    public ProductCatalogServiceGrpc.ProductCatalogServiceStub productCatalogServiceStub(
+            ManagedChannel channel, GrpcClientProperties properties) {
+
+        ProductCatalogServiceGrpc.ProductCatalogServiceStub stub = ProductCatalogServiceGrpc.newStub(channel);
 
         // Apply deadline if configured
         Duration deadline = properties.getDeadline();
