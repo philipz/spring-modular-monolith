@@ -200,6 +200,12 @@ class CatalogIntegrationTests {
 - **Spotless** with Palantir Java Format for code formatting
 - **Enhanced test reporting** with JUnit 5 tree reporter
 
+### gRPC Support
+- **Protocol Buffers** for service definitions in `src/main/proto/`
+- **gRPC Server** on port 9091 with health checks and reflection
+- **gRPC Client** configuration with retry and circuit breaker support
+- **Conditional loading** via `@ConditionalOnClass` and `@ConditionalOnProperty`
+
 ## Development Guidelines
 
 ### Module Design Principles
@@ -212,11 +218,20 @@ class CatalogIntegrationTests {
 ### Module Organization & Structure
 - **Java sources**: `src/main/java/com/sivalabs/bookstore/{common,catalog,orders,inventory,notifications,config}`
 - **Resources**: `src/main/resources/{templates,static,db}` (Liquibase migrations in `db/migration/`)
+- **Proto files**: `src/main/proto/` for gRPC service definitions
 - **Tests**: `src/test/java` (module-focused tests; Testcontainers where needed)
 - **Operations**: `compose.yml`, `k8s/`, and `Taskfile.yml` for local/dev workflows
 - **Module Boundaries**: Define with `@ApplicationModule` (`package-info.java`) and `@NamedInterface`
-- **Allowed Dependencies**: Respect module boundaries (e.g., `orders` → `catalog` only)
+- **Allowed Dependencies**: Respect module boundaries (e.g., `orders` → `catalog::product-api` only)
 - **Cross-module Access**: Via explicit APIs (e.g., `catalog.ProductApi`)
+
+Example `package-info.java`:
+```java
+@ApplicationModule(allowedDependencies = {"catalog::product-api", "common::common-cache"})
+package com.sivalabs.bookstore.orders;
+
+import org.springframework.modulith.ApplicationModule;
+```
 
 ### Adding New Modules
 1. Create package under `com.sivalabs.bookstore.[modulename]`
@@ -261,6 +276,8 @@ class CatalogIntegrationTests {
 - **Docker Compose**: Sets DB/RabbitMQ/Zipkin automatically
 - **Secrets**: Never commit secrets; use `.env` files or CI secrets
 - **Cache/Session**: Hazelcast defaults tunable via `bookstore.cache.*` properties
+- **Session Management**: Distributed sessions via Hazelcast (`spring.session.store-type=hazelcast`)
+- **Conditional Features**: Use `@ConditionalOnClass` and `@ConditionalOnProperty` for optional components (e.g., gRPC)
 
 ### Commit & Pull Request Guidelines
 - **Commit Messages**: Concise, imperative mood (e.g., "Add orders cache metrics")
@@ -278,6 +295,7 @@ class CatalogIntegrationTests {
 
 ### Application URLs
 - **Application**: http://localhost:8080
+- **gRPC Server**: localhost:9091 (with health checks and reflection)
 - **Actuator**: http://localhost:8080/actuator
 - **Modulith Info**: http://localhost:8080/actuator/modulith
 - **Cache Health**: http://localhost:8080/actuator/health
@@ -318,3 +336,35 @@ bookstore.cache.circuit-breaker.recovery-timeout=30000
 - **Docker & Docker Compose** for running dependencies
 - **Task runner** (go-task) for simplified command execution
 - **Maven Wrapper** included in project
+- **Protocol Buffers Compiler** (protoc) - automatically downloaded by Maven plugin
+
+## Important Notes
+
+### Conditional Bean Loading
+When adding optional features (like gRPC support), use both conditions to ensure proper loading:
+
+```java
+@Configuration
+@EnableConfigurationProperties(FeatureProperties.class)
+@ConditionalOnClass(name = "com.example.RequiredClass")  // Prevents loading if class missing
+@ConditionalOnProperty(name = "feature.enabled", havingValue = "true", matchIfMissing = false)
+public class FeatureConfiguration {
+    // Configuration beans
+}
+```
+
+**Why both annotations?**
+- `@ConditionalOnClass`: Prevents bean definition errors when required classes are absent
+- `@ConditionalOnProperty`: Allows runtime enable/disable via configuration
+- Without `@ConditionalOnClass`, `@EnableConfigurationProperties` may try to load classes before property conditions are evaluated
+
+### Protobuf Compilation
+The build automatically compiles `.proto` files during the `compile` phase:
+- Source: `src/main/proto/*.proto`
+- Generated Java: `target/generated-sources/protobuf/java/`
+- Generated gRPC stubs: `target/generated-sources/protobuf/grpc-java/`
+
+If you encounter protobuf compilation errors, ensure:
+1. Proto files use correct import paths (e.g., `google/protobuf/timestamp.proto`)
+2. Required protobuf dependencies are available in Maven dependencies
+3. Run `./mvnw clean` before rebuilding to clear stale generated files
