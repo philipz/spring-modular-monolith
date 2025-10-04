@@ -72,11 +72,15 @@ public class GrpcOrderMapper {
     }
 
     public com.sivalabs.bookstore.orders.grpc.proto.OrderView toProto(OrderView orderView) {
-        return com.sivalabs.bookstore.orders.grpc.proto.OrderView.newBuilder()
+        var builder = com.sivalabs.bookstore.orders.grpc.proto.OrderView.newBuilder()
                 .setOrderNumber(orderView.orderNumber())
-                .setStatus(toProto(orderView.status()))
-                // Note: OrderView in new proto doesn't include customer
-                .build();
+                .setStatus(toProto(orderView.status()));
+
+        if (orderView.customer() != null) {
+            builder.setCustomer(toProto(orderView.customer()));
+        }
+
+        return builder.build();
     }
 
     public List<com.sivalabs.bookstore.orders.grpc.proto.OrderView> toProtoOrderViews(List<OrderView> orderViews) {
@@ -111,9 +115,8 @@ public class GrpcOrderMapper {
     }
 
     public OrderView toDomain(com.sivalabs.bookstore.orders.grpc.proto.OrderView orderView) {
-        // Note: New proto OrderView doesn't include customer, so we need to handle this
-        // We'll create a null customer as the domain OrderView requires it
-        return new OrderView(orderView.getOrderNumber(), toDomain(orderView.getStatus()), null);
+        Customer customer = orderView.hasCustomer() ? toDomain(orderView.getCustomer()) : null;
+        return new OrderView(orderView.getOrderNumber(), toDomain(orderView.getStatus()), customer);
     }
 
     private com.sivalabs.bookstore.orders.grpc.proto.Customer toProto(Customer customer) {
@@ -122,6 +125,10 @@ public class GrpcOrderMapper {
                 .setEmail(customer.email())
                 .setPhone(customer.phone())
                 .build();
+    }
+
+    private Customer toDomain(com.sivalabs.bookstore.orders.grpc.proto.Customer customer) {
+        return new Customer(customer.getName(), customer.getEmail(), customer.getPhone());
     }
 
     private com.sivalabs.bookstore.orders.grpc.proto.OrderItem toProto(OrderItem item) {

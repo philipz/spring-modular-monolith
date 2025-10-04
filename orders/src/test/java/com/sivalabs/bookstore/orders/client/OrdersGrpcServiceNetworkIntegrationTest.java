@@ -15,6 +15,7 @@ import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderRepository;
 import com.sivalabs.bookstore.orders.domain.OrderService;
 import com.sivalabs.bookstore.orders.domain.ProductCatalogPort;
+import com.sivalabs.bookstore.orders.infrastructure.grpc.GrpcOrderMapper;
 import com.sivalabs.bookstore.orders.infrastructure.grpc.OrdersGrpcClient;
 import com.sivalabs.bookstore.orders.infrastructure.grpc.OrdersGrpcClient.OrderNotFoundException;
 import com.sivalabs.bookstore.orders.support.DockerAvailability;
@@ -97,8 +98,12 @@ class OrdersGrpcServiceNetworkIntegrationTest {
         // gRPC server will be configured with random port in test properties
     }
 
-    @Autowired(required = false)
-    private OrdersGrpcClient ordersGrpcClient;
+    @Autowired
+    private com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc.OrdersServiceBlockingStub
+            ordersServiceBlockingStub;
+
+    @Autowired
+    private GrpcOrderMapper grpcOrderMapper;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -113,6 +118,7 @@ class OrdersGrpcServiceNetworkIntegrationTest {
     private ProductCatalogPort productCatalogPort;
 
     private OrderEntity testOrder;
+    private OrdersGrpcClient ordersGrpcClient;
 
     @BeforeEach
     void setUp() {
@@ -122,8 +128,10 @@ class OrdersGrpcServiceNetworkIntegrationTest {
         // Create test order entity for database operations
         testOrder = buildTestOrderEntity();
 
-        // Mock ProductCatalogPort to avoid external API calls
+        // Create OrdersGrpcClient with the autowired blocking stub and mapper
+        ordersGrpcClient = new OrdersGrpcClient(ordersServiceBlockingStub, grpcOrderMapper);
 
+        // Mock ProductCatalogPort to avoid external API calls
         // ProductCatalogPort.validate() just validates price - no return value needed
         // The validation will succeed if no exception is thrown
     }

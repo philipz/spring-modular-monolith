@@ -96,6 +96,20 @@ task test
 ./mvnw test -Dtest="**/*CacheService*IntegrationTests"
 ./mvnw test -Dtest="**/*MapStore*Tests"
 ```
+#### gRPC CLI Testing
+```bash
+# List services exposed by orders-service
+grpcurl -plaintext localhost:9090 list
+
+# Inspect OrdersService RPC methods
+grpcurl -plaintext localhost:9090 list com.sivalabs.bookstore.orders.grpc.proto.OrdersService
+
+# Describe message schema
+grpcurl -plaintext localhost:9090 describe com.sivalabs.bookstore.orders.grpc.proto.CreateOrderRequest
+
+# Invoke createOrder RPC with a sample payload
+grpcurl -plaintext -d '{"customer":{"name":"Test User","email":"test@example.com","phone":"+12025550100"},"delivery_address":"742 Evergreen Terrace","item":{"code":"BOOK-123","name":"Effective Testing","price":"89.99","quantity":1}}' localhost:9090 com.sivalabs.bookstore.orders.grpc.proto.OrdersService/CreateOrder
+```
 
 ## Architecture Overview
 
@@ -112,7 +126,12 @@ The application follows Spring Modulith principles with these business modules:
 
 #### API-based Communication
 - Orders module calls Catalog module's public API (`ProductApi`) for product validation
-- Each module exposes a public API component (e.g., `ProductApi`, `OrderApi`)
+- Each module exposes a public API component (e.g., `ProductApi`, `OrderApi`), but orders external access now flows through gRPC gateway described below
+
+#### gRPC-based Communication
+- The monolith's UI layer invokes the orders-service via `OrdersGrpcClient`, which maps to the gRPC endpoint on `localhost:9090`
+- REST endpoints under `http://localhost:8091/api/orders` are disabled by default (enable temporarily with `orders.rest.enabled=true` for rollback)
+- Proto contracts live in `orders/src/main/proto/orders.proto`; generated stubs are consumed by both the server (`OrdersGrpcService`) and client wrapper
 
 #### Event-driven Communication
 - Orders publishes `OrderCreatedEvent` when order is successfully created
@@ -188,7 +207,7 @@ class CatalogIntegrationTests {
 ### Observability
 - **Micrometer** with Prometheus registry
 - **OpenTelemetry** tracing with Zipkin export
-- **Spring Actuator** with modulith endpoints
+- **Spring Actuator** with modulith endpoints (health endpoint now includes `grpc` component reporting orders-service status and port 9090)
 - **Cache metrics** and health indicators
 
 ### Frontend
@@ -202,9 +221,10 @@ class CatalogIntegrationTests {
 
 ### gRPC Support
 - **Protocol Buffers** for service definitions in `src/main/proto/`
-- **gRPC Server** on port 9091 with health checks and reflection
+- **gRPC Server** on port 9090 with health checks and reflection enabled for development tooling
 - **gRPC Client** configuration with retry and circuit breaker support
 - **Conditional loading** via `@ConditionalOnClass` and `@ConditionalOnProperty`
+- **REST orders API replaced**: use gRPC clients (`OrdersGrpcClient`) instead of HTTP endpoints
 
 ## Development Guidelines
 
@@ -295,13 +315,14 @@ import org.springframework.modulith.ApplicationModule;
 
 ### Application URLs
 - **Application**: http://localhost:8080
-- **gRPC Server**: localhost:9091 (with health checks and reflection)
+- **Orders gRPC (orders-service)**: localhost:9090 (health checks + reflection enabled)
 - **Actuator**: http://localhost:8080/actuator
 - **Modulith Info**: http://localhost:8080/actuator/modulith
 - **Cache Health**: http://localhost:8080/actuator/health
 - **Cache Metrics**: http://localhost:8080/actuator/metrics
 - **RabbitMQ Admin**: http://localhost:15672 (guest/guest)
 - **Zipkin**: http://localhost:9411
+- **Removed REST Orders API**: http://localhost:8091/api/orders (disabled after gRPC migration on 2025-10-04)
 
 ### Key Configuration Properties
 - **Database**: PostgreSQL connection via `spring.datasource.*`

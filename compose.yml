@@ -57,7 +57,8 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
+      # REST API URL removed during gRPC migration (2025-10-04)
+      # Previous: ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090
       # Hazelcast JVM optimization for Java modular environment
       JDK_JAVA_OPTIONS: "--add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED"
@@ -87,11 +88,13 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      SERVER_PORT: 8091
+      # REST port removed during gRPC migration (2025-10-04)
+      # Previous: SERVER_PORT: 8091
+      # Now using gRPC server on port 9090
       SPRING_MODULITH_EVENTS_SCHEMA: orders_events
       PRODUCT_API_BASE_URL: http://monolith:8080
     ports:
-      - "9090:9090"
+      - "9090:9090"  # gRPC server port
     networks:
       - proxy
 

@@ -193,6 +193,11 @@ message OrderView {
      * Current status of the order.
      */
     OrderStatus status = 2;
+
+    /**
+     * Customer associated with the order.
+     */
+    Customer customer = 3;
 }
 
 /**

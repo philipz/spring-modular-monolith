@@ -93,14 +93,20 @@ public class GrpcMessageMapper {
     }
 
     public com.sivalabs.bookstore.orders.grpc.proto.OrderView toOrderView(OrderView view) {
-        return com.sivalabs.bookstore.orders.grpc.proto.OrderView.newBuilder()
+        var builder = com.sivalabs.bookstore.orders.grpc.proto.OrderView.newBuilder()
                 .setOrderNumber(view.orderNumber())
-                .setStatus(toOrderStatusProto(view.status()))
-                .build();
+                .setStatus(toOrderStatusProto(view.status()));
+
+        if (view.customer() != null) {
+            builder.setCustomer(toCustomerProto(view.customer()));
+        }
+
+        return builder.build();
     }
 
     public OrderView toOrderViewDto(com.sivalabs.bookstore.orders.grpc.proto.OrderView proto) {
-        return new OrderView(proto.getOrderNumber(), toOrderStatus(proto.getStatus()), null);
+        Customer customer = proto.hasCustomer() ? toCustomer(proto.getCustomer()) : null;
+        return new OrderView(proto.getOrderNumber(), toOrderStatus(proto.getStatus()), customer);
     }
 
     private Customer toCustomer(com.sivalabs.bookstore.orders.grpc.proto.Customer proto) {

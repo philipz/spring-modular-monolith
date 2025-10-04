@@ -83,6 +83,7 @@ class OrdersEndToEndTests {
         registry.add("grpc.server.port", () -> -1);
         // Disable gRPC client for tests
         registry.add("grpc.client.orders.enabled", () -> "false");
+        registry.add("orders.rest.enabled", () -> "true");
     }
 
     @Autowired

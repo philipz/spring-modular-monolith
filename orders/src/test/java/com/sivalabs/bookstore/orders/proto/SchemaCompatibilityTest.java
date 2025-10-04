@@ -85,7 +85,7 @@ class SchemaCompatibilityTest {
             assertThat(parsedRequest.getDeliveryAddress()).isEqualTo("123 Test Street");
             assertThat(parsedRequest.getItem().getCode()).isEqualTo("P001");
             assertThat(parsedRequest.getItem().getName()).isEqualTo("Test Product");
-            assertThat(parsedRequest.getItem().getPrice()).isEqualTo(29.99);
+            assertThat(parsedRequest.getItem().getPrice()).isEqualTo("29.99");
             assertThat(parsedRequest.getItem().getQuantity()).isEqualTo(1);
         }
 

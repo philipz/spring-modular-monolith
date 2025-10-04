@@ -121,14 +121,23 @@ class GrpcMessageMapperTest {
 
     @Test
     void shouldMapOrderViewProtoToDto() {
+        var customer = com.sivalabs.bookstore.orders.grpc.proto.Customer.newBuilder()
+                .setName("OrderView Tester")
+                .setEmail("orderview@test.com")
+                .setPhone("+1-555-VIEW")
+                .build();
+
         var proto = com.sivalabs.bookstore.orders.grpc.proto.OrderView.newBuilder()
                 .setOrderNumber("ORDER-2")
                 .setStatus(com.sivalabs.bookstore.orders.grpc.proto.OrderStatus.NEW)
+                .setCustomer(customer)
                 .build();
 
         OrderView dto = mapper.toOrderViewDto(proto);
         assertThat(dto.orderNumber()).isEqualTo("ORDER-2");
         assertThat(dto.status()).isEqualTo(OrderStatus.NEW);
+        assertThat(dto.customer()).isNotNull();
+        assertThat(dto.customer().name()).isEqualTo("OrderView Tester");
     }
 
     @Test

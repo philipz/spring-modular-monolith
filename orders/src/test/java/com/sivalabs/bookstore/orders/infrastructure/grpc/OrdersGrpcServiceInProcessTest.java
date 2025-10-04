@@ -54,7 +54,10 @@ import org.testcontainers.utility.DockerImageName;
  */
 @SpringBootTest(
         webEnvironment = NONE,
-        properties = {"grpc.client.orders.enabled=true"})
+        properties = {
+            "grpc.client.orders.enabled=true",
+            "grpc.server.port=-1" // Disable the real gRPC server since we use in-process
+        })
 @Testcontainers(disabledWithoutDocker = true)
 class OrdersGrpcServiceInProcessTest {
 
@@ -81,6 +84,9 @@ class OrdersGrpcServiceInProcessTest {
 
     @MockBean
     private ConnectionFactory connectionFactory;
+
+    @MockBean
+    private com.sivalabs.bookstore.orders.domain.ProductCatalogPort productCatalogPort;
 
     @Autowired
     private OrdersGrpcService ordersGrpcService;
