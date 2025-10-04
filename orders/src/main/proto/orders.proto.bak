@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package com.sivalabs.bookstore.orders.v1;
+
+option java_package = "com.sivalabs.bookstore.common.grpc";
+option java_outer_classname = "OrdersProto";
+
+import "google/protobuf/timestamp.proto";
+
+service OrdersService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc FindOrder(FindOrderRequest) returns (OrderDto);
+  rpc FindOrders(FindOrdersRequest) returns (FindOrdersResponse);
+}
+
+message CreateOrderRequest {
+  Customer customer = 1;
+  string delivery_address = 2;
+  OrderItem item = 3;
+}
+
+message CreateOrderResponse {
+  string order_number = 1;
+}
+
+message FindOrderRequest {
+  string order_number = 1;
+}
+
+message FindOrdersRequest {}
+
+message FindOrdersResponse {
+  repeated OrderView orders = 1;
+}
+
+message OrderDto {
+  string order_number = 1;
+  OrderItem item = 2;
+  Customer customer = 3;
+  string delivery_address = 4;
+  OrderStatus status = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message OrderView {
+  string order_number = 1;
+  OrderStatus status = 2;
+  Customer customer = 3;
+}
+
+message Customer {
+  string name = 1;
+  string email = 2;
+  string phone = 3;
+}
+
+message OrderItem {
+  string code = 1;
+  string name = 2;
+  double price = 3;
+  int32 quantity = 4;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_NEW = 1;
+  ORDER_STATUS_PENDING = 2;
+  ORDER_STATUS_CONFIRMED = 3;
+  ORDER_STATUS_IN_PROCESS = 4;
+  ORDER_STATUS_SHIPPED = 5;
+  ORDER_STATUS_DELIVERED = 6;
+  ORDER_STATUS_CANCELLED = 7;
+  ORDER_STATUS_ERROR = 8;
+}

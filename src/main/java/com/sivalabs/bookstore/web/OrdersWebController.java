@@ -1,25 +1,23 @@
 package com.sivalabs.bookstore.web;
 
+import com.sivalabs.bookstore.orders.InvalidOrderException;
+import com.sivalabs.bookstore.orders.OrderNotFoundException;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
 import com.sivalabs.bookstore.orders.api.OrderView;
+import com.sivalabs.bookstore.orders.api.OrdersRemoteClient;
 import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HtmxRequest;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,29 +25,29 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.client.RestTemplate;
 
 /**
- * Controller to handle /orders path by displaying orders using Thymeleaf template.
- * This fetches data from the external Orders Service API and renders using local templates.
+ * Controller to handle /orders path using the Orders gRPC client while rendering
+ * responses with Thymeleaf templates.
  */
 @Controller
 public class OrdersWebController {
 
     private static final Logger log = LoggerFactory.getLogger(OrdersWebController.class);
 
-    @Value("${orders.service.api-url}")
-    private String ordersServiceApiUrl;
+    private final OrdersRemoteClient ordersClient;
 
-    private final RestTemplate restTemplate;
-
-    public OrdersWebController(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public OrdersWebController(OrdersRemoteClient ordersClient) {
+        this.ordersClient = ordersClient;
     }
 
     @PostMapping("/orders")
     public String createOrder(
-            @ModelAttribute @Valid OrderForm orderForm, BindingResult bindingResult, Model model, HttpSession session) {
+            @ModelAttribute @Valid OrderForm orderForm,
+            BindingResult bindingResult,
+            Model model,
+            HttpSession session,
+            HttpServletResponse response) {
         Cart cart = CartUtil.getCart(session);
         if (bindingResult.hasErrors()) {
             model.addAttribute("cart", cart);
@@ -63,34 +61,29 @@ public class OrdersWebController {
                 new CreateOrderRequest(orderForm.customer(), orderForm.deliveryAddress(), orderItem);
 
         try {
-            log.info("Creating order via external service: {}", ordersServiceApiUrl);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<CreateOrderRequest> entity = new HttpEntity<>(request, headers);
-
-            ResponseEntity<CreateOrderResponse> response =
-                    restTemplate.exchange(ordersServiceApiUrl, HttpMethod.POST, entity, CreateOrderResponse.class);
-
-            if (response.getStatusCode() == HttpStatus.CREATED && response.getBody() != null) {
-                CreateOrderResponse savedOrder = response.getBody();
-                session.removeAttribute("cart");
-                CartUtil.setCart(session, new Cart());
-                String orderNumber = savedOrder.orderNumber();
-                log.info("Successfully created order: {}", orderNumber);
-                return "redirect:/orders/" + orderNumber;
-            } else {
-                log.error("Failed to create order, unexpected response status: {}", response.getStatusCode());
-                model.addAttribute("cart", cart);
-                model.addAttribute("error", "Failed to create order. Please try again.");
-                return "cart";
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to create order via external service: {}", e.getMessage());
-            model.addAttribute("cart", cart);
-            model.addAttribute("error", "Unable to create order. Please try again later.");
-            return "cart";
+            log.info("Creating order via gRPC client");
+            CreateOrderResponse savedOrder = ordersClient.createOrder(request);
+            session.removeAttribute("cart");
+            CartUtil.setCart(session, new Cart());
+            String orderNumber = savedOrder.orderNumber();
+            log.info("Successfully created order: {}", orderNumber);
+            return "redirect:/orders/" + orderNumber;
+        } catch (InvalidOrderException ex) {
+            log.warn("Invalid order request: {}", ex.getMessage());
+            return renderError(HttpStatus.BAD_REQUEST, ex.getMessage(), model, response);
+        } catch (OrderNotFoundException ex) {
+            log.warn("Referenced order not found during creation: {}", ex.getMessage());
+            return renderError(HttpStatus.NOT_FOUND, ex.getMessage(), model, response);
+        } catch (StatusRuntimeException ex) {
+            log.error("gRPC error while creating order", ex);
+            return handleGrpcStatusException(ex, model, response);
+        } catch (Exception ex) {
+            log.error("Unexpected error while creating order", ex);
+            return renderError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Unable to create order. Please try again later.",
+                    model,
+                    response);
         }
     }
 
@@ -103,29 +96,35 @@ public class OrdersWebController {
      * @return the view name to render
      */
     @GetMapping("/orders")
-    public String showOrders(Model model, HtmxRequest hxRequest) {
-        log.info("Fetching orders from external service: {}", ordersServiceApiUrl);
+    public String showOrders(Model model, HtmxRequest hxRequest, HttpServletResponse response) {
+        log.info("Fetching orders via gRPC client");
 
         try {
-            ResponseEntity<OrderView[]> response =
-                    restTemplate.exchange(ordersServiceApiUrl, HttpMethod.GET, null, OrderView[].class);
-
-            List<OrderView> orders =
-                    response.getBody() != null ? Arrays.asList(response.getBody()) : Collections.emptyList();
-
+            List<OrderView> orders = ordersClient.listOrders();
             model.addAttribute("orders", orders);
-            log.info("Successfully fetched {} orders from external service", orders.size());
+            log.info("Successfully fetched {} orders", orders.size());
 
-        } catch (Exception e) {
-            log.error("Failed to fetch orders from external service: {}", e.getMessage());
-            model.addAttribute("orders", Collections.emptyList());
-            model.addAttribute("error", "Unable to load orders. Please try again later.");
+            if (hxRequest.isHtmxRequest()) {
+                return "partials/orders";
+            }
+            return "orders";
+        } catch (InvalidOrderException ex) {
+            log.warn("Invalid request while listing orders: {}", ex.getMessage());
+            return renderError(HttpStatus.BAD_REQUEST, ex.getMessage(), model, response);
+        } catch (OrderNotFoundException ex) {
+            log.warn("Orders not found: {}", ex.getMessage());
+            return renderError(HttpStatus.NOT_FOUND, ex.getMessage(), model, response);
+        } catch (StatusRuntimeException ex) {
+            log.error("gRPC error while fetching orders", ex);
+            return handleGrpcStatusException(ex, model, response);
+        } catch (Exception ex) {
+            log.error("Unexpected error while fetching orders", ex);
+            return renderError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Unable to load orders. Please try again later.",
+                    model,
+                    response);
         }
-
-        if (hxRequest.isHtmxRequest()) {
-            return "partials/orders";
-        }
-        return "orders";
     }
 
     /**
@@ -137,28 +136,57 @@ public class OrdersWebController {
      * @return the view name to render
      */
     @GetMapping("/orders/{orderNumber}")
-    public String showOrderDetails(@PathVariable String orderNumber, Model model) {
-        log.info("Fetching order details for orderNumber: {} from external service", orderNumber);
+    public String showOrderDetails(@PathVariable String orderNumber, Model model, HttpServletResponse response) {
+        log.info("Fetching order details for orderNumber: {} via gRPC client", orderNumber);
 
         try {
-            String orderDetailsUrl = ordersServiceApiUrl + "/" + orderNumber;
-            ResponseEntity<OrderDto> response =
-                    restTemplate.exchange(orderDetailsUrl, HttpMethod.GET, null, OrderDto.class);
-
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                model.addAttribute("order", response.getBody());
-                log.info("Successfully fetched order details for orderNumber: {}", orderNumber);
-            } else {
-                log.warn("Order not found for orderNumber: {}", orderNumber);
-                model.addAttribute("order", null);
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to fetch order details for orderNumber: {} - {}", orderNumber, e.getMessage());
-            model.addAttribute("order", null);
-            model.addAttribute("error", "Unable to load order details. Please try again later.");
+            OrderDto order = ordersClient.getOrder(orderNumber);
+            model.addAttribute("order", order);
+            return "order_details";
+        } catch (OrderNotFoundException ex) {
+            log.warn("Order not found: {}", orderNumber);
+            return renderError(HttpStatus.NOT_FOUND, ex.getMessage(), model, response);
+        } catch (InvalidOrderException ex) {
+            log.warn("Invalid request while fetching order details: {}", ex.getMessage());
+            return renderError(HttpStatus.BAD_REQUEST, ex.getMessage(), model, response);
+        } catch (StatusRuntimeException ex) {
+            log.error("gRPC error while fetching order details", ex);
+            return handleGrpcStatusException(ex, model, response);
+        } catch (Exception ex) {
+            log.error("Unexpected error while fetching order details", ex);
+            return renderError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Unable to load order details. Please try again later.",
+                    model,
+                    response);
         }
+    }
 
-        return "order_details";
+    private String handleGrpcStatusException(
+            StatusRuntimeException exception, Model model, HttpServletResponse response) {
+        Status status = exception.getStatus();
+        String description = status.getDescription() != null
+                ? status.getDescription()
+                : status.getCode().name();
+        return switch (status.getCode()) {
+            case NOT_FOUND -> renderError(HttpStatus.NOT_FOUND, description, model, response);
+            case INVALID_ARGUMENT -> renderError(HttpStatus.BAD_REQUEST, description, model, response);
+            default ->
+                renderError(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Unable to process request at the moment. Please try again later.",
+                        model,
+                        response);
+        };
+    }
+
+    private String renderError(HttpStatus status, String message, Model model, HttpServletResponse response) {
+        response.setStatus(status.value());
+        model.addAttribute("message", message);
+        return switch (status) {
+            case BAD_REQUEST -> "error/400";
+            case NOT_FOUND -> "error/404";
+            default -> "error/500";
+        };
     }
 }

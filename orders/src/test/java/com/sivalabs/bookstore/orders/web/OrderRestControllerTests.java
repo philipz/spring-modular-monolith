@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(OrderRestController.class)
+@WebMvcTest(value = OrderRestController.class, properties = "orders.rest.enabled=true")
 @Import(OrdersExceptionHandler.class)
 class OrderRestControllerTests {
 
