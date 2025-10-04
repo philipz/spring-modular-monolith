@@ -1,6 +1,5 @@
 package com.sivalabs.bookstore.orders.grpc;
 
-import com.sivalabs.bookstore.config.GrpcProperties;
 import com.sivalabs.bookstore.orders.InvalidOrderException;
 import com.sivalabs.bookstore.orders.OrderNotFoundException;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
@@ -14,6 +13,7 @@ import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,14 +24,17 @@ import org.springframework.stereotype.Component;
 public class OrdersGrpcClient {
 
     private final ManagedChannel channel;
-    private final GrpcProperties grpcProperties;
     private final GrpcMessageMapper messageMapper;
+    private final long deadlineMs;
     private OrdersServiceGrpc.OrdersServiceBlockingStub blockingStub;
 
-    public OrdersGrpcClient(ManagedChannel channel, GrpcProperties grpcProperties, GrpcMessageMapper messageMapper) {
+    public OrdersGrpcClient(
+            ManagedChannel channel,
+            @Value("${bookstore.grpc.client.deadline-ms}") long deadlineMs,
+            GrpcMessageMapper messageMapper) {
         this.channel = channel;
-        this.grpcProperties = grpcProperties;
         this.messageMapper = messageMapper;
+        this.deadlineMs = deadlineMs;
     }
 
     @PostConstruct
@@ -74,7 +77,6 @@ public class OrdersGrpcClient {
     }
 
     private OrdersServiceGrpc.OrdersServiceBlockingStub stubWithDeadline() {
-        long deadlineMs = grpcProperties.getClient().getDeadlineMs();
         return blockingStub.withDeadlineAfter(deadlineMs, TimeUnit.MILLISECONDS);
     }
 

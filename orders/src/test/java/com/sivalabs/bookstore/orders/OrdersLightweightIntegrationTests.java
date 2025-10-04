@@ -35,7 +35,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "bookstore.cache.enabled=false",
             "app.amqp.new-orders.bind=false",
             "spring.rabbitmq.listener.direct.auto-startup=false",
-            "spring.rabbitmq.listener.simple.auto-startup=false"
+            "spring.rabbitmq.listener.simple.auto-startup=false",
+            "grpc.client.orders.enabled=false"
         })
 @DisplayName("Orders Lightweight Integration Tests")
 class OrdersLightweightIntegrationTests {
@@ -60,6 +61,7 @@ class OrdersLightweightIntegrationTests {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
         registry.add("spring.liquibase.enabled", () -> true);
+        registry.add("grpc.server.port", () -> -1);
     }
 
     @Autowired

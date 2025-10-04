@@ -1,10 +1,11 @@
 package com.sivalabs.bookstore.config;
 
-import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
+import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.protobuf.services.ProtoReflectionService;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -22,12 +23,13 @@ import org.springframework.context.annotation.Configuration;
 public class GrpcServerConfig {
 
     @Bean
-    public Server grpcServer(GrpcProperties grpcProperties, OrdersServiceGrpc.OrdersServiceImplBase ordersGrpcService) {
+    public Server grpcServer(GrpcProperties grpcProperties, List<BindableService> grpcServices) {
         var serverProperties = grpcProperties.getServer();
 
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(serverProperties.getPort())
-                .addService(ordersGrpcService)
                 .maxInboundMessageSize(serverProperties.getMaxInboundMessageSize());
+
+        grpcServices.forEach(serverBuilder::addService);
 
         if (serverProperties.isHealthCheckEnabled()) {
             HealthStatusManager healthStatusManager = new HealthStatusManager();

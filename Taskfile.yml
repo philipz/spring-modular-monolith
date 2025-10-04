@@ -22,7 +22,7 @@ tasks:
 
   build_image:
     cmds:
-      - "{{.MVNW}} clean compile spring-boot:build-image -DskipTests -DdockerImageName={{.IMAGE_NAME}}"
+      - "{{.MVNW}} clean protobuf:compile compile spring-boot:build-image -DskipTests -DdockerImageName={{.IMAGE_NAME}}"
 
   start:
     deps: [ build_image ]

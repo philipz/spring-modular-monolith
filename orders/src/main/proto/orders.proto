@@ -1,0 +1,226 @@
+syntax = "proto3";
+
+package com.sivalabs.bookstore.orders.grpc.proto;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.sivalabs.bookstore.orders.grpc.proto";
+option java_outer_classname = "OrdersProto";
+
+/**
+ * Orders service providing order management operations.
+ */
+service OrdersService {
+    /**
+     * Creates a new order with customer information, delivery address, and order items.
+     */
+    rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+
+    /**
+     * Retrieves an order by its order number.
+     */
+    rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+
+    /**
+     * Lists all orders in the system.
+     */
+    rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+}
+
+/**
+ * Request message for creating a new order.
+ */
+message CreateOrderRequest {
+    /**
+     * Customer information for the order.
+     */
+    Customer customer = 1;
+
+    /**
+     * Delivery address for the order.
+     */
+    string delivery_address = 2;
+
+    /**
+     * Order item details.
+     */
+    OrderItem item = 3;
+}
+
+/**
+ * Response message containing the created order number.
+ */
+message CreateOrderResponse {
+    /**
+     * Unique order number for the created order.
+     */
+    string order_number = 1;
+}
+
+/**
+ * Request message for retrieving an order.
+ */
+message GetOrderRequest {
+    /**
+     * Order number to retrieve.
+     */
+    string order_number = 1;
+}
+
+/**
+ * Response message containing the order details.
+ */
+message GetOrderResponse {
+    /**
+     * Order details (to be defined in subsequent tasks).
+     */
+    OrderDto order = 1;
+}
+
+/**
+ * Request message for listing orders.
+ */
+message ListOrdersRequest {
+    // Empty for now - pagination/filtering may be added later
+}
+
+/**
+ * Response message containing a list of orders.
+ */
+message ListOrdersResponse {
+    /**
+     * List of orders (to be defined in subsequent tasks).
+     */
+    repeated OrderView orders = 1;
+}
+
+/**
+ * Customer information.
+ */
+message Customer {
+    /**
+     * Customer's full name.
+     */
+    string name = 1;
+
+    /**
+     * Customer's email address.
+     */
+    string email = 2;
+
+    /**
+     * Customer's phone number.
+     */
+    string phone = 3;
+}
+
+/**
+ * Order item information.
+ */
+message OrderItem {
+    /**
+     * Product code.
+     */
+    string code = 1;
+
+    /**
+     * Product name.
+     */
+    string name = 2;
+
+    /**
+     * Product price as string representation of decimal.
+     */
+    string price = 3;
+
+    /**
+     * Quantity ordered.
+     */
+    int32 quantity = 4;
+}
+
+/**
+ * Order details returned from gRPC services.
+ */
+message OrderDto {
+    /**
+     * Unique order number identifying the order.
+     */
+    string order_number = 1;
+
+    /**
+     * Item included in the order.
+     */
+    OrderItem item = 2;
+
+    /**
+     * Customer associated with the order.
+     */
+    Customer customer = 3;
+
+    /**
+     * Delivery address provided for the order.
+     */
+    string delivery_address = 4;
+
+    /**
+     * Current status of the order.
+     */
+    OrderStatus status = 5;
+
+    /**
+     * Timestamp for when the order was created.
+     */
+    google.protobuf.Timestamp created_at = 6;
+
+    /**
+     * Total amount for the order as a decimal string.
+     */
+    string total_amount = 7;
+}
+
+/**
+ * Lightweight view of an order suitable for list responses.
+ */
+message OrderView {
+    /**
+     * Unique order number identifying the order.
+     */
+    string order_number = 1;
+
+    /**
+     * Current status of the order.
+     */
+    OrderStatus status = 2;
+}
+
+/**
+ * Status values describing the order lifecycle.
+ */
+enum OrderStatus {
+    /**
+     * Default value when no status has been set.
+     */
+    UNSPECIFIED = 0;
+
+    /**
+     * Newly created order awaiting processing.
+     */
+    NEW = 1;
+
+    /**
+     * Order delivered to the customer.
+     */
+    DELIVERED = 2;
+
+    /**
+     * Order cancelled prior to fulfillment.
+     */
+    CANCELLED = 3;
+
+    /**
+     * Order encountered an error during processing.
+     */
+    ERROR = 4;
+}

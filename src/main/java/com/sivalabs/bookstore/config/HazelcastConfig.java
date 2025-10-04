@@ -14,6 +14,7 @@ import com.hazelcast.spring.context.SpringManagedContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
@@ -163,6 +164,7 @@ public class HazelcastConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public SpringManagedContext springManagedContext(ApplicationContext applicationContext) {
         SpringManagedContext springManagedContext = new SpringManagedContext();
         springManagedContext.setApplicationContext(applicationContext);
@@ -221,6 +223,7 @@ public class HazelcastConfig {
      */
     @Bean("ordersCache")
     @Lazy // Lazy initialization to allow MapStore bean to be created first
+    @ConditionalOnMissingBean(name = "ordersCache")
     public IMap<String, Object> ordersCache(HazelcastInstance hazelcastInstance) {
         logger.info("Creating orders cache map");
         IMap<String, Object> ordersMap = hazelcastInstance.getMap(ORDERS_CACHE_NAME);

@@ -2,6 +2,9 @@ package com.sivalabs.bookstore.orders.grpc;
 
 import com.sivalabs.bookstore.orders.api.OrdersApi;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import java.util.Collections;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,10 +18,12 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
 
     private final OrdersApi ordersApi;
     private final GrpcMessageMapper messageMapper;
+    private final Validator validator;
 
-    public OrdersGrpcService(OrdersApi ordersApi, GrpcMessageMapper messageMapper) {
+    public OrdersGrpcService(OrdersApi ordersApi, GrpcMessageMapper messageMapper, Validator validator) {
         this.ordersApi = ordersApi;
         this.messageMapper = messageMapper;
+        this.validator = validator;
     }
 
     @Override
@@ -28,12 +33,13 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
                     responseObserver) {
         try {
             var createOrderRequest = messageMapper.toCreateOrderRequest(request);
+            validateCreateOrderRequest(createOrderRequest);
             var response = ordersApi.createOrder(createOrderRequest);
             var grpcResponse = messageMapper.toCreateOrderResponse(response);
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
         } catch (Exception ex) {
-            responseObserver.onError(ex);
+            responseObserver.onError(GrpcExceptionHandler.handleException(ex));
         }
     }
 
@@ -44,7 +50,8 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
         try {
             var orderOptional = ordersApi.findOrder(request.getOrderNumber());
             if (orderOptional.isEmpty()) {
-                responseObserver.onError(new RuntimeException("Order not found"));
+                responseObserver.onError(GrpcExceptionHandler.handleException(
+                        new com.sivalabs.bookstore.orders.OrderNotFoundException(request.getOrderNumber())));
                 return;
             }
             var order = orderOptional.get();
@@ -55,7 +62,7 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
         } catch (Exception ex) {
-            responseObserver.onError(ex);
+            responseObserver.onError(GrpcExceptionHandler.handleException(ex));
         }
     }
 
@@ -73,7 +80,17 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();
         } catch (Exception ex) {
-            responseObserver.onError(ex);
+            responseObserver.onError(GrpcExceptionHandler.handleException(ex));
+        }
+    }
+
+    private void validateCreateOrderRequest(com.sivalabs.bookstore.orders.api.CreateOrderRequest request) {
+        if (request == null) {
+            throw new ConstraintViolationException("CreateOrderRequest must not be null", Collections.emptySet());
+        }
+        var violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
         }
     }
 }

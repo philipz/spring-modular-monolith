@@ -471,7 +471,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.4, 7.2, 7.3, 7.5_
   - _Leverage: gRPC in-process testing utilities (InProcessServerBuilder)_
 
-- [ ] 44. Write getOrder integration tests for success and not found
+- [x] 44. Write getOrder integration tests for success and not found
   - File: `src/test/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcServiceIntegrationTest.java` (continue from task 43)
   - Test 1: Create order then getOrder with that orderNumber returns order
   - Verify all fields are populated correctly
@@ -481,7 +481,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.4, 2.5, 7.2, 7.3_
   - _Leverage: Existing test data setup from OrdersIntegrationTests_
 
-- [ ] 45. Write listOrders integration test
+- [x] 45. Write listOrders integration test
   - File: `src/test/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcServiceIntegrationTest.java` (continue from task 44)
   - Create 3 orders via createOrder
   - Call listOrders() RPC
@@ -491,7 +491,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.4, 7.2, 7.3_
   - _Leverage: Existing list test patterns_
 
-- [ ] 46. Write error scenario integration tests
+- [x] 46. Write error scenario integration tests
   - File: `src/test/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcServiceIntegrationTest.java` (continue from task 45)
   - Test createOrder with empty customer name throws INVALID_ARGUMENT
   - Test createOrder with negative quantity throws INVALID_ARGUMENT
@@ -501,7 +501,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.5, 7.3_
   - _Leverage: Existing validation and ProductServiceClient error handling_
 
-- [ ] 47. Create GrpcClientIntegrationTest for client wrapper
+- [-] 47. Create GrpcClientIntegrationTest for client wrapper
   - File: `src/test/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcClientIntegrationTest.java`
   - Add @SpringBootTest annotation
   - Add @Testcontainers
@@ -516,28 +516,83 @@ Each task meets these criteria for optimal execution:
 
 ### Phase 11: REST Endpoint Removal & Documentation
 
-- [ ] 48. Review and remove REST controllers for Orders API
+- [ ] 48. Update monolith OrdersWebController to use gRPC client
   - File: `src/main/java/com/sivalabs/bookstore/web/OrdersWebController.java`
-  - Review if this controller exposes Orders API REST endpoints
-  - If it only handles UI (Thymeleaf), keep it unchanged
-  - If it exposes REST API for Orders, remove or add @ConditionalOnProperty to disable
-  - Document decision in code comments
-  - _Requirements: 4.2_
-  - _Leverage: Review existing controller implementation_
+  - Remove `RestTemplate` and `@Value("${orders.service.api-url}")` dependencies
+  - Inject `OrdersGrpcClient` (from `src/main/java/com/sivalabs/bookstore/orders/grpc/`)
+  - Update `createOrder()` method: change to use `grpcClient.createOrder(request)`
+  - Update `showOrders()` method: change to use `grpcClient.listOrders()`
+  - Update `showOrderDetails()` method: change to use `grpcClient.getOrder(orderNumber)`
+  - Handle gRPC exception conversion to HTTP responses:
+    - `StatusRuntimeException` with `Status.NOT_FOUND` → return 404 error page
+    - `StatusRuntimeException` with `Status.INVALID_ARGUMENT` → return 400 error page with validation message
+    - Other exceptions → return 500 error page with generic error message
+  - Test the changes by running the application and verifying order creation flow works via UI
+  - _Requirements: 4.1, 4.2_
+  - _Leverage: OrdersGrpcClient (Tasks 33-34), GrpcExceptionHandler pattern_
 
-- [ ] 49. Update CLAUDE.md with gRPC endpoints documentation
+- [ ] 49. Remove or disable orders service REST API endpoint
+  - File: `orders/src/main/java/com/sivalabs/bookstore/orders/web/OrderRestController.java`
+  - **Recommended approach**: Add `@ConditionalOnProperty(name = "orders.rest.enabled", havingValue = "true", matchIfMissing = false)` to class
+  - **Alternative approach**: Delete the file completely (more aggressive, harder to rollback)
+  - Add JavaDoc deprecation notice: `@deprecated Migrated to gRPC. See OrdersGrpcService for gRPC implementation.`
+  - Add comment explaining migration date and reason
+  - Keep the code for emergency rollback capability
+  - _Requirements: 4.2_
+  - _Leverage: Spring conditional loading pattern (see GrpcServerConfig @ConditionalOnClass)_
+
+- [ ] 50. Clean up REST API related configuration
+  - Files:
+    - `src/main/resources/application.properties`
+    - `compose.yml`
+  - **application.properties**: Remove or comment out `orders.service.api-url=${ORDERS_SERVICE_API_URL:http://localhost:8091/api/orders}`
+  - **compose.yml monolith service**: Remove environment variable `ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders`
+  - **compose.yml orders-service**:
+    - Remove or comment out `SERVER_PORT: 8091` (if completely disabling REST)
+    - Keep gRPC port mapping: `9090:9090`
+  - **compose.yml monolith service**: Verify `BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090` is present and correct
+  - Add comments explaining configuration changes with date and migration reference
+  - _Requirements: 4.1, 4.3_
+  - _Leverage: Existing compose.yml and application.properties structure_
+
+- [ ] 51. Verify REST endpoint completely removed and gRPC working
+  - Start services: `docker-compose up -d`
+  - **Verify REST is disabled**:
+    - Run: `curl http://localhost:8091/api/orders`
+    - Expected: Connection refused or 404 Not Found
+  - **Verify gRPC is available**:
+    - Run: `grpcurl -plaintext localhost:9090 list`
+    - Expected: Shows `com.sivalabs.bookstore.orders.grpc.proto.OrdersService`
+  - **End-to-end UI test**:
+    - Open browser: `http://localhost:8080/cart`
+    - Add a product to cart
+    - Fill in customer details and create order
+    - Verify order details page displays correctly
+    - Verify order appears in orders list
+  - **Check logs for gRPC communication**:
+    - Should see `[ORDERS-CLIENT]` logs from monolith service
+    - Should see `[ORDERS-SERVER]` logs from orders-service
+    - Should NOT see any REST API related errors
+  - Stop services: `docker-compose down`
+  - _Requirements: 4.1, 4.2, 4.4_
+  - _Leverage: Existing testing workflows and grpcurl tool_
+
+- [ ] 52. Update CLAUDE.md with gRPC endpoints documentation
   - File: `CLAUDE.md`
-  - Add gRPC Server entry under Application URLs section: localhost:9091
-  - Update Module Communication Patterns section noting Orders uses gRPC
+  - Add gRPC Server entry under Application URLs section: `localhost:9090` (orders-service gRPC)
+  - Update Module Communication Patterns section:
+    - Note that Orders module communication now uses gRPC instead of REST
+    - Explain monolith → orders-service communication via gRPC
   - Add testing guidance with grpcurl command examples
-  - Document health check at /actuator/health includes gRPC status
+  - Document that health check at `/actuator/health` includes gRPC status
   - Add note about server reflection enabled for development
+  - **Add migration note**: Document that REST API (`http://localhost:8091/api/orders`) has been removed, only gRPC is available
   - _Requirements: 4.1, 4.3_
   - _Leverage: Existing CLAUDE.md structure and format_
 
 ### Phase 12: Final Validation
 
-- [ ] 50. Run complete test suite and verify all tests pass
+- [ ] 53. Run complete test suite and verify all tests pass
   - Run: `./mvnw clean verify`
   - Verify all unit tests pass (GrpcMessageMapperTest, GrpcExceptionHandlerTest)
   - Verify all integration tests pass (OrdersGrpcServiceIntegrationTest, GrpcClientIntegrationTest)
@@ -546,7 +601,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: All, NFR: Reliability_
   - _Leverage: Existing Maven test execution and reporting_
 
-- [ ] 51. Verify application startup with gRPC server
+- [ ] 54. Verify application startup with gRPC server
   - Run: `./mvnw spring-boot:run`
   - Verify application starts without errors
   - Verify log shows "gRPC server started on port 9091" message
@@ -556,7 +611,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.1, 2.2, 6.2_
   - _Leverage: Existing application startup validation_
 
-- [ ] 52. Verify Spring Actuator health endpoint shows gRPC status
+- [ ] 55. Verify Spring Actuator health endpoint shows gRPC status
   - Start application with `./mvnw spring-boot:run`
   - Access http://localhost:8080/actuator/health in browser or curl
   - Verify JSON response includes "grpc" component
@@ -566,7 +621,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.6, NFR: Observability_
   - _Leverage: Existing Spring Actuator health check infrastructure_
 
-- [ ] 53. Manual functional testing with grpcurl
+- [ ] 56. Manual functional testing with grpcurl
   - Install grpcurl if not available: `brew install grpcurl` (macOS) or download binary
   - Start application
   - Test server reflection: `grpcurl -plaintext localhost:9091 list`
@@ -579,7 +634,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.7, 7.4, NFR: Usability_
   - _Leverage: gRPC server reflection feature_
 
-- [ ] 54. Performance comparison with previous REST baseline
+- [ ] 57. Performance comparison with previous REST baseline
   - Create simple JMH or JUnit benchmark test
   - Measure gRPC createOrder latency (average over 100 requests)
   - Measure message size: Protobuf CreateOrderRequest vs equivalent JSON
@@ -588,6 +643,19 @@ Each task meets these criteria for optimal execution:
   - Document findings in test output or separate performance report
   - _Requirements: 7.4, NFR: Performance_
   - _Leverage: JUnit 5 benchmark extensions or simple timing in test_
+
+- [ ] 58. Final integration verification and migration report
+  - Run complete end-to-end flow test (UI → gRPC → Database → Events)
+  - Verify no REST endpoints remain accessible on port 8091
+  - Confirm all documentation updates are complete (CLAUDE.md, README files)
+  - Verify Docker Compose setup works correctly with gRPC-only configuration
+  - Generate migration completion report with:
+    - Performance comparison results (REST vs gRPC)
+    - Test coverage metrics
+    - List of removed/deprecated components
+    - Rollback procedure documentation
+  - _Requirements: All, NFR: Maintainability_
+  - _Leverage: All previous validation tasks_
 
 ## Implementation Notes
 
@@ -635,15 +703,20 @@ grpcurl -plaintext localhost:9091 describe com.sivalabs.bookstore.orders.grpc.pr
 3. Tasks 15-20 (mapper) must complete before tasks 21-24 (service using mapper)
 4. Tasks 21-24 (service) must complete before tasks 29-35 (client needs server stubs)
 5. Tasks 38-47 (testing) depend on all implementation tasks
-6. Tasks 48-49 (REST removal/docs) should wait until task 53 (manual testing) confirms gRPC works
-7. Tasks 50-54 (final validation) must be last
+6. **Tasks 48-52 (REST removal/docs) must execute in order**:
+   - Task 48 (monolith uses gRPC) must complete BEFORE task 49
+   - Task 49 (disable REST API) must complete BEFORE task 50
+   - Task 50 (clean config) must complete BEFORE task 51
+   - Task 51 (verify removal) must complete BEFORE task 52
+7. Tasks 53-58 (final validation) must be last
 
 **Parallel Opportunities:**
 - Tasks 8-14 (config) and 15-20 (mapper) can be done in parallel after task 7
 - Tasks 25-26 (exception handler) and 27-28 (health) can be done in parallel with tasks 15-24
 - Tasks 38-41 (unit tests) can be written in parallel with integration test setup (task 42)
 - Tasks 43-46 (integration tests) can be written in parallel
-- Tasks 36-37 (properties) can be done early or late, but should be before task 51
+- Tasks 36-37 (properties) can be done early or late, but should be before task 54
+- Tasks 53-57 (validation tests) can potentially run in parallel if properly isolated
 
 ### Critical Success Factors
 
@@ -653,5 +726,8 @@ grpcurl -plaintext localhost:9091 describe com.sivalabs.bookstore.orders.grpc.pr
 - Timestamp conversion must handle timezones correctly (use system default or UTC consistently)
 - Exception handling must map all domain exceptions to appropriate gRPC status codes
 - Client retry logic must respect maxRetryAttempts and only retry on retryable statuses
-- All tests must pass before considering migration complete (task 50 gate)
-- Manual grpcurl testing must succeed before removing REST endpoints (task 53 before task 48)
+- **Task 48 must correctly handle gRPC exceptions and convert to appropriate HTTP error responses**
+- **Task 49 should use @ConditionalOnProperty for safety, not delete files immediately**
+- **Task 51 end-to-end test must pass before considering REST removal complete**
+- All tests must pass before considering migration complete (task 53 gate)
+- Task 58 migration report must document rollback procedure
