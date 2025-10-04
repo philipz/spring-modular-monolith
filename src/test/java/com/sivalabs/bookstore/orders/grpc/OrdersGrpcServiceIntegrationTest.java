@@ -42,7 +42,11 @@ import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(
         webEnvironment = NONE,
-        properties = {"bookstore.cache.enabled=false", "bookstore.session.hazelcast.enabled=false"},
+        properties = {
+            "bookstore.cache.enabled=false",
+            "bookstore.session.hazelcast.enabled=false",
+            "bookstore.grpc.server.enabled=false"
+        },
         classes = {
             com.sivalabs.bookstore.BookStoreApplication.class,
             com.sivalabs.bookstore.testsupport.session.TestSessionConfiguration.class

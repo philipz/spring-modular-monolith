@@ -6,6 +6,7 @@ import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
 import com.sivalabs.bookstore.orders.api.OrderView;
+import com.sivalabs.bookstore.orders.api.OrdersRemoteClient;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Component;
  * DTOs and protobuf messages.
  */
 @Component
-public class OrdersGrpcClient {
+public class OrdersGrpcClient implements OrdersRemoteClient {
 
     private final ManagedChannel channel;
     private final GrpcMessageMapper messageMapper;
@@ -42,6 +43,7 @@ public class OrdersGrpcClient {
         this.blockingStub = OrdersServiceGrpc.newBlockingStub(channel);
     }
 
+    @Override
     public CreateOrderResponse createOrder(CreateOrderRequest request) {
         var grpcRequest = messageMapper.toCreateOrderRequestProto(request);
         try {
@@ -52,6 +54,7 @@ public class OrdersGrpcClient {
         }
     }
 
+    @Override
     public OrderDto getOrder(String orderNumber) {
         var grpcRequest = com.sivalabs.bookstore.orders.grpc.proto.GetOrderRequest.newBuilder()
                 .setOrderNumber(orderNumber)
@@ -64,6 +67,7 @@ public class OrdersGrpcClient {
         }
     }
 
+    @Override
     public List<OrderView> listOrders() {
         var grpcRequest = com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest.getDefaultInstance();
         try {

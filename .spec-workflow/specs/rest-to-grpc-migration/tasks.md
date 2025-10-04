@@ -501,7 +501,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 2.5, 7.3_
   - _Leverage: Existing validation and ProductServiceClient error handling_
 
-- [-] 47. Create GrpcClientIntegrationTest for client wrapper
+- [x] 47. Create GrpcClientIntegrationTest for client wrapper
   - File: `src/test/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcClientIntegrationTest.java`
   - Add @SpringBootTest annotation
   - Add @Testcontainers
@@ -516,7 +516,7 @@ Each task meets these criteria for optimal execution:
 
 ### Phase 11: REST Endpoint Removal & Documentation
 
-- [ ] 48. Update monolith OrdersWebController to use gRPC client
+- [x] 48. Update monolith OrdersWebController to use gRPC client
   - File: `src/main/java/com/sivalabs/bookstore/web/OrdersWebController.java`
   - Remove `RestTemplate` and `@Value("${orders.service.api-url}")` dependencies
   - Inject `OrdersGrpcClient` (from `src/main/java/com/sivalabs/bookstore/orders/grpc/`)
@@ -531,7 +531,7 @@ Each task meets these criteria for optimal execution:
   - _Requirements: 4.1, 4.2_
   - _Leverage: OrdersGrpcClient (Tasks 33-34), GrpcExceptionHandler pattern_
 
-- [ ] 49. Remove or disable orders service REST API endpoint
+- [x] 49. Remove or disable orders service REST API endpoint
   - File: `orders/src/main/java/com/sivalabs/bookstore/orders/web/OrderRestController.java`
   - **Recommended approach**: Add `@ConditionalOnProperty(name = "orders.rest.enabled", havingValue = "true", matchIfMissing = false)` to class
   - **Alternative approach**: Delete the file completely (more aggressive, harder to rollback)

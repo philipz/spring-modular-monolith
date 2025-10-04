@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Orders", description = "Order management operations")
 @RestController
 @RequestMapping("/api/orders")
+@ConditionalOnProperty(name = "orders.rest.enabled", havingValue = "true")
+@Deprecated(forRemoval = false, since = "2025-10-04")
+/**
+ * @deprecated 已改用 gRPC OrdersGrpcService，僅供回溯需求啟用。
+ */
 class OrderRestController {
 
     private static final Logger log = LoggerFactory.getLogger(OrderRestController.class);

@@ -28,6 +28,8 @@ public class GrpcProperties {
      * Server-side gRPC configuration group.
      */
     public static class ServerProperties {
+        private boolean enabled = true;
+
         @Min(1024) @Max(65535) private int port = 9091;
 
         @Min(1) private int maxInboundMessageSize = 4_194_304;
@@ -36,6 +38,14 @@ public class GrpcProperties {
         private boolean reflectionEnabled = true;
 
         @Min(0) private long shutdownGracePeriodSeconds = 30L;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
 
         public int getPort() {
             return port;

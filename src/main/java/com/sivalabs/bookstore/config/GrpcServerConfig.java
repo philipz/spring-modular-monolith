@@ -7,6 +7,7 @@ import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties(GrpcProperties.class)
 @ConditionalOnClass(Server.class)
+@ConditionalOnProperty(name = "bookstore.grpc.server.enabled", havingValue = "true", matchIfMissing = true)
 public class GrpcServerConfig {
 
     @Bean

@@ -4,6 +4,7 @@ import io.grpc.Server;
 import java.util.Objects;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnClass(Server.class)
+@ConditionalOnBean(Server.class)
 public class GrpcHealthIndicator implements HealthIndicator {
 
     private final Server server;

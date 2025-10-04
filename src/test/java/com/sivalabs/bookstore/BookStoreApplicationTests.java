@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = RANDOM_PORT,
+        properties = {"bookstore.grpc.server.port=0"})
 @Import(TestcontainersConfiguration.class)
 class BookStoreApplicationTests {
 
