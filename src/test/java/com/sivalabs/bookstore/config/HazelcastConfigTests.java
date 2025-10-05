@@ -39,7 +39,8 @@ import org.springframework.test.context.TestPropertySource;
             "bookstore.cache.time-to-live-seconds=3600",
             "bookstore.cache.write-delay-seconds=1",
             "bookstore.cache.metrics-enabled=true",
-            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG"
+            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG",
+            "bookstore.grpc.server.port=0"
         })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("HazelcastConfig Integration Tests")

@@ -47,7 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
             "bookstore.cache.write-delay-seconds=0", // Immediate write-through
             "bookstore.cache.metrics-enabled=true",
             "logging.level.com.sivalabs.bookstore.orders.cache=DEBUG",
-            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG"
+            "logging.level.com.sivalabs.bookstore.config.HazelcastConfig=DEBUG",
+            "bookstore.grpc.server.port=0"
         })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("Orders Cache Integration Tests")
