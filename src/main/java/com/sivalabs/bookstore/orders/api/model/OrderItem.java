@@ -10,7 +10,7 @@ public record OrderItem(
         @NotBlank(message = "Code is required") String code,
         @NotBlank(message = "Name is required") String name,
         @NotNull(message = "Price is required") BigDecimal price,
-        @NotNull @Min(1) Integer quantity)
+        @NotNull @Min(value = 1, message = "Quantity must be greater than 0") Integer quantity)
         implements Serializable {
 
     private static final long serialVersionUID = 1L;

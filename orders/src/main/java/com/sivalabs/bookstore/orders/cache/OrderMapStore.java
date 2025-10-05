@@ -129,13 +129,15 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
             logger.warn("Batch loadAll error for {} orders: {}", orderNumbers.size(), e.getMessage());
         }
 
-        for (String num : orderNumbers) {
-            if (!result.containsKey(num)) {
-                try {
-                    Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(num);
-                    orderOpt.ifPresent(order -> result.put(num, order));
-                } catch (Exception e) {
-                    logger.warn("Error loading order individually {}: {}", num, e.getMessage());
+        if (orderRepository != null) {
+            for (String num : orderNumbers) {
+                if (!result.containsKey(num)) {
+                    try {
+                        Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(num);
+                        orderOpt.ifPresent(order -> result.put(num, order));
+                    } catch (Exception e) {
+                        logger.warn("Error loading order individually {}: {}", num, e.getMessage());
+                    }
                 }
             }
         }

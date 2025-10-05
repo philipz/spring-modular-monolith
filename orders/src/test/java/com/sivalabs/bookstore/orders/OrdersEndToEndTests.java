@@ -80,6 +80,10 @@ class OrdersEndToEndTests {
         registry.add("spring.rabbitmq.username", RABBITMQ::getAdminUsername);
         registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
         registry.add("product.api.base-url", () -> productCatalogServer.url("/").toString());
+        registry.add("grpc.server.port", () -> -1);
+        // Disable gRPC client for tests
+        registry.add("grpc.client.orders.enabled", () -> "false");
+        registry.add("orders.rest.enabled", () -> "true");
     }
 
     @Autowired
