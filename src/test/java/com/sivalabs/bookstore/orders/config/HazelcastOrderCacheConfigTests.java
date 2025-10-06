@@ -6,8 +6,11 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.sivalabs.bookstore.orders.cache.OrderMapStore;
+import com.sivalabs.bookstore.orders.domain.OrderRepository;
+import com.sivalabs.bookstore.testsupport.TestObjectProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.mock.env.MockEnvironment;
 
 class HazelcastOrderCacheConfigTests {
@@ -28,7 +31,10 @@ class HazelcastOrderCacheConfigTests {
                 .withProperty("bookstore.cache.write-delay-seconds", "5")
                 .withProperty("bookstore.cache.write-batch-size", "10");
 
-        MapConfig mapConfig = config.ordersCacheMapConfig(environment);
+        OrderRepository orderRepository = Mockito.mock(OrderRepository.class);
+        OrderMapStore orderMapStore = new OrderMapStore(new TestObjectProvider<>(() -> orderRepository));
+
+        MapConfig mapConfig = config.ordersCacheMapConfig(environment, orderMapStore);
 
         assertThat(mapConfig.getName()).isEqualTo("orders-cache");
         assertThat(mapConfig.getEvictionConfig().getMaxSizePolicy()).isEqualTo(MaxSizePolicy.PER_NODE);
@@ -42,9 +48,9 @@ class HazelcastOrderCacheConfigTests {
         MapStoreConfig mapStoreConfig = mapConfig.getMapStoreConfig();
         assertThat(mapStoreConfig).isNotNull();
         assertThat(mapStoreConfig.isEnabled()).isTrue();
-        assertThat(mapStoreConfig.getClassName()).isEqualTo(OrderMapStore.class.getName());
+        assertThat(mapStoreConfig.getImplementation()).isSameAs(orderMapStore);
         assertThat(mapStoreConfig.getInitialLoadMode()).isEqualTo(MapStoreConfig.InitialLoadMode.LAZY);
-        assertThat(mapStoreConfig.getWriteDelaySeconds()).isEqualTo(5);
+        assertThat(mapStoreConfig.getWriteDelaySeconds()).isEqualTo(0);
         assertThat(mapStoreConfig.getWriteBatchSize()).isEqualTo(10);
     }
 }

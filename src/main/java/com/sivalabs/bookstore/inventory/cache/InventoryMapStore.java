@@ -14,7 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
 
 /**
  * Hazelcast MapStore implementation for InventoryEntity.
@@ -31,26 +32,27 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Note: Uses Long keys for inventory ID-based operations, following inventory domain patterns.
  */
 @SpringAware
+@Component
 public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(InventoryMapStore.class);
     private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
-    private final long initTimestamp = System.currentTimeMillis();
+    private final long initTimestamp;
+
+    private final ObjectProvider<InventoryRepository> inventoryRepositoryProvider;
+
+    public InventoryMapStore(ObjectProvider<InventoryRepository> inventoryRepositoryProvider) {
+        this.inventoryRepositoryProvider = inventoryRepositoryProvider;
+        this.initTimestamp = System.currentTimeMillis();
+        logger.info("InventoryMapStore initialized with lazy InventoryRepository access");
+    }
+
+    private InventoryRepository inventoryRepository() {
+        return inventoryRepositoryProvider.getObject();
+    }
 
     private boolean withinStartupWindow() {
         return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
-    }
-
-    @Autowired
-    private InventoryRepository inventoryRepository;
-
-    public InventoryMapStore() {
-        logger.info("InventoryMapStore default constructor");
-    }
-
-    public InventoryMapStore(InventoryRepository inventoryRepository) {
-        this.inventoryRepository = inventoryRepository;
-        logger.info("InventoryMapStore initialized with InventoryRepository");
     }
 
     @Override
@@ -133,7 +135,7 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
         logger.debug("Loading inventory from database: inventoryId={}", inventoryId);
 
         try {
-            Optional<InventoryEntity> inventoryOpt = inventoryRepository.findById(inventoryId);
+            Optional<InventoryEntity> inventoryOpt = inventoryRepository().findById(inventoryId);
 
             if (inventoryOpt.isPresent()) {
                 InventoryEntity inventory = inventoryOpt.get();
@@ -169,7 +171,7 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
 
         try {
             // Load inventory records by IDs using repository's findAllById method
-            Map<Long, InventoryEntity> loadedInventory = inventoryRepository.findAllById(inventoryIds).stream()
+            Map<Long, InventoryEntity> loadedInventory = inventoryRepository().findAllById(inventoryIds).stream()
                     .collect(Collectors.toMap(InventoryEntity::getId, inventory -> inventory));
 
             logger.debug(
@@ -204,7 +206,7 @@ public class InventoryMapStore implements MapStore<Long, InventoryEntity>, MapLo
         logger.debug("Loading all inventory IDs from database");
 
         try {
-            Set<Long> allInventoryIds = inventoryRepository.findAll().stream()
+            Set<Long> allInventoryIds = inventoryRepository().findAll().stream()
                     .map(InventoryEntity::getId)
                     .collect(Collectors.toSet());
 

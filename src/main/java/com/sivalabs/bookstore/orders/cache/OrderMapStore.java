@@ -13,7 +13,8 @@ import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
 
 /**
  * Hazelcast MapStore implementation for OrderEntity.
@@ -28,26 +29,27 @@ import org.springframework.beans.factory.annotation.Autowired;
  * - loadAll() provides bulk loading capabilities
  */
 @SpringAware
+@Component
 public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderMapStore.class);
     private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
-    private final long initTimestamp = System.currentTimeMillis();
+    private final long initTimestamp;
+
+    private final ObjectProvider<OrderRepository> orderRepositoryProvider;
+
+    public OrderMapStore(ObjectProvider<OrderRepository> orderRepositoryProvider) {
+        this.orderRepositoryProvider = orderRepositoryProvider;
+        this.initTimestamp = System.currentTimeMillis();
+        logger.info("OrderMapStore initialized with lazy OrderRepository access");
+    }
+
+    private OrderRepository orderRepository() {
+        return orderRepositoryProvider.getObject();
+    }
 
     private boolean withinStartupWindow() {
         return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
-    }
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    public OrderMapStore() {
-        logger.info("OrderMapStore default constructor");
-    }
-
-    public OrderMapStore(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-        logger.info("OrderMapStore initialized with OrderRepository");
     }
 
     @Override
@@ -130,7 +132,7 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
         logger.debug("Loading order from database: orderNumber={}", orderNumber);
 
         try {
-            Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(orderNumber);
+            Optional<OrderEntity> orderOpt = orderRepository().findByOrderNumber(orderNumber);
 
             if (orderOpt.isPresent()) {
                 OrderEntity order = orderOpt.get();
@@ -167,7 +169,7 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
 
         // Try batch query first
         try {
-            var orders = orderRepository.findByOrderNumberIn(orderNumbers);
+            var orders = orderRepository().findByOrderNumberIn(orderNumbers);
             for (OrderEntity o : orders) {
                 if (o != null && o.getOrderNumber() != null) {
                     result.put(o.getOrderNumber(), o);
@@ -181,7 +183,7 @@ public class OrderMapStore implements MapStore<String, OrderEntity>, MapLoaderLi
         for (String num : orderNumbers) {
             if (!result.containsKey(num)) {
                 try {
-                    Optional<OrderEntity> orderOpt = orderRepository.findByOrderNumber(num);
+                    Optional<OrderEntity> orderOpt = orderRepository().findByOrderNumber(num);
                     orderOpt.ifPresent(order -> result.put(num, order));
                 } catch (Exception e) {
                     logger.warn("Error loading order individually {}: {}", num, e.getMessage());

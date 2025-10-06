@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sivalabs.bookstore.catalog.domain.ProductEntity;
 import com.sivalabs.bookstore.catalog.domain.ProductRepository;
+import com.sivalabs.bookstore.testsupport.TestObjectProvider;
 import com.sivalabs.bookstore.testsupport.cache.AbstractMapStoreTest;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -33,14 +34,14 @@ class ProductMapStoreTests extends AbstractMapStoreTest<String, ProductEntity, P
     @BeforeEach
     protected void setUp() {
         // Initialize with specific typed mock to avoid ClassCastException
-        mapStore = new ProductMapStore(productRepository);
+        mapStore = new ProductMapStore(new TestObjectProvider<>(() -> productRepository));
         testEntity1 = createTestEntity1();
         testEntity2 = createTestEntity2();
     }
 
     @Override
     protected ProductMapStore createMapStore(ProductRepository repository) {
-        return new ProductMapStore(repository);
+        return new ProductMapStore(new TestObjectProvider<>(() -> repository));
     }
 
     @Override

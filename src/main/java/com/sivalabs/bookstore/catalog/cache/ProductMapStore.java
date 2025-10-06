@@ -15,7 +15,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
 
 /**
  * Hazelcast MapStore implementation for ProductEntity.
@@ -30,26 +31,27 @@ import org.springframework.beans.factory.annotation.Autowired;
  * - loadAll() provides bulk loading capabilities
  */
 @SpringAware
+@Component
 public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoaderLifecycleSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductMapStore.class);
     private static final long STARTUP_GRACE_PERIOD_MS = 30_000L;
-    private final long initTimestamp = System.currentTimeMillis();
+    private final long initTimestamp;
+
+    private final ObjectProvider<ProductRepository> productRepositoryProvider;
+
+    public ProductMapStore(ObjectProvider<ProductRepository> productRepositoryProvider) {
+        this.productRepositoryProvider = productRepositoryProvider;
+        this.initTimestamp = System.currentTimeMillis();
+        logger.info("ProductMapStore initialized with lazy ProductRepository access");
+    }
+
+    private ProductRepository productRepository() {
+        return productRepositoryProvider.getObject();
+    }
 
     private boolean withinStartupWindow() {
         return (System.currentTimeMillis() - initTimestamp) < STARTUP_GRACE_PERIOD_MS;
-    }
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    public ProductMapStore() {
-        logger.info("ProductMapStore default constructor");
-    }
-
-    public ProductMapStore(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-        logger.info("ProductMapStore initialized with ProductRepository");
     }
 
     @Override
@@ -134,7 +136,7 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
         logger.debug("Loading product from database: productCode={}", productCode);
 
         try {
-            Optional<ProductEntity> productOpt = productRepository.findByCode(productCode);
+            Optional<ProductEntity> productOpt = productRepository().findByCode(productCode);
 
             if (productOpt.isPresent()) {
                 ProductEntity product = productOpt.get();
@@ -173,7 +175,7 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
 
         // Try batch query first
         try {
-            var products = productRepository.findByCodeIn(productCodes);
+            var products = productRepository().findByCodeIn(productCodes);
             for (ProductEntity p : products) {
                 if (p != null && p.getCode() != null) {
                     result.put(p.getCode(), p);
@@ -187,7 +189,7 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
         for (String code : productCodes) {
             if (!result.containsKey(code)) {
                 try {
-                    Optional<ProductEntity> productOpt = productRepository.findByCode(code);
+                    Optional<ProductEntity> productOpt = productRepository().findByCode(code);
                     productOpt.ifPresent(product -> result.put(code, product));
                 } catch (Exception e) {
                     logger.warn("Error loading product individually {}: {}", code, e.getMessage());
@@ -210,7 +212,7 @@ public class ProductMapStore implements MapStore<String, ProductEntity>, MapLoad
         logger.debug("Loading all product codes from database");
 
         try {
-            Set<String> allProductCodes = productRepository.findAll().stream()
+            Set<String> allProductCodes = productRepository().findAll().stream()
                     .map(ProductEntity::getCode)
                     .collect(Collectors.toSet());
 

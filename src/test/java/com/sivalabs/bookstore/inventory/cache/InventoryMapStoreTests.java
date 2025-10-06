@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import com.hazelcast.core.HazelcastInstance;
 import com.sivalabs.bookstore.inventory.domain.InventoryEntity;
 import com.sivalabs.bookstore.inventory.domain.InventoryRepository;
+import com.sivalabs.bookstore.testsupport.TestObjectProvider;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -38,7 +39,7 @@ class InventoryMapStoreTests {
 
     @BeforeEach
     void setUp() {
-        inventoryMapStore = new InventoryMapStore(inventoryRepository);
+        inventoryMapStore = new InventoryMapStore(new TestObjectProvider<>(() -> inventoryRepository));
 
         // Create test inventory data with Long IDs
         testInventory = createTestInventory(1L, "INV-P001", 100L);
