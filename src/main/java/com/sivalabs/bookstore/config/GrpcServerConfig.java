@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.config;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import java.util.List;
@@ -36,6 +37,9 @@ public class GrpcServerConfig {
         if (serverProperties.isHealthCheckEnabled()) {
             HealthStatusManager healthStatusManager = new HealthStatusManager();
             serverBuilder.addService(healthStatusManager.getHealthService());
+            healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
+            grpcServices.forEach(service -> healthStatusManager.setStatus(
+                    service.bindService().getServiceDescriptor().getName(), HealthCheckResponse.ServingStatus.SERVING));
         }
 
         if (serverProperties.isReflectionEnabled()) {

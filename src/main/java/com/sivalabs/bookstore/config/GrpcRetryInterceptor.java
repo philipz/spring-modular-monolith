@@ -77,6 +77,9 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         }
 
         private void startNewAttempt() {
+            if (completed) {
+                return;
+            }
             attempt++;
             delegate = channel.newCall(method, callOptions);
             delegate.start(new RetryListener(attempt), headers);

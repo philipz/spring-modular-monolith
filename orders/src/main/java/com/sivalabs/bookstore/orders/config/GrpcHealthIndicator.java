@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnClass(name = "io.grpc.health.v1.HealthGrpc")
-@ConditionalOnProperty(name = "grpc.client.orders.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnBean(name = "ordersServiceChannel")
 public class GrpcHealthIndicator implements HealthIndicator {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcHealthIndicator.class);

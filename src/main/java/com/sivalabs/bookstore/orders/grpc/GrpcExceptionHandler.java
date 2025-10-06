@@ -24,6 +24,10 @@ public final class GrpcExceptionHandler {
     }
 
     public static StatusRuntimeException handleException(Exception exception) {
+        if (exception instanceof StatusRuntimeException statusException) {
+            log.debug("Propagating existing gRPC status: {}", statusException.getStatus(), statusException);
+            return statusException;
+        }
         if (exception instanceof OrderNotFoundException notFoundException) {
             log.debug("Order not found: {}", notFoundException.getMessage());
             return Status.NOT_FOUND

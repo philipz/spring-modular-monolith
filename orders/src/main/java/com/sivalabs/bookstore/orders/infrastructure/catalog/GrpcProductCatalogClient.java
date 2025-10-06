@@ -40,13 +40,15 @@ public class GrpcProductCatalogClient implements ProductCatalogPort {
     }
 
     @Override
+    @CircuitBreaker(name = CATALOG_CIRCUIT_BREAKER, fallbackMethod = "handleValidationFailure")
+    @Retry(name = CATALOG_CIRCUIT_BREAKER)
     public void validate(String productCode, BigDecimal price) {
-        log.info("🔍 [gRPC-CLIENT] Starting product validation for code={}, price={}", productCode, price);
+        log.info("[gRPC-CLIENT] Starting product validation for code={}, price={}", productCode, price);
 
         ProductValidationResponse response = validateProduct(productCode, price);
 
         if (!response.getValid()) {
-            log.warn("❌ [gRPC-CLIENT] Product validation failed for code={}: {}", productCode, response.getMessage());
+            log.warn("[gRPC-CLIENT] Product validation failed for code={}: {}", productCode, response.getMessage());
             throw new InvalidOrderException(response.getMessage());
         }
 
@@ -58,7 +60,7 @@ public class GrpcProductCatalogClient implements ProductCatalogPort {
 
         if (difference.compareTo(tolerance) > 0) {
             log.warn(
-                    "❌ [gRPC-CLIENT] Price validation failed for code={}. Expected: {}, Provided: {}, Difference: {}",
+                    "[gRPC-CLIENT] Price validation failed for code={}. Expected: {}, Provided: {}, Difference: {}",
                     productCode,
                     productPrice,
                     price,
@@ -68,36 +70,34 @@ public class GrpcProductCatalogClient implements ProductCatalogPort {
         }
 
         log.info(
-                "✅ [gRPC-CLIENT] Product validation successful for code={}, productName={}, catalogPrice={}",
+                "[gRPC-CLIENT] Product validation successful for code={}, productName={}, catalogPrice={}",
                 productCode,
                 response.getProduct().getName(),
                 productPrice);
     }
 
-    @CircuitBreaker(name = CATALOG_CIRCUIT_BREAKER, fallbackMethod = "handleValidationFailure")
-    @Retry(name = CATALOG_CIRCUIT_BREAKER)
-    ProductValidationResponse validateProduct(String productCode, BigDecimal price) {
+    private ProductValidationResponse validateProduct(String productCode, BigDecimal price) {
         try {
-            log.debug("📤 [gRPC-CLIENT] Preparing gRPC request for catalog validation");
+            log.debug("[gRPC-CLIENT] Preparing gRPC request for catalog validation");
 
             ProductValidationRequest request = ProductValidationRequest.newBuilder()
                     .setProductCode(productCode)
                     .setPrice(price.doubleValue())
                     .build();
 
-            log.info("🚀 [gRPC-CLIENT] Invoking ProductCatalogService.validateProduct for code={}", productCode);
+            log.info("[gRPC-CLIENT] Invoking ProductCatalogService.validateProduct for code={}", productCode);
 
             ProductValidationResponse response = catalogStub.validateProduct(request);
 
             log.info(
-                    "📥 [gRPC-CLIENT] Received gRPC response: valid={}, message={}",
+                    "[gRPC-CLIENT] Received gRPC response: valid={}, message={}",
                     response.getValid(),
                     response.getMessage());
 
             return response;
         } catch (StatusRuntimeException e) {
             log.error(
-                    "🚨 [gRPC-CLIENT] gRPC call failed for code={}: status={}, description={}",
+                    "[gRPC-CLIENT] gRPC call failed for code={}: status={}, description={}",
                     productCode,
                     e.getStatus().getCode(),
                     e.getStatus().getDescription());
@@ -106,9 +106,9 @@ public class GrpcProductCatalogClient implements ProductCatalogPort {
         }
     }
 
-    ProductValidationResponse handleValidationFailure(String productCode, BigDecimal price, Throwable throwable) {
+    void handleValidationFailure(String productCode, BigDecimal price, Throwable throwable) {
         log.error(
-                "🔄 [gRPC-CLIENT] Circuit breaker fallback triggered for product {}: {}",
+                "[gRPC-CLIENT] Circuit breaker fallback triggered for product {}: {}",
                 productCode,
                 throwable.getMessage());
         throw new CatalogServiceException("Unable to validate product via catalog gRPC service", throwable);

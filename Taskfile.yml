@@ -4,7 +4,6 @@ vars:
   GOOS: "{{default OS .GOOS}}"
   MVNW: '{{if eq .GOOS "windows"}}mvnw.cmd{{else}}./mvnw{{end}}'
   SLEEP_CMD: '{{if eq .GOOS "windows"}}timeout{{else}}sleep{{end}}'
-  IMAGE_NAME: 'sivaprasadreddy/spring-modular-monolith'
   DC_FILE: "compose.yml"
 
 tasks:
@@ -22,7 +21,7 @@ tasks:
 
   build_image:
     cmds:
-      - "{{.MVNW}} clean protobuf:compile package spring-boot:build-image -DskipTests -DdockerImageName={{.IMAGE_NAME}}"
+      - "{{.MVNW}} clean protobuf:compile package spring-boot:build-image -DskipTests"
 
   start:
     deps: [ build_image ]
