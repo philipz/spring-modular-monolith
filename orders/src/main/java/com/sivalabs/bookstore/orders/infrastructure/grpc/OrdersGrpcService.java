@@ -11,7 +11,9 @@ import com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse;
 import com.sivalabs.bookstore.orders.grpc.proto.OrderView;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
 import io.grpc.stub.StreamObserver;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.regex.Pattern;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,8 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
     private final GrpcOrderMapper mapper;
     private final GrpcExceptionMapper exceptionMapper;
     private static final Logger log = LoggerFactory.getLogger(OrdersGrpcService.class);
+    private static final Pattern BASIC_EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     public OrdersGrpcService(
             OrdersApiService ordersApiService, GrpcOrderMapper mapper, GrpcExceptionMapper exceptionMapper) {
@@ -184,6 +188,15 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
         if (item.getPrice() == null || item.getPrice().isBlank()) {
             throw new IllegalArgumentException("Product price is required");
         }
+        BigDecimal price;
+        try {
+            price = new BigDecimal(item.getPrice());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Product price must be a valid number", ex);
+        }
+        if (price.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Product price must be greater than 0");
+        }
         if (item.getQuantity() <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
@@ -199,7 +212,24 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
         if (email == null) {
             return false;
         }
-        // Simple email validation pattern
-        return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+        String candidate = email.trim();
+        if (!BASIC_EMAIL_PATTERN.matcher(candidate).matches()) {
+            return false;
+        }
+        int atIndex = candidate.indexOf('@');
+        String localPart = candidate.substring(0, atIndex);
+        String domainPart = candidate.substring(atIndex + 1);
+
+        if (localPart.startsWith(".") || localPart.endsWith(".") || localPart.contains("..")) {
+            return false;
+        }
+        if (domainPart.startsWith("-")
+                || domainPart.endsWith("-")
+                || domainPart.startsWith(".")
+                || domainPart.endsWith(".")
+                || domainPart.contains("..")) {
+            return false;
+        }
+        return true;
     }
 }

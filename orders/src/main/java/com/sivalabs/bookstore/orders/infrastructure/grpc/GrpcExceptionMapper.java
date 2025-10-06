@@ -24,11 +24,17 @@ public class GrpcExceptionMapper {
         }
 
         if (rootCause instanceof jakarta.validation.ConstraintViolationException violationException) {
-            String description = violationException.getConstraintViolations().stream()
-                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-                    .collect(java.util.stream.Collectors.joining(", "));
-            if (description.isBlank()) {
+            var violations = violationException.getConstraintViolations();
+            String description = violations == null || violations.isEmpty()
+                    ? null
+                    : violations.stream()
+                            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                            .collect(java.util.stream.Collectors.joining(", "));
+            if (description == null || description.isBlank()) {
                 description = violationException.getMessage();
+                if (description == null || description.isBlank()) {
+                    description = "Validation failed";
+                }
             }
             return Status.INVALID_ARGUMENT
                     .withDescription(description)

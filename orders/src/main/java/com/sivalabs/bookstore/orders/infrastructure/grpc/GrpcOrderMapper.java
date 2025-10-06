@@ -24,8 +24,8 @@ public class GrpcOrderMapper {
     /** Standard scale for monetary amounts (2 decimal places for currency). */
     private static final int PRICE_SCALE = 2;
 
-    /** Rounding mode for monetary calculations (banker's rounding). */
-    private static final RoundingMode PRICE_ROUNDING_MODE = RoundingMode.HALF_UP;
+    /** Rounding mode for monetary calculations (banker's rounding: rounds ties to nearest even). */
+    private static final RoundingMode PRICE_ROUNDING_MODE = RoundingMode.HALF_EVEN;
 
     public CreateOrderRequest toDomain(com.sivalabs.bookstore.orders.grpc.proto.CreateOrderRequest request) {
         Customer customer = new Customer(
@@ -185,12 +185,13 @@ public class GrpcOrderMapper {
      * <p>This ensures consistent precision for all monetary values in the system:
      * <ul>
      *   <li>Scale: 2 decimal places (standard for currency)</li>
-     *   <li>Rounding: HALF_UP (standard banker's rounding)</li>
+     *   <li>Rounding: HALF_UP (rounds ties away from zero)</li>
      * </ul>
      *
      * @param priceStr price as string from gRPC request
      * @return BigDecimal with scale=2 and HALF_UP rounding
      * @throws IllegalArgumentException if priceStr is null or blank
+     * @throws NumberFormatException if priceStr is not a valid decimal number
      */
     private BigDecimal parsePrice(String priceStr) {
         if (priceStr == null || priceStr.isBlank()) {
