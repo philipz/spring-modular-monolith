@@ -61,9 +61,9 @@ public class CacheProperties {
 
     /**
      * When true, health check basic operations run in read-only mode (no put/remove),
-     * using only get operations to avoid triggering MapStore writes. Default is false.
+     * using only get operations to avoid triggering MapStore writes. Default is true.
      */
-    private boolean basicOperationsReadOnly = false;
+    private boolean basicOperationsReadOnly = true;
 
     /**
      * Enable/disable health check basic operations block. Default is true.

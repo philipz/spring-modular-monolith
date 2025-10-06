@@ -1,11 +1,7 @@
 package com.sivalabs.bookstore.config;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -62,72 +58,6 @@ public class HazelcastConfig {
         // Allow Hazelcast to inject Spring-managed dependencies into components like MapStore
         config.setManagedContext(springManagedContext);
 
-        // Configure the products cache map (same configuration as orders cache)
-        MapConfig productsCacheMapConfig = new MapConfig(PRODUCTS_CACHE_NAME);
-
-        EvictionConfig productsEvictionConfig = new EvictionConfig();
-        productsEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
-        productsEvictionConfig.setSize(cacheProperties.getMaxSize());
-        productsEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        productsCacheMapConfig.setEvictionConfig(productsEvictionConfig);
-
-        productsCacheMapConfig.setTimeToLiveSeconds(cacheProperties.getTimeToLiveSeconds());
-        productsCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
-        productsCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
-        productsCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
-
-        productsCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
-
-        // Configure MapStore for products cache (lazy to avoid circular dependency)
-        configureMapStore(
-                productsCacheMapConfig, "com.sivalabs.bookstore.catalog.cache.ProductMapStore", cacheProperties);
-
-        config.addMapConfig(productsCacheMapConfig);
-
-        // Configure the inventory cache map (same configuration as others but with shorter TTL)
-        MapConfig inventoryCacheMapConfig = new MapConfig(INVENTORY_CACHE_NAME);
-
-        EvictionConfig inventoryEvictionConfig = new EvictionConfig();
-        inventoryEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
-        inventoryEvictionConfig.setSize(cacheProperties.getMaxSize());
-        inventoryEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        inventoryCacheMapConfig.setEvictionConfig(inventoryEvictionConfig);
-
-        // Use shorter TTL for inventory data due to volatility
-        // Use externalized TTL for inventory cache instead of hardcoded value
-        inventoryCacheMapConfig.setTimeToLiveSeconds(cacheProperties.getInventoryTimeToLiveSeconds());
-        inventoryCacheMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
-        inventoryCacheMapConfig.setBackupCount(cacheProperties.getBackupCount());
-        inventoryCacheMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
-
-        inventoryCacheMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
-
-        // Configure MapStore for inventory cache (lazy to avoid circular dependency)
-        configureMapStore(
-                inventoryCacheMapConfig, "com.sivalabs.bookstore.inventory.cache.InventoryMapStore", cacheProperties);
-
-        config.addMapConfig(inventoryCacheMapConfig);
-
-        // Configure the inventory-by-product-code index cache (String -> Long)
-        MapConfig inventoryByProductCodeMapConfig = new MapConfig(INVENTORY_BY_PRODUCT_CODE_CACHE_NAME);
-
-        EvictionConfig indexEvictionConfig = new EvictionConfig();
-        indexEvictionConfig.setMaxSizePolicy(MaxSizePolicy.PER_NODE);
-        indexEvictionConfig.setSize(cacheProperties.getMaxSize());
-        indexEvictionConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        inventoryByProductCodeMapConfig.setEvictionConfig(indexEvictionConfig);
-
-        // Align TTL with inventory cache TTL for consistency
-        inventoryByProductCodeMapConfig.setTimeToLiveSeconds(cacheProperties.getInventoryTimeToLiveSeconds());
-        inventoryByProductCodeMapConfig.setMaxIdleSeconds(cacheProperties.getMaxIdleSeconds());
-        inventoryByProductCodeMapConfig.setBackupCount(cacheProperties.getBackupCount());
-        inventoryByProductCodeMapConfig.setReadBackupData(cacheProperties.isReadBackupData());
-        inventoryByProductCodeMapConfig.setStatisticsEnabled(cacheProperties.isMetricsEnabled());
-
-        // No MapStore for index cache (derived data)
-
-        config.addMapConfig(inventoryByProductCodeMapConfig);
-
         // Allow other modules (e.g., orders) to contribute additional map configurations
         mapConfigs.orderedStream().forEach(config::addMapConfig);
 
@@ -169,34 +99,6 @@ public class HazelcastConfig {
         SpringManagedContext springManagedContext = new SpringManagedContext();
         springManagedContext.setApplicationContext(applicationContext);
         return springManagedContext;
-    }
-
-    /**
-     * Configures MapStore for a cache map using class name to avoid circular dependency.
-     */
-    private void configureMapStore(MapConfig mapConfig, String mapStoreClassName, CacheProperties cacheProperties) {
-        try {
-            MapStoreConfig mapStoreConfig = new MapStoreConfig();
-            mapStoreConfig.setEnabled(true);
-            mapStoreConfig.setClassName(mapStoreClassName);
-            mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
-
-            if (cacheProperties.isWriteThrough()) {
-                mapStoreConfig.setWriteDelaySeconds(cacheProperties.getWriteDelaySeconds());
-                mapStoreConfig.setWriteBatchSize(cacheProperties.getWriteBatchSize());
-            }
-
-            mapConfig.setMapStoreConfig(mapStoreConfig);
-
-            logger.debug("MapStore {} configured for cache {}", mapStoreClassName, mapConfig.getName());
-        } catch (Exception e) {
-            logger.warn(
-                    "Failed to configure MapStore {} for cache {}: {}",
-                    mapStoreClassName,
-                    mapConfig.getName(),
-                    e.getMessage());
-            // Continue without MapStore if configuration fails
-        }
     }
 
     /**

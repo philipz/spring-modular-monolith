@@ -13,6 +13,7 @@ import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
 import com.sivalabs.bookstore.orders.domain.OrderRepository;
+import com.sivalabs.bookstore.testsupport.TestObjectProvider;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -45,7 +46,7 @@ class OrderMapStoreTests {
 
     @BeforeEach
     void setUp() {
-        orderMapStore = new OrderMapStore(orderRepository);
+        orderMapStore = new OrderMapStore(new TestObjectProvider<>(() -> orderRepository));
 
         // Create test order data
         testOrder = createTestOrder("ORD-001", 1L, "Test Product", 2);
