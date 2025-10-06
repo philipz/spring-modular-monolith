@@ -1,10 +1,15 @@
 package com.sivalabs.bookstore.orders.config;
 
 import com.sivalabs.bookstore.common.grpc.ProductCatalogServiceGrpc;
+import com.sivalabs.bookstore.orders.config.GrpcClientProperties.RetryProperties;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -45,9 +50,17 @@ public class GrpcClientConfiguration {
                 .keepAliveTime(properties.getKeepAliveTime().toSeconds(), TimeUnit.SECONDS)
                 .keepAliveTimeout(properties.getKeepAliveTimeout().toSeconds(), TimeUnit.SECONDS)
                 .keepAliveWithoutCalls(properties.isKeepAliveWithoutCalls())
-                .maxInboundMessageSize(4 * 1024 * 1024) // 4MB default
-                .enableRetry()
-                .usePlaintext(); // Use plaintext for development
+                .maxInboundMessageSize(4 * 1024 * 1024); // 4MB default
+
+        if (properties.getRetry().isEnabled()) {
+            channelBuilder
+                    .defaultServiceConfig(buildRetryServiceConfig(properties.getRetry()))
+                    .enableRetry();
+        } else {
+            channelBuilder.disableRetry();
+        }
+
+        channelBuilder.usePlaintext(); // Use plaintext for development
 
         // Apply TLS configuration if enabled
         if (properties.getSecurity().isTlsEnabled()) {
@@ -161,5 +174,28 @@ public class GrpcClientConfiguration {
         }
 
         return stub;
+    }
+
+    private Map<String, ?> buildRetryServiceConfig(RetryProperties retryProperties) {
+        Map<String, Object> retryPolicy = new HashMap<>();
+        retryPolicy.put("maxAttempts", (double) retryProperties.getMaxAttempts());
+        retryPolicy.put("initialBackoff", toSecondsString(retryProperties.getInitialBackoff()));
+        retryPolicy.put("maxBackoff", toSecondsString(retryProperties.getMaxBackoff()));
+        retryPolicy.put("backoffMultiplier", retryProperties.getMultiplier());
+        retryPolicy.put("retryableStatusCodes", List.of("UNAVAILABLE", "DEADLINE_EXCEEDED"));
+
+        Map<String, Object> methodConfig = new HashMap<>();
+        methodConfig.put("name", List.of(Map.of()));
+        methodConfig.put("retryPolicy", retryPolicy);
+
+        return Map.of("methodConfig", List.of(methodConfig));
+    }
+
+    private String toSecondsString(Duration duration) {
+        BigDecimal seconds = BigDecimal.valueOf(duration.getSeconds());
+        if (duration.getNano() != 0) {
+            seconds = seconds.add(BigDecimal.valueOf(duration.getNano(), 9));
+        }
+        return seconds.stripTrailingZeros().toPlainString() + "s";
     }
 }

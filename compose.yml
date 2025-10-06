@@ -5,6 +5,20 @@ services:
       - 'POSTGRES_DB=postgres'
       - 'POSTGRES_PASSWORD=postgres'
       - 'POSTGRES_USER=postgres'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proxy
+  
+  orders-postgres:
+    image: 'postgres:17-alpine'
+    environment:
+      - 'POSTGRES_DB=postgres'
+      - 'POSTGRES_PASSWORD=postgres'
+      - 'POSTGRES_USER=postgres'
     ports:
       - '5432:5432'
     healthcheck:
@@ -45,7 +59,7 @@ services:
       - proxy
 
   monolith:
-    image: sivaprasadreddy/spring-modular-monolith
+    image: sivaprasadreddy/spring-modular-monolith:0.0.1-SNAPSHOT
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
@@ -75,13 +89,13 @@ services:
   orders-service:
     image: philipz/orders-service:0.0.1-SNAPSHOT
     depends_on:
-      postgres:
+      orders-postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://orders-postgres:5432/postgres
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_DATASOURCE_POOL_SIZE: 10

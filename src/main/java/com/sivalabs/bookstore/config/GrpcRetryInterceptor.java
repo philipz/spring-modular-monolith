@@ -61,7 +61,7 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         private boolean halfClosed;
         private ClientCall<ReqT, RespT> delegate;
         private int attempt;
-        private boolean completed;
+        private volatile boolean completed;
 
         private RetryingClientCall(Channel channel, MethodDescriptor<ReqT, RespT> method, CallOptions callOptions) {
             this.channel = channel;
@@ -77,6 +77,9 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         }
 
         private void startNewAttempt() {
+            if (completed) {
+                return;
+            }
             attempt++;
             delegate = channel.newCall(method, callOptions);
             delegate.start(new RetryListener(attempt), headers);

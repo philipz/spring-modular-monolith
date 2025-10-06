@@ -9,18 +9,23 @@ import com.sivalabs.bookstore.orders.api.model.Customer;
 import com.sivalabs.bookstore.orders.api.model.OrderItem;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnClass(name = "com.sivalabs.bookstore.orders.grpc.proto.CreateOrderRequest")
-@ConditionalOnProperty(name = "grpc.client.orders.enabled", havingValue = "true", matchIfMissing = true)
 public class GrpcOrderMapper {
+
+    /** Standard scale for monetary amounts (2 decimal places for currency). */
+    private static final int PRICE_SCALE = 2;
+
+    /** Rounding mode for monetary calculations (banker's rounding: rounds ties to nearest even). */
+    private static final RoundingMode PRICE_ROUNDING_MODE = RoundingMode.HALF_EVEN;
 
     public CreateOrderRequest toDomain(com.sivalabs.bookstore.orders.grpc.proto.CreateOrderRequest request) {
         Customer customer = new Customer(
@@ -31,7 +36,7 @@ public class GrpcOrderMapper {
         OrderItem item = new OrderItem(
                 request.getItem().getCode(),
                 request.getItem().getName(),
-                new BigDecimal(request.getItem().getPrice()), // Convert from string
+                parsePrice(request.getItem().getPrice()), // Parse with standard scale and rounding
                 request.getItem().getQuantity());
 
         return new CreateOrderRequest(customer, request.getDeliveryAddress(), item);
@@ -95,7 +100,7 @@ public class GrpcOrderMapper {
         OrderItem item = new OrderItem(
                 orderDto.getItem().getCode(),
                 orderDto.getItem().getName(),
-                new BigDecimal(orderDto.getItem().getPrice()), // Convert from string
+                parsePrice(orderDto.getItem().getPrice()), // Parse with standard scale and rounding
                 orderDto.getItem().getQuantity());
 
         Customer customer = new Customer(
@@ -162,7 +167,7 @@ public class GrpcOrderMapper {
     }
 
     private Timestamp toTimestamp(LocalDateTime createdAt) {
-        Instant instant = createdAt.toInstant(ZoneOffset.UTC);
+        Instant instant = createdAt.atZone(ZoneId.systemDefault()).toInstant();
         return Timestamp.newBuilder()
                 .setSeconds(instant.getEpochSecond())
                 .setNanos(instant.getNano())
@@ -171,6 +176,27 @@ public class GrpcOrderMapper {
 
     private LocalDateTime toLocalDateTime(Timestamp timestamp) {
         return LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), ZoneOffset.UTC);
+                Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), ZoneId.systemDefault());
+    }
+
+    /**
+     * Parses price string to BigDecimal with standard monetary scale and rounding.
+     *
+     * <p>This ensures consistent precision for all monetary values in the system:
+     * <ul>
+     *   <li>Scale: 2 decimal places (standard for currency)</li>
+     *   <li>Rounding: HALF_UP (rounds ties away from zero)</li>
+     * </ul>
+     *
+     * @param priceStr price as string from gRPC request
+     * @return BigDecimal with scale=2 and HALF_UP rounding
+     * @throws IllegalArgumentException if priceStr is null or blank
+     * @throws NumberFormatException if priceStr is not a valid decimal number
+     */
+    private BigDecimal parsePrice(String priceStr) {
+        if (priceStr == null || priceStr.isBlank()) {
+            throw new IllegalArgumentException("Price cannot be null or blank");
+        }
+        return new BigDecimal(priceStr).setScale(PRICE_SCALE, PRICE_ROUNDING_MODE);
     }
 }

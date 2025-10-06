@@ -24,6 +24,10 @@ public final class GrpcExceptionHandler {
     }
 
     public static StatusRuntimeException handleException(Exception exception) {
+        if (exception instanceof StatusRuntimeException statusException) {
+            log.debug("Propagating existing gRPC status: {}", statusException.getStatus(), statusException);
+            return statusException;
+        }
         if (exception instanceof OrderNotFoundException notFoundException) {
             log.debug("Order not found: {}", notFoundException.getMessage());
             return Status.NOT_FOUND
@@ -42,11 +46,17 @@ public final class GrpcExceptionHandler {
 
         if (exception instanceof ConstraintViolationException violationException) {
             log.debug("Constraint violation while processing gRPC request", violationException);
-            String description = violationException.getConstraintViolations().stream()
-                    .map(GrpcExceptionHandler::formatViolation)
-                    .collect(Collectors.joining(", "));
-            if (description.isBlank()) {
+            var violations = violationException.getConstraintViolations();
+            String description = violations == null || violations.isEmpty()
+                    ? null
+                    : violations.stream()
+                            .map(GrpcExceptionHandler::formatViolation)
+                            .collect(Collectors.joining(", "));
+            if (description == null || description.isBlank()) {
                 description = violationException.getMessage();
+                if (description == null || description.isBlank()) {
+                    description = "Validation failed";
+                }
             }
             return Status.INVALID_ARGUMENT
                     .withDescription(description)

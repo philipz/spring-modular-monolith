@@ -9,12 +9,10 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnClass(name = "io.grpc.Status")
-@ConditionalOnProperty(name = "grpc.client.orders.enabled", havingValue = "true", matchIfMissing = true)
 public class GrpcExceptionMapper {
 
     public StatusRuntimeException map(Throwable throwable) {
@@ -25,6 +23,25 @@ public class GrpcExceptionMapper {
             return statusRuntimeException;
         }
 
+        if (rootCause instanceof jakarta.validation.ConstraintViolationException violationException) {
+            var violations = violationException.getConstraintViolations();
+            String description = violations == null || violations.isEmpty()
+                    ? null
+                    : violations.stream()
+                            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                            .collect(java.util.stream.Collectors.joining(", "));
+            if (description == null || description.isBlank()) {
+                description = violationException.getMessage();
+                if (description == null || description.isBlank()) {
+                    description = "Validation failed";
+                }
+            }
+            return Status.INVALID_ARGUMENT
+                    .withDescription(description)
+                    .withCause(rootCause)
+                    .asRuntimeException();
+        }
+
         if (rootCause instanceof OrderNotFoundException) {
             return Status.NOT_FOUND
                     .withDescription(rootCause.getMessage())
@@ -32,7 +49,7 @@ public class GrpcExceptionMapper {
                     .asRuntimeException();
         }
 
-        if (rootCause instanceof InvalidOrderException) {
+        if (rootCause instanceof InvalidOrderException || rootCause instanceof IllegalArgumentException) {
             return Status.INVALID_ARGUMENT
                     .withDescription(rootCause.getMessage())
                     .withCause(rootCause)

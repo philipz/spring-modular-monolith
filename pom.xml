@@ -18,7 +18,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <dockerImageName>sivaprasadreddy/${project.artifactId}</dockerImageName>
+        <dockerImageName>sivaprasadreddy/${project.artifactId}:${project.version}</dockerImageName>
         <spring-modulith.version>1.4.3</spring-modulith.version>
         <htmx-spring-boot-thymeleaf.version>4.0.1</htmx-spring-boot-thymeleaf.version>
         <datasource-micrometer-spring-boot.version>1.1.2</datasource-micrometer-spring-boot.version>

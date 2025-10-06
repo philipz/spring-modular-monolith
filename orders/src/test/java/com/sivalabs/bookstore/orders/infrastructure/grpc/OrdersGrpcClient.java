@@ -55,24 +55,24 @@ public class OrdersGrpcClient {
     public CreateOrderResponse createOrder(com.sivalabs.bookstore.orders.api.CreateOrderRequest request) {
         try {
             log.info(
-                    "🚀 [ORDERS-CLIENT] Starting order creation via gRPC for customer: {}, product: {}",
+                    "[ORDERS-CLIENT] Starting order creation via gRPC for customer: {}, product: {}",
                     request.customer().name(),
                     request.item().code());
 
             CreateOrderRequest grpcRequest = mapper.toProto(request);
 
-            log.debug("📤 [ORDERS-CLIENT] Sending gRPC createOrder request");
+            log.debug("[ORDERS-CLIENT] Sending gRPC createOrder request");
             var grpcResponse = ordersServiceStub
                     .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .createOrder(grpcRequest);
 
             CreateOrderResponse response = mapper.toDomain(grpcResponse);
-            log.info("✅ [ORDERS-CLIENT] Successfully created order: {}", response.orderNumber());
+            log.info("[ORDERS-CLIENT] Successfully created order: {}", response.orderNumber());
 
             return response;
         } catch (StatusRuntimeException e) {
             log.error(
-                    "🚨 [ORDERS-CLIENT] gRPC createOrder failed: status={}, description={}",
+                    "[ORDERS-CLIENT] gRPC createOrder failed: status={}, description={}",
                     e.getStatus().getCode(),
                     e.getStatus().getDescription());
             throw convertGrpcException("createOrder", e);
@@ -91,23 +91,23 @@ public class OrdersGrpcClient {
     // @Retry(name = ORDERS_CIRCUIT_BREAKER)
     public OrderDto findOrder(String orderNumber) {
         try {
-            log.info("🔍 [ORDERS-CLIENT] Finding order via gRPC: {}", orderNumber);
+            log.info("[ORDERS-CLIENT] Finding order via gRPC: {}", orderNumber);
 
             GetOrderRequest grpcRequest =
                     GetOrderRequest.newBuilder().setOrderNumber(orderNumber).build();
 
-            log.debug("📤 [ORDERS-CLIENT] Sending gRPC getOrder request");
+            log.debug("[ORDERS-CLIENT] Sending gRPC getOrder request");
             var grpcResponse = ordersServiceStub
                     .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .getOrder(grpcRequest);
 
             OrderDto response = mapper.toDomain(grpcResponse.getOrder());
-            log.info("✅ [ORDERS-CLIENT] Successfully found order: {}, status: {}", orderNumber, response.status());
+            log.info("[ORDERS-CLIENT] Successfully found order: {}, status: {}", orderNumber, response.status());
 
             return response;
         } catch (StatusRuntimeException e) {
             log.error(
-                    "🚨 [ORDERS-CLIENT] gRPC getOrder failed for {}: status={}, description={}",
+                    "[ORDERS-CLIENT] gRPC getOrder failed for {}: status={}, description={}",
                     orderNumber,
                     e.getStatus().getCode(),
                     e.getStatus().getDescription());
@@ -125,11 +125,11 @@ public class OrdersGrpcClient {
     // @Retry(name = ORDERS_CIRCUIT_BREAKER)
     public List<OrderView> findOrders() {
         try {
-            log.info("📋 [ORDERS-CLIENT] Finding all orders via gRPC");
+            log.info("[ORDERS-CLIENT] Finding all orders via gRPC");
 
             ListOrdersRequest grpcRequest = ListOrdersRequest.newBuilder().build();
 
-            log.debug("📤 [ORDERS-CLIENT] Sending gRPC listOrders request");
+            log.debug("[ORDERS-CLIENT] Sending gRPC listOrders request");
             var grpcResponse = ordersServiceStub
                     .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .listOrders(grpcRequest);
@@ -137,12 +137,12 @@ public class OrdersGrpcClient {
             List<OrderView> response =
                     grpcResponse.getOrdersList().stream().map(mapper::toDomain).toList();
 
-            log.info("✅ [ORDERS-CLIENT] Successfully found {} orders", response.size());
+            log.info("[ORDERS-CLIENT] Successfully found {} orders", response.size());
 
             return response;
         } catch (StatusRuntimeException e) {
             log.error(
-                    "🚨 [ORDERS-CLIENT] gRPC listOrders failed: status={}, description={}",
+                    "[ORDERS-CLIENT] gRPC listOrders failed: status={}, description={}",
                     e.getStatus().getCode(),
                     e.getStatus().getDescription());
             throw convertGrpcException("listOrders", e);
