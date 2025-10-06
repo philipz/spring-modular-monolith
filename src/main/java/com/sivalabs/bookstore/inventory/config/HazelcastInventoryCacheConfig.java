@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.inventory.config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.sivalabs.bookstore.common.cache.SpringAwareMapStoreConfig;
 import com.sivalabs.bookstore.inventory.cache.InventoryMapStore;
@@ -44,7 +45,7 @@ class HazelcastInventoryCacheConfig {
         SpringAwareMapStoreConfig mapStoreConfig = new SpringAwareMapStoreConfig();
         mapStoreConfig.setEnabled(true);
         mapStoreConfig.setImplementation(inventoryMapStore);
-        mapStoreConfig.setInitialLoadMode(SpringAwareMapStoreConfig.InitialLoadMode.LAZY);
+        mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
 
         boolean writeThrough = getBoolean(environment, "bookstore.cache.write-through", true);
         if (writeThrough) {
