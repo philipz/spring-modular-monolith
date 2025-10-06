@@ -50,7 +50,7 @@ class HazelcastOrderCacheConfigTests {
         assertThat(mapStoreConfig.isEnabled()).isTrue();
         assertThat(mapStoreConfig.getImplementation()).isSameAs(orderMapStore);
         assertThat(mapStoreConfig.getInitialLoadMode()).isEqualTo(MapStoreConfig.InitialLoadMode.LAZY);
-        assertThat(mapStoreConfig.getWriteDelaySeconds()).isEqualTo(5);
+        assertThat(mapStoreConfig.getWriteDelaySeconds()).isEqualTo(0);
         assertThat(mapStoreConfig.getWriteBatchSize()).isEqualTo(10);
     }
 }

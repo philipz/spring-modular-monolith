@@ -8,6 +8,14 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.sivalabs.bookstore.TestcontainersConfiguration;
+import com.sivalabs.bookstore.catalog.domain.ProductEntity;
+import com.sivalabs.bookstore.inventory.domain.InventoryEntity;
+import com.sivalabs.bookstore.orders.api.model.Customer;
+import com.sivalabs.bookstore.orders.api.model.OrderItem;
+import com.sivalabs.bookstore.orders.api.model.OrderStatus;
+import com.sivalabs.bookstore.orders.domain.OrderEntity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -224,13 +232,14 @@ class HazelcastConfigTests {
         @DisplayName("Should handle products cache operations correctly")
         void shouldHandleProductsCacheOperationsCorrectly() {
             String testKey = "CACHE-TEST-P001";
-            String testValue = "Test Product Cache Value";
+            ProductEntity testProduct = createProductEntity(testKey);
 
-            // Test cache put/get operations
-            productsCache.put(testKey, testValue);
+            productsCache.put(testKey, testProduct);
             Object retrieved = productsCache.get(testKey);
 
-            assertThat(retrieved).isEqualTo(testValue);
+            assertThat(retrieved).isInstanceOf(ProductEntity.class);
+            ProductEntity cachedProduct = (ProductEntity) retrieved;
+            assertThat(cachedProduct.getCode()).isEqualTo(testKey);
             assertThat(productsCache.containsKey(testKey)).isTrue();
 
             // Clean up
@@ -312,13 +321,15 @@ class HazelcastConfigTests {
         @DisplayName("Should handle inventory cache operations with Long keys correctly")
         void shouldHandleInventoryCacheOperationsWithLongKeysCorrectly() {
             Long testKey = System.currentTimeMillis();
-            String testValue = "Test Inventory Cache Value";
+            InventoryEntity testInventory = createInventoryEntity(testKey, "CACHE-INV-" + testKey, 100L);
 
-            // Test cache put/get operations with Long key
-            inventoryCache.put(testKey, testValue);
+            inventoryCache.put(testKey, testInventory);
             Object retrieved = inventoryCache.get(testKey);
 
-            assertThat(retrieved).isEqualTo(testValue);
+            assertThat(retrieved).isInstanceOf(InventoryEntity.class);
+            InventoryEntity cachedInventory = (InventoryEntity) retrieved;
+            assertThat(cachedInventory.getId()).isEqualTo(testKey);
+            assertThat(cachedInventory.getProductCode()).isEqualTo("CACHE-INV-" + testKey);
             assertThat(inventoryCache.containsKey(testKey)).isTrue();
 
             // Clean up
@@ -331,18 +342,22 @@ class HazelcastConfigTests {
         void shouldHandleLongKeyEdgeValuesCorrectlyInInventoryCache() {
             // Test with Long.MAX_VALUE
             Long maxKey = Long.MAX_VALUE;
-            String maxValue = "Max Value Test";
+            InventoryEntity maxInventory = createInventoryEntity(maxKey, "MAX-CODE", 50L);
 
-            inventoryCache.put(maxKey, maxValue);
-            assertThat(inventoryCache.get(maxKey)).isEqualTo(maxValue);
+            inventoryCache.put(maxKey, maxInventory);
+            Object retrievedMax = inventoryCache.get(maxKey);
+            assertThat(retrievedMax).isInstanceOf(InventoryEntity.class);
+            assertThat(((InventoryEntity) retrievedMax).getId()).isEqualTo(maxKey);
             inventoryCache.remove(maxKey);
 
             // Test with 1L
             Long minKey = 1L;
-            String minValue = "Min Value Test";
+            InventoryEntity minInventory = createInventoryEntity(minKey, "MIN-CODE", 25L);
 
-            inventoryCache.put(minKey, minValue);
-            assertThat(inventoryCache.get(minKey)).isEqualTo(minValue);
+            inventoryCache.put(minKey, minInventory);
+            Object retrievedMin = inventoryCache.get(minKey);
+            assertThat(retrievedMin).isInstanceOf(InventoryEntity.class);
+            assertThat(((InventoryEntity) retrievedMin).getId()).isEqualTo(minKey);
             inventoryCache.remove(minKey);
         }
     }
@@ -358,9 +373,9 @@ class HazelcastConfigTests {
             String productKey = "CROSS-TEST-PRODUCT";
             Long inventoryKey = 999L;
 
-            String orderValue = "Test Order";
-            String productValue = "Test Product";
-            String inventoryValue = "Test Inventory";
+            OrderEntity orderValue = createOrderEntity(orderKey);
+            ProductEntity productValue = createProductEntity(productKey);
+            InventoryEntity inventoryValue = createInventoryEntity(inventoryKey, "INV-" + inventoryKey, 10L);
 
             // Put values in all caches
             ordersCache.put(orderKey, orderValue);
@@ -368,9 +383,13 @@ class HazelcastConfigTests {
             inventoryCache.put(inventoryKey, inventoryValue);
 
             // Verify all values are present
-            assertThat(ordersCache.get(orderKey)).isEqualTo(orderValue);
-            assertThat(productsCache.get(productKey)).isEqualTo(productValue);
-            assertThat(inventoryCache.get(inventoryKey)).isEqualTo(inventoryValue);
+            OrderEntity cachedOrder = (OrderEntity) ordersCache.get(orderKey);
+            ProductEntity cachedProduct = (ProductEntity) productsCache.get(productKey);
+            InventoryEntity cachedInventory = (InventoryEntity) inventoryCache.get(inventoryKey);
+
+            assertThat(cachedOrder.getOrderNumber()).isEqualTo(orderKey);
+            assertThat(cachedProduct.getCode()).isEqualTo(productKey);
+            assertThat(cachedInventory.getId()).isEqualTo(inventoryKey);
 
             // Clean up all caches
             ordersCache.remove(orderKey);
@@ -389,9 +408,9 @@ class HazelcastConfigTests {
             String sameKey = "ISOLATION-TEST";
             Long sameLongKey = 12345L;
 
-            String orderValue = "Order Data";
-            String productValue = "Product Data";
-            String inventoryValue = "Inventory Data";
+            OrderEntity orderValue = createOrderEntity(sameKey);
+            ProductEntity productValue = createProductEntity(sameKey);
+            InventoryEntity inventoryValue = createInventoryEntity(sameLongKey, "INV-" + sameLongKey, 25L);
 
             // Use same string key for orders and products, Long key for inventory
             ordersCache.put(sameKey, orderValue);
@@ -399,9 +418,11 @@ class HazelcastConfigTests {
             inventoryCache.put(sameLongKey, inventoryValue);
 
             // Each cache should maintain its own value
-            assertThat(ordersCache.get(sameKey)).isEqualTo(orderValue);
-            assertThat(productsCache.get(sameKey)).isEqualTo(productValue);
-            assertThat(inventoryCache.get(sameLongKey)).isEqualTo(inventoryValue);
+            assertThat(((OrderEntity) ordersCache.get(sameKey)).getOrderNumber())
+                    .isEqualTo(sameKey);
+            assertThat(((ProductEntity) productsCache.get(sameKey)).getCode()).isEqualTo(sameKey);
+            assertThat(((InventoryEntity) inventoryCache.get(sameLongKey)).getId())
+                    .isEqualTo(sameLongKey);
 
             // Operations on one cache should not affect others
             ordersCache.remove(sameKey);
@@ -418,9 +439,9 @@ class HazelcastConfigTests {
         @DisplayName("Should report correct cache statistics for all cache types")
         void shouldReportCorrectCacheStatisticsForAllCacheTypes() {
             // Add some test data to each cache
-            ordersCache.put("STATS-ORDER", "Order");
-            productsCache.put("STATS-PRODUCT", "Product");
-            inventoryCache.put(999L, "Inventory");
+            ordersCache.put("STATS-ORDER", createOrderEntity("STATS-ORDER"));
+            productsCache.put("STATS-PRODUCT", createProductEntity("STATS-PRODUCT"));
+            inventoryCache.put(999L, createInventoryEntity(999L, "INV-STATS", 15L));
 
             // Verify each cache has at least one entry
             assertThat(ordersCache.size()).isGreaterThan(0);
@@ -493,18 +514,18 @@ class HazelcastConfigTests {
             MapConfig inventoryConfig = mapConfigs.get("inventory-cache");
             assertThat(inventoryConfig.getMapStoreConfig().isEnabled()).isTrue();
             assertThat(inventoryConfig.getMapStoreConfig().getWriteDelaySeconds())
-                    .isEqualTo(1);
+                    .isEqualTo(0);
             assertThat(inventoryConfig.getMapStoreConfig().getWriteBatchSize()).isEqualTo(1);
 
             MapConfig productsConfig = mapConfigs.get("products-cache");
             assertThat(productsConfig.getMapStoreConfig().isEnabled()).isTrue();
             assertThat(productsConfig.getMapStoreConfig().getWriteDelaySeconds())
-                    .isEqualTo(1);
+                    .isEqualTo(0);
             assertThat(productsConfig.getMapStoreConfig().getWriteBatchSize()).isEqualTo(1);
 
             MapConfig ordersConfig = mapConfigs.get("orders-cache");
             assertThat(ordersConfig.getMapStoreConfig().isEnabled()).isTrue();
-            assertThat(ordersConfig.getMapStoreConfig().getWriteDelaySeconds()).isEqualTo(1);
+            assertThat(ordersConfig.getMapStoreConfig().getWriteDelaySeconds()).isEqualTo(0);
             assertThat(ordersConfig.getMapStoreConfig().getWriteBatchSize()).isEqualTo(1);
         }
 
@@ -520,5 +541,40 @@ class HazelcastConfigTests {
             // Inventory should have shorter TTL due to volatility
             assertThat(mapConfigs.get("inventory-cache").getTimeToLiveSeconds()).isEqualTo(1800);
         }
+    }
+
+    private ProductEntity createProductEntity(String code) {
+        ProductEntity product = new ProductEntity();
+        product.setId(Math.abs(code.hashCode()) + 1L);
+        product.setCode(code);
+        product.setName("Product " + code);
+        product.setDescription("Test product for " + code);
+        product.setImageUrl("https://example.com/" + code);
+        product.setPrice(BigDecimal.valueOf(19.99));
+        return product;
+    }
+
+    private InventoryEntity createInventoryEntity(Long id, String productCode, long quantity) {
+        InventoryEntity inventory = new InventoryEntity();
+        inventory.setId(id);
+        inventory.setProductCode(productCode);
+        inventory.setQuantity(quantity);
+        return inventory;
+    }
+
+    private OrderEntity createOrderEntity(String orderNumber) {
+        OrderEntity order = new OrderEntity();
+        order.setId(Math.abs(orderNumber.hashCode()) + 1L);
+        order.setOrderNumber(orderNumber);
+        order.setCustomer(
+                new Customer("Test Customer", "test-" + orderNumber.toLowerCase() + "@example.com", "1234567890"));
+        order.setDeliveryAddress("123 Test Street");
+        order.setOrderItem(
+                new OrderItem("SKU-" + orderNumber, "Order Item " + orderNumber, BigDecimal.valueOf(49.99), 1));
+        order.setStatus(OrderStatus.NEW);
+        LocalDateTime now = LocalDateTime.now();
+        order.setCreatedAt(now);
+        order.setUpdatedAt(now);
+        return order;
     }
 }

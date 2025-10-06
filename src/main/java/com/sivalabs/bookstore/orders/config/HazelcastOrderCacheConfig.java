@@ -44,9 +44,17 @@ public class HazelcastOrderCacheConfig {
         mapStoreConfig.setImplementation(orderMapStore);
         mapStoreConfig.setInitialLoadMode(SpringAwareMapStoreConfig.InitialLoadMode.LAZY);
 
-        if (getBoolean(environment, "bookstore.cache.write-through", true)) {
-            mapStoreConfig.setWriteDelaySeconds(getInt(environment, "bookstore.cache.write-delay-seconds", 0));
+        boolean writeThrough = getBoolean(environment, "bookstore.cache.write-through", true);
+        if (writeThrough) {
+            mapStoreConfig.setWriteDelaySeconds(0);
             mapStoreConfig.setWriteBatchSize(getInt(environment, "bookstore.cache.write-batch-size", 1));
+        } else {
+            int writeDelaySeconds = getInt(environment, "bookstore.cache.write-delay-seconds", 1);
+            if (writeDelaySeconds <= 0) {
+                writeDelaySeconds = 1;
+            }
+            mapStoreConfig.setWriteDelaySeconds(writeDelaySeconds);
+            mapStoreConfig.setWriteBatchSize(getInt(environment, "bookstore.cache.write-batch-size", 100));
         }
 
         ordersCacheConfig.setMapStoreConfig(mapStoreConfig);
