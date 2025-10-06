@@ -8,9 +8,10 @@ This application follows modular monolith architecture with the following module
 
 * **Common:** This module contains the code that is shared by all modules, including distributed caching with Hazelcast.
 * **Catalog:** This module manages the catalog of products and store data in `catalog` schema.
-* **Orders:** This module implements the order management and store the data in `orders` schema.
-* **Inventory:** This module implements the inventory management and store the data in `inventory` schema.
-* **Notifications:** This module handles the events published by other modules and sends notifications to the interested parties.
+* **Orders:** This module implements the order management and stores the data in `orders` schema.
+* **Inventory:** This module implements the inventory management and stores the data in `inventory` schema.
+* **Notifications:** This module consumes published events and currently logs notification activity (placeholder for future email delivery).
+* **Web:** This module hosts the HTMX-enabled web controllers and integrates with the Orders gRPC client to render views.
 
 **Distributed Caching:**
 * The application uses **Hazelcast** for distributed caching to improve performance across all modules.
@@ -30,7 +31,16 @@ This application follows modular monolith architecture with the following module
 * When an Order is successfully created, **Orders** module publishes **"OrderCreatedEvent"**
 * The **"OrderCreatedEvent"** will also be published to external broker like RabbitMQ. Other applications may consume and process those events.
 * **Inventory** module consumes "OrderCreatedEvent" and updates the stock level for the products.
-* **Notifications** module consumes "OrderCreatedEvent" and sends an order confirmation email to the customer.
+* **Notifications** module consumes "OrderCreatedEvent" and currently records the notification intent via logging (email dispatch planned for a future milestone).
+
+### gRPC integration
+
+The monolith exposes Orders capabilities via a gRPC server and also consumes gRPC endpoints when the Orders module is deployed as a separate service.
+
+* **Server:** `GrpcServerConfig` enables a gRPC server on port `9091` (configurable with `bookstore.grpc.server.*` properties).
+* **Client:** `OrdersGrpcClient` targets `bookstore.grpc.client.target` (defaults to `localhost:9091`, pointing to the in-process server). In Docker Compose the target is overridden to `orders-service:9090`, allowing the UI to talk to the extracted Orders service.
+* **Health & observability:** Health checks and reflection can be toggled via properties; see `application.properties` for the full list.
+* **Deployment:** Ensure the chosen port is reachable in your environment. When running the monolith alone no extra setup is required—the gRPC client and server operate within the same process.
 
 ## Prerequisites
 
@@ -122,9 +132,7 @@ export SPRING_RABBITMQ_HOST=localhost
 
 ### Orders Service Rollout
 
-- Set `ORDERS_SERVICE_PERCENT` (0-100) before running `docker compose up webproxy` to gradually shift `/orders`, `/buy`, and `/cart` requests to the extracted service.
-- Override on a per-request basis with header `X-Orders-Backend: monolith|orders` or cookie `orders_backend=monolith|orders`.
-- Access logs emit `backend=<target>` so you can compare behaviour; see `docs/orders-traffic-migration.md` for the full playbook.
+The bundled `webproxy/nginx.conf` currently forwards all storefront traffic to the monolith. To test the extracted `orders-service`, point the monolith's gRPC client at `orders-service:9090` (already wired in `docker compose`) or adjust the proxy manually. Weighted routing and request overrides are tracked for future work; refer to `docs/orders-traffic-migration.md` for the proposed rollout playbook and adapt it to your proxy configuration.
 
 ## Kubernetes Deployment
 
@@ -172,6 +180,7 @@ src/main/java/com/sivalabs/bookstore/
 ├── orders/          # Order management module
 ├── inventory/       # Inventory management module
 ├── notifications/   # Notification module
+├── web/             # Web UI and gRPC client integration
 └── config/          # Configuration files
 ```
 

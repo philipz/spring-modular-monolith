@@ -1,10 +1,10 @@
 # Orders Service Traffic Migration Playbook
 
-This document describes how to gradually migrate traffic from the monolith to the extracted `orders-service`. The strategy is based on the Docker Compose `webproxy` gateway and can be replicated on any ingress capable of weighted routing.
+This document describes how to gradually migrate traffic from the monolith to the extracted `orders-service`. The strategy is based on the Docker Compose `webproxy` gateway and can be replicated on any ingress capable of weighted routing. The current repository ships a static `webproxy/nginx.conf` that always proxies to the monolith—treat the steps below as the target rollout plan and adapt them to your custom Nginx template or ingress controller before executing in production.
 
 ## 1. Gateway Rollout Controls
 
-The `webproxy` container now renders its Nginx configuration from `proxy.conf.template` at startup. Use the `ORDERS_SERVICE_PERCENT` environment variable to control how many requests matching `/orders`, `/buy`, or `/cart` should be forwarded to the new service.
+When using a templated Nginx configuration (for example, a `proxy.conf.template` in your own deployment), use the `ORDERS_SERVICE_PERCENT` environment variable to control how many requests matching `/orders`, `/buy`, or `/cart` should be forwarded to the new service.
 
 | Percentage | Behaviour |
 | --- | --- |
