@@ -44,34 +44,31 @@ services:
       retries: 5
     networks:
       - proxy
-  zipkin:
-    image: 'openzipkin/zipkin:3.5.1'
-    environment:
-      - STORAGE_TYPE=mem
+  hyperdx:
+    image: 'docker.hyperdx.io/hyperdx/hyperdx-all-in-one'
     ports:
-      - '9411:9411'
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9411/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - '8081:8080'   # HyperDX UI (remapped to avoid conflict with webproxy)
+      - '4317:4317'   # OpenTelemetry gRPC
+      - '4318:4318'   # OpenTelemetry HTTP
     networks:
       - proxy
 
   monolith:
     image: sivaprasadreddy/spring-modular-monolith:0.0.1-SNAPSHOT
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      #SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_DATASOURCE_POOL_SIZE: 10
+      SPRING_DATASOURCE_POOL_SIZE: 30
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      # OpenTelemetry configuration for HyperDX (gRPC protocol)
+      OTLP_ENDPOINT: http://hyperdx:4317
+      HYPERDX_API_KEY: XXXX
       # REST API URL removed during gRPC migration (2025-10-04)
       # Previous: ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090
@@ -98,12 +95,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://orders-postgres:5432/postgres
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_DATASOURCE_POOL_SIZE: 10
+      SPRING_DATASOURCE_POOL_SIZE: 30
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      # OpenTelemetry configuration for HyperDX (gRPC protocol)
+      OTLP_ENDPOINT: http://hyperdx:4317
+      HYPERDX_API_KEY: XXXX
       # REST port removed during gRPC migration (2025-10-04)
       # Previous: SERVER_PORT: 8091
       # Now using gRPC server on port 9090

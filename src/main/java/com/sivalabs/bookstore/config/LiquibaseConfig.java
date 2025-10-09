@@ -21,7 +21,7 @@ public class LiquibaseConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(LiquibaseConfig.class);
 
-    @Value("${spring.liquibase.change-log:classpath:db/changelog/db.changelog-master.xml}")
+    @Value("${spring.liquibase.change-log:classpath:db/db.changelog-master.xml}")
     private String changeLog;
 
     @Value("${spring.liquibase.contexts:}")

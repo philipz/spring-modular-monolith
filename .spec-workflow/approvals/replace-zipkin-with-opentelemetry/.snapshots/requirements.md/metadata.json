@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/replace-zipkin-with-opentelemetry/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-09T01:26:16.900Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759973176887_0u59k97wk",
+      "approvalTitle": "Requirements: Replace Zipkin with OpenTelemetry"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-10-09T01:44:37.446Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759974192047_l377l8sqy",
+      "approvalTitle": "Requirements: Replace Zipkin with HyperDX (Updated)"
+    }
+  ]
+}
