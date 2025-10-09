@@ -1,9 +1,9 @@
 package com.sivalabs.bookstore.orders.config;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "otlp.grpc")
@@ -54,10 +54,10 @@ public class OtlpProperties {
     }
 
     public Map<String, String> getHeaders() {
-        return headers;
+        return Collections.unmodifiableMap(headers);
     }
 
     public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
+        this.headers = headers != null ? new HashMap<>(headers) : new HashMap<>();
     }
 }
