@@ -85,7 +85,7 @@ This implementation replaces Zipkin with HyperDX using a configuration-first app
   - Current state: Environment variables have been updated to use simplified configuration
   - Verified configuration:
     - Both monolith and orders-service have `OTLP_ENDPOINT: http://hyperdx:4318/v1/traces`
-    - Both services have `HYPERDX_API_KEY: 806699b2-a198-47cb-83ac-2cacacd57d58`
+    - Both services have `HYPERDX_API_KEY: XXXX`
     - YAML syntax validated successfully with `docker-compose config`
   - Purpose: Ensure OTLP endpoint configuration with authentication is complete for both services
   - _Leverage: Existing Docker Compose configuration_

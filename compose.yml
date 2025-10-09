@@ -68,7 +68,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
       # OpenTelemetry configuration for HyperDX (gRPC protocol)
       OTLP_ENDPOINT: http://hyperdx:4317
-      HYPERDX_API_KEY: 806699b2-a198-47cb-83ac-2cacacd57d58
+      HYPERDX_API_KEY: XXXX
       # REST API URL removed during gRPC migration (2025-10-04)
       # Previous: ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090
@@ -95,7 +95,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://orders-postgres:5432/postgres
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_DATASOURCE_POOL_SIZE: 300
+      SPRING_DATASOURCE_POOL_SIZE: 30
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
