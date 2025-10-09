@@ -56,12 +56,12 @@ services:
   monolith:
     image: sivaprasadreddy/spring-modular-monolith:0.0.1-SNAPSHOT
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      #SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_DATASOURCE_POOL_SIZE: 50
+      SPRING_DATASOURCE_POOL_SIZE: 30
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
