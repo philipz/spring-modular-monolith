@@ -68,7 +68,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
       # OpenTelemetry configuration for HyperDX (gRPC protocol)
       OTLP_ENDPOINT: http://hyperdx:4317
-      OTLP_GRPC_HEADERS_AUTHORIZATION: XXXX
+      OTLP_GRPC_HEADERS_AUTHORIZATION: ${HYPERDX_API_KEY}
       # REST API URL removed during gRPC migration (2025-10-04)
       # Previous: ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090
@@ -102,7 +102,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
       # OpenTelemetry configuration for HyperDX (gRPC protocol)
       OTLP_ENDPOINT: http://hyperdx:4317
-      OTLP_GRPC_HEADERS_AUTHORIZATION: XXXX
+      OTLP_GRPC_HEADERS_AUTHORIZATION: ${HYPERDX_API_KEY}
       # REST port removed during gRPC migration (2025-10-04)
       # Previous: SERVER_PORT: 8091
       # Now using gRPC server on port 9090
@@ -115,7 +115,7 @@ services:
 
   webproxy:
     environment:
-      HYPERDX_API_KEY: XXXX
+      HYPERDX_API_KEY: ${HYPERDX_API_KEY}
     depends_on:
       - monolith
       - orders-service
