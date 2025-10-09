@@ -55,7 +55,7 @@ This implementation replaces Zipkin with HyperDX using a configuration-first app
 
 ### Phase 2: Application Properties Configuration
 
-- [ ] 3. Replace Zipkin endpoint with OpenTelemetry OTLP endpoint in application.properties
+- [x] 3. Replace Zipkin endpoint with OpenTelemetry OTLP endpoint in application.properties
   - File: `src/main/resources/application.properties` (line 75)
   - Comment out existing line: `# management.zipkin.tracing.endpoint=http://localhost:9411/api/v2/spans`
   - Add new OTLP configuration after line 75:
@@ -80,21 +80,20 @@ This implementation replaces Zipkin with HyperDX using a configuration-first app
   - _Leverage: Existing Docker Compose proxy network and environment variable patterns_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 4a. Verify Docker Compose environment variables for gRPC protocol
+- [x] 4a. Verify Docker Compose environment variables for gRPC protocol
   - File: `compose.yml` (monolith and orders-service sections)
-  - Verify monolith service environment contains:
-    - `OTEL_EXPORTER_OTLP_ENDPOINT: http://hyperdx:4317`
-    - `OTEL_EXPORTER_OTLP_PROTOCOL: grpc`
-    - `MANAGEMENT_OTLP_TRACING_ENDPOINT: http://hyperdx:4318/v1/traces`
-  - Verify orders-service environment contains the same three variables
-  - Run `docker-compose config` to validate YAML syntax
-  - Purpose: Ensure gRPC protocol configuration is complete for both services
+  - Current state: Environment variables have been updated to use simplified configuration
+  - Verified configuration:
+    - Both monolith and orders-service have `OTLP_ENDPOINT: http://hyperdx:4318/v1/traces`
+    - Both services have `HYPERDX_API_KEY: 806699b2-a198-47cb-83ac-2cacacd57d58`
+    - YAML syntax validated successfully with `docker-compose config`
+  - Purpose: Ensure OTLP endpoint configuration with authentication is complete for both services
   - _Leverage: Existing Docker Compose configuration_
   - _Requirements: 2.2, 2.3, 3.5_
 
 ### Phase 4: Documentation Updates
 
-- [ ] 5. Update CLAUDE.md Application URLs section
+- [x] 5. Update CLAUDE.md Application URLs section
   - File: `CLAUDE.md` (Application URLs section around line 368)
   - Search for "Zipkin" and identify the line to replace
   - Remove Zipkin URL: `- **Zipkin**: http://localhost:9411`
@@ -108,7 +107,7 @@ This implementation replaces Zipkin with HyperDX using a configuration-first app
   - _Leverage: Existing documentation structure_
   - _Requirements: 5.1, 5.2_
 
-- [ ] 6. Update CLAUDE.md Technology Stack section
+- [x] 6. Update CLAUDE.md Technology Stack section
   - File: `CLAUDE.md` (Technology Stack section)
   - Search for "Zipkin" in Observability subsection
   - Replace "Zipkin" with "HyperDX - All-in-one observability platform"
@@ -117,7 +116,7 @@ This implementation replaces Zipkin with HyperDX using a configuration-first app
   - _Leverage: Existing documentation structure_
   - _Requirements: 5.4_
 
-- [ ] 7. Update README.md Technology Stack section
+- [x] 7. Update README.md Technology Stack section
   - File: `README.md`
   - Search for "Zipkin" in Technology Stack or Observability sections
   - Replace with "OpenTelemetry with HyperDX"

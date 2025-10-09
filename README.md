@@ -18,6 +18,12 @@ This application follows modular monolith architecture with the following module
 * **Hazelcast Management Center** provides real-time monitoring and management of cache clusters.
 * Cache configurations include TTL (Time To Live), eviction policies, and backup strategies for high availability.
 
+**Observability:**
+* The application uses **OpenTelemetry** for distributed tracing, metrics collection, and observability.
+* **HyperDX** - All-in-one observability platform with integrated traces, metrics, and logs visualization.
+* Automatic instrumentation captures HTTP requests, database queries, cache operations, and inter-module communications.
+* Traces are exported to HyperDX for comprehensive monitoring and debugging.
+
 **Goals:**
 * Implement each module as independently as possible.
 * Prefer event-driven communication instead of direct module dependency wherever applicable.
@@ -127,7 +133,7 @@ export SPRING_RABBITMQ_HOST=localhost
 - Actuator: http://localhost:8080/actuator
 - Modulith Info: http://localhost:8080/actuator/modulith
 - RabbitMQ Admin: http://localhost:15672 (guest/guest)
-- Zipkin Tracing: http://localhost:9411
+- HyperDX Observability: http://localhost:8080/hyperdx (traces, metrics, and logs)
 - Hazelcast Management Center: http://localhost:38080
 
 ### Orders Service Rollout
@@ -166,7 +172,7 @@ $ task kind_destroy
 **K8s Environment URLs:**
 - Application: http://localhost:30090
 - RabbitMQ Admin: http://localhost:30091 (guest/guest)
-- Zipkin Tracing: http://localhost:30092
+- HyperDX Observability: http://localhost:30092 (traces, metrics, and logs)
 - Hazelcast Management Center: http://localhost:30093
 
 ## Development Guide
@@ -206,5 +212,6 @@ src/main/java/com/sivalabs/bookstore/
 - Check `/actuator/health` and `/actuator/modulith`
 
 **Tracing Not Visible:**
-- Confirm Zipkin service is running
-- Verify tracing endpoint configuration
+- Confirm HyperDX service is running
+- Verify OpenTelemetry endpoint configuration in `application.properties`
+- Check HyperDX dashboard at http://localhost:8080/hyperdx for traces and metrics

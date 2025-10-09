@@ -206,7 +206,8 @@ class CatalogIntegrationTests {
 
 ### Observability
 - **Micrometer** with Prometheus registry
-- **OpenTelemetry** tracing with Zipkin export
+- **HyperDX** - All-in-one observability platform
+- **OpenTelemetry** with HyperDX for distributed tracing
 - **Spring Actuator** with modulith endpoints (health endpoint now includes `grpc` component reporting orders-service status and port 9090)
 - **Cache metrics** and health indicators
 
@@ -293,7 +294,7 @@ import org.springframework.modulith.ApplicationModule;
 
 ### Security & Configuration
 - **Configuration**: Use `application.properties`; override via environment variables
-- **Docker Compose**: Sets DB/RabbitMQ/Zipkin automatically
+- **Docker Compose**: Sets DB/RabbitMQ/HyperDX automatically
 - **Secrets**: Never commit secrets; use `.env` files or CI secrets
 - **Cache/Session**: Hazelcast defaults tunable via `bookstore.cache.*` properties
 - **Session Management**: Distributed sessions via Hazelcast (`spring.session.store-type=hazelcast`)
@@ -321,13 +322,15 @@ import org.springframework.modulith.ApplicationModule;
 - **Cache Health**: http://localhost:8080/actuator/health
 - **Cache Metrics**: http://localhost:8080/actuator/metrics
 - **RabbitMQ Admin**: http://localhost:15672 (guest/guest)
-- **Zipkin**: http://localhost:9411
+- **HyperDX UI**: http://localhost:8081
+- **HyperDX gRPC**: localhost:4317
+- **HyperDX HTTP**: localhost:4318
 - **Removed REST Orders API**: http://localhost:8091/api/orders (disabled after gRPC migration on 2025-10-04)
 
 ### Key Configuration Properties
 - **Database**: PostgreSQL connection via `spring.datasource.*`
 - **Events**: JDBC event store with schema initialization
-- **Tracing**: Full sampling with Zipkin export
+- **Tracing**: Full sampling with HyperDX export
 - **RabbitMQ**: Local connection for event publishing
 - **Cache**: Hazelcast configuration via `bookstore.cache.*`
 
