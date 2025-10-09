@@ -13,10 +13,20 @@ on:
       - 'Taskfile.yml'
       - 'renovate.json'
       - 'k8s/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - 'pom.xml'
+      - '**/pom.xml'
+      - 'src/**'
+      - '.github/workflows/maven.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for dependency submission
     steps:
       - uses: actions/checkout@v5
 
@@ -32,3 +42,7 @@ jobs:
 
       - name: Build with Maven
         run: ./mvnw -ntp verify
+
+      - name: Submit Dependency Snapshot
+        if: github.event_name == 'push'
+        uses: advanced-security/maven-dependency-submission-action@v5
