@@ -1,0 +1,12 @@
+{
+  "id": "approval_1759973176887_0u59k97wk",
+  "title": "Requirements: Replace Zipkin with OpenTelemetry",
+  "filePath": ".spec-workflow/specs/replace-zipkin-with-opentelemetry/requirements.md",
+  "type": "document",
+  "status": "rejected",
+  "createdAt": "2025-10-09T01:26:16.887Z",
+  "category": "spec",
+  "categoryName": "replace-zipkin-with-opentelemetry",
+  "response": "Have new version",
+  "respondedAt": "2025-10-09T01:44:35.187Z"
+}

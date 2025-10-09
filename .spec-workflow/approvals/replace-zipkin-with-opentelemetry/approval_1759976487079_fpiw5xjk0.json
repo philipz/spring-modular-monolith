@@ -1,0 +1,12 @@
+{
+  "id": "approval_1759976487079_fpiw5xjk0",
+  "title": "Tasks breakdown for replacing Zipkin with HyperDX",
+  "filePath": ".spec-workflow/specs/replace-zipkin-with-opentelemetry/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2025-10-09T02:21:27.079Z",
+  "category": "spec",
+  "categoryName": "replace-zipkin-with-opentelemetry",
+  "response": "Approved via dashboard",
+  "respondedAt": "2025-10-09T02:33:26.090Z"
+}

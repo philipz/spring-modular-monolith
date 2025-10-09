@@ -44,17 +44,12 @@ services:
       retries: 5
     networks:
       - proxy
-  zipkin:
-    image: 'openzipkin/zipkin:3.5.1'
-    environment:
-      - STORAGE_TYPE=mem
+  hyperdx:
+    image: 'docker.hyperdx.io/hyperdx/hyperdx-all-in-one'
     ports:
-      - '9411:9411'
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9411/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - '8081:8080'   # HyperDX UI (remapped to avoid conflict with webproxy)
+      - '4317:4317'   # OpenTelemetry gRPC
+      - '4318:4318'   # OpenTelemetry HTTP
     networks:
       - proxy
 
@@ -71,7 +66,10 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      # OpenTelemetry configuration for HyperDX
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://hyperdx:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://hyperdx:4318/v1/traces
       # REST API URL removed during gRPC migration (2025-10-04)
       # Previous: ORDERS_SERVICE_API_URL: http://orders-service:8091/api/orders
       BOOKSTORE_GRPC_CLIENT_TARGET: orders-service:9090
@@ -103,7 +101,10 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      # OpenTelemetry configuration for HyperDX
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://hyperdx:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: http://hyperdx:4318/v1/traces
       # REST port removed during gRPC migration (2025-10-04)
       # Previous: SERVER_PORT: 8091
       # Now using gRPC server on port 9090
