@@ -3,6 +3,7 @@ package com.sivalabs.bookstore.orders.config;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "otlp.grpc")
@@ -21,7 +22,7 @@ public class OtlpProperties {
     /**
      * Compression type for OTLP gRPC (none, gzip)
      */
-    private String compression = "none";
+    private String compression = "gzip";
 
     /**
      * Custom headers to include in OTLP gRPC requests
