@@ -1,8 +1,0 @@
-{
-  "service_name": "webproxy",
-  "collector_host": "zipkin",
-  "collector_port": 9411,
-  "collector_endpoint": "/api/v2/spans",
-  "trace_id_128bit": true,
-  "sample_rate": 1.0
-}
