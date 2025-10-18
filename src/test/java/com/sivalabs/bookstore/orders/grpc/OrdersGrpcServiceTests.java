@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Import;
             "app.amqp.new-orders.bind=false",
             "spring.rabbitmq.listener.direct.auto-startup=false",
             "spring.rabbitmq.listener.simple.auto-startup=false",
-            "grpc.server.port=-1"
+            "bookstore.grpc.server.enabled=false"
         },
         classes = {
             com.sivalabs.bookstore.BookStoreApplication.class,

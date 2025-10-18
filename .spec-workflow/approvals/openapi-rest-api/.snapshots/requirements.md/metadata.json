@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/openapi-rest-api/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-11T13:27:15.032Z",
+      "trigger": "initial",
+      "approvalId": "approval_1760189235017_vfhyptfz7",
+      "approvalTitle": "Requirements: OpenAPI REST API Support"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-10-11T13:29:17.781Z",
+      "trigger": "approved",
+      "approvalId": "approval_1760189235017_vfhyptfz7",
+      "approvalTitle": "Requirements: OpenAPI REST API Support"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/openapi-rest-api/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-11T13:31:45.316Z",
+      "trigger": "initial",
+      "approvalId": "approval_1760189505311_z2101ory3",
+      "approvalTitle": "Design: OpenAPI REST API Architecture"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-10-11T14:41:45.854Z",
+      "trigger": "approved",
+      "approvalId": "approval_1760189505311_z2101ory3",
+      "approvalTitle": "Design: OpenAPI REST API Architecture"
+    }
+  ]
+}
