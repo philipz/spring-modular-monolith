@@ -189,7 +189,7 @@
   - _Requirements: Requirement 5 (Client SDK Generation)_
   - _Prompt: Implement the task for spec openapi-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Tooling Engineer | Task: Generate TypeScript SDK following Requirement 5 by exporting OpenAPI spec from /api-docs, running openapi-generator-cli with typescript-axios generator, and verifying compilation | Restrictions: Use official openapi-generator-cli, generate to separate directory (frontend-sdk/), verify TypeScript compilation succeeds | _Leverage: openapi-generator-cli tool, npm/yarn for SDK compilation | Success: SDK generates without errors, TypeScript compiles successfully, types match OpenAPI spec | Instructions: Mark in-progress [-], export spec, generate SDK, verify compilation, mark complete [x]_
 
-- [ ] 20. Update README with API documentation
+- [x] 20. Update README with API documentation
   - Files: `README.md`, `README-API.md` (new)
   - Create API usage documentation with endpoint list, examples, error codes
   - Update main README with links to Swagger UI and API docs
@@ -198,7 +198,7 @@
   - _Requirements: Requirement 5 (API Documentation)_
   - _Prompt: Implement the task for spec openapi-rest-api, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with API documentation expertise | Task: Create comprehensive API documentation following Requirement 5, including endpoint overview, authentication (if any), error codes, and usage examples (curl, JavaScript fetch) in README-API.md, and update main README.md with API section | Restrictions: Follow existing README format, use markdown tables for endpoint list, include practical examples, link to Swagger UI (/swagger-ui.html) | _Leverage: Existing README.md structure and documentation style | Success: API documentation is clear and complete, examples are working, main README updated with API section | Instructions: Mark in-progress [-], create README-API.md, update README.md, mark complete [x]_
 
-- [ ] 21. Verify full system integration
+- [x] 21. Verify full system integration
   - Files: N/A (verification task)
   - Start application, verify all REST and Web endpoints work
   - Test session sharing between Web and REST (add via Web, get via REST API)

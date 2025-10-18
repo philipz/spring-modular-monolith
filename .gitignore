@@ -42,3 +42,5 @@ out/
 *.log
 
 .env
+
+frontend-sdk/
