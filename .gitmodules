@@ -1,0 +1,3 @@
+[submodule "frontend-nuxt"]
+	path = frontend-nuxt
+	url = git@github.com:philipz/next-mvp-lab.git
