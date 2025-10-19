@@ -1,0 +1,54 @@
+{
+  "filePath": ".spec-workflow/specs/nuxt-frontend-integration/tasks.md",
+  "currentVersion": 6,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-19T01:35:39.846Z",
+      "trigger": "initial",
+      "approvalId": "approval_1760837739843_h9y1nukfu",
+      "approvalTitle": "Next.js Frontend Integration - Tasks Document (40 Atomic Tasks)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-10-19T01:46:52.224Z",
+      "trigger": "approved",
+      "approvalId": "approval_1760837739843_h9y1nukfu",
+      "approvalTitle": "Next.js Frontend Integration - Tasks Document (40 Atomic Tasks)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-10-19T10:08:29.894Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1760868371576_adkykulg4",
+      "approvalTitle": "Review Next.js Frontend Integration Tasks"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2025-10-19T10:14:33.128Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1760868751895_xs2duy3zw",
+      "approvalTitle": "Review Next.js Frontend Integration Tasks (Revision)"
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2025-10-19T10:27:30.773Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1760869464141_nr9tznifw",
+      "approvalTitle": "Review REVISED Tasks - Shell Script + Docker + nginx"
+    },
+    {
+      "version": 6,
+      "filename": "snapshot-006.json",
+      "timestamp": "2025-10-19T10:35:55.072Z",
+      "trigger": "approved",
+      "approvalId": "approval_1760869808413_jqoc6j8uo",
+      "approvalTitle": "FINAL REVISION - Webproxy Integration (Single nginx Service)"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "approval_1760850183470_6dmde9if0",
+  "title": "Updated Tasks Document - Nuxt 3 + Nginx Architecture",
+  "filePath": ".spec-workflow/specs/nuxt-frontend-integration/tasks.md",
+  "type": "document",
+  "status": "rejected",
+  "createdAt": "2025-10-19T05:03:03.470Z",
+  "category": "spec",
+  "categoryName": "nuxt-frontend-integration",
+  "response": "已改成 next-frontend-integration",
+  "respondedAt": "2025-10-19T10:00:28.981Z"
+}

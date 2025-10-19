@@ -1,0 +1,297 @@
+=================================================================================
+SPRING BOOT REST API ANALYSIS - EXECUTIVE SUMMARY FOR NEXT.JS INTEGRATION
+=================================================================================
+
+ANALYSIS COMPLETED: October 19, 2025
+LOCATION: /Users/cfh00805122/lab/springboot/modulith/spring-modular-monolith
+
+=================================================================================
+KEY FINDINGS
+=================================================================================
+
+1. REST API STRUCTURE
+   - 3 main API modules: Products, Cart, Orders
+   - All endpoints under /api/* prefix
+   - OpenAPI 3.0 spec available at /api-docs
+   - Full Swagger UI at /swagger-ui.html
+
+2. ENDPOINTS SUMMARY
+   
+   Products (Catalog Module):
+   - GET /api/products (paginated list, page=1-based)
+   - GET /api/products/{code} (single product by code)
+   
+   Cart (Web Module, Session-based):
+   - GET /api/cart (retrieve cart)
+   - POST /api/cart/items (add item, requires code + quantity)
+   - PUT /api/cart/items/{code} (update quantity)
+   - DELETE /api/cart (clear cart)
+   
+   Orders (Orders Module, gRPC-backed):
+   - POST /api/orders (create order, HTTP 201)
+   - GET /api/orders (list all orders)
+   - GET /api/orders/{orderNumber} (get order details)
+
+3. SESSION MANAGEMENT
+   - Technology: Hazelcast distributed cache
+   - Cookie: JSESSIONID (HttpOnly, SameSite=Lax)
+   - Timeout: 30 minutes
+   - Sticky sessions required (nginx handles this in docker-compose)
+   - Per-user cart data stored in session
+
+4. CORS STATUS
+   - NO explicit CORS configuration currently exists
+   - CRITICAL: Must add CORS config for Next.js (localhost:3000)
+   - Solution: Add to WebConfig.java with allowCredentials=true
+   - Alternative: Configure at nginx proxy level
+
+5. OPENAPI SETUP
+   - Configuration: OpenApiConfig.java (Spring Boot configuration class)
+   - Spec endpoint: /api-docs (JSON format)
+   - Documentation: /swagger-ui.html (interactive)
+   - API v1.0.0, License: Apache 2.0
+   - Endpoints grouped by: catalog, cart, orders
+
+6. BUILD & DEPLOYMENT
+   - Build: Maven (pom.xml with Spring Boot 3.5.5)
+   - Deployment: Docker Compose (compose.yml)
+   - Frontend proxy: nginx webproxy (handles all incoming requests)
+   - Services: monolith (8080), postgres, rabbitmq, hyperdx
+   - Optional: orders-service (separate gRPC service on port 9090)
+
+7. ERROR HANDLING
+   - Standard error format: {status, message, timestamp}
+   - Exception handlers for Orders and Catalog modules
+   - gRPC errors mapped to HTTP status codes
+   - Validation errors return HTTP 400 with field details
+
+8. VALIDATION
+   - Uses Jakarta Bean Validation (@NotBlank, @Email, @Min, etc.)
+   - Server-side validation on all request DTOs
+   - Custom validation messages
+
+9. DATA TYPE CONVERSIONS
+   - ProductDto: code, name, description, imageUrl, price
+   - CartDto: items[], totalAmount, itemCount
+   - CartItemDto: code, name, price, quantity, subtotal
+   - CreateOrderRequest: customer, deliveryAddress, item
+   - OrderDto: orderNumber, item, customer, deliveryAddress, status, createdAt
+   - PagedResult: data[], totalElements, pageNumber, totalPages, pagination flags
+
+=================================================================================
+CRITICAL CONFIGURATION NEEDED FOR NEXT.JS
+=================================================================================
+
+1. ADD CORS CONFIGURATION (WebConfig.java)
+   
+   @Configuration
+   public class WebConfig implements WebMvcConfigurer {
+       @Override
+       public void addCorsMappings(CorsRegistry registry) {
+           registry.addMapping("/api/**")
+                   .allowedOrigins("http://localhost:3000")
+                   .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                   .allowedHeaders("*")
+                   .allowCredentials(true)  // IMPORTANT for session cookies
+                   .maxAge(3600);
+       }
+   }
+
+2. UPDATE HTTP CLIENT (lib/http.ts)
+   - Add credentials: 'include' to all fetch calls
+   - Enables session cookie persistence
+   - Required for cart and order endpoints
+
+3. ENVIRONMENT SETUP (.env.local)
+   - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+
+4. TANSTACK QUERY CONFIG
+   - Configure default credentials: 'include'
+   - Persist JSESSIONID between requests
+   - Handle session-dependent endpoints
+
+=================================================================================
+ARCHITECTURE OVERVIEW
+=================================================================================
+
+Next.js (Port 3000)
+       ↓ HTTP/REST
+   nginx proxy (Port 8080)
+       ↓
+Spring Boot Monolith (Port 8080)
+   ├─ Catalog Module → ProductRestController
+   ├─ Web Module → CartRestController
+   ├─ Orders Module → OrdersRestController → OrdersGrpcClient → gRPC (Port 9090)
+   └─ Infrastructure
+       ├─ Hazelcast (distributed sessions, cache)
+       ├─ PostgreSQL (multiple schemas per module)
+       ├─ RabbitMQ (event publishing)
+       └─ OpenAPI/Swagger UI
+
+Sticky Sessions Flow:
+   1. Browser requests /api/cart without JSESSIONID
+   2. Server creates session, returns Set-Cookie: JSESSIONID=...
+   3. Browser stores cookie, includes in subsequent requests
+   4. nginx routes all requests with same JSESSIONID to same monolith instance
+   5. Hazelcast ensures session data accessible across cluster nodes
+
+=================================================================================
+FILE LOCATIONS & KEY REFERENCES
+=================================================================================
+
+Backend Implementation:
+- REST Controllers: src/main/java/com/sivalabs/bookstore/**/web/*Controller.java
+- DTOs/Models: src/main/java/com/sivalabs/bookstore/**/*.java (api, dto packages)
+- Configuration: src/main/java/com/sivalabs/bookstore/config/
+  - OpenApiConfig.java (OpenAPI setup)
+  - HttpSessionConfig.java (Hazelcast sessions)
+  - WebConfig.java (general web config - needs CORS)
+- Exception Handlers: OrdersRestExceptionHandler, CatalogExceptionHandler
+- Properties: src/main/resources/application.properties
+
+Build & Deployment:
+- Build: pom.xml (Maven configuration)
+- Docker: compose.yml (development environment)
+- Proxy: webproxy/nginx.conf (nginx configuration)
+
+Frontend (Next.js):
+- Location: frontend-next/ directory
+- HTTP Client: apps/web/lib/http.ts
+- Features: apps/web/features/ (products, cart, orders)
+- Configuration: apps/web/tsconfig.json, next.config.js
+
+Documentation:
+- OpenAPI Spec: http://localhost:8080/api-docs (JSON)
+- Swagger UI: http://localhost:8080/swagger-ui.html (interactive)
+- Full analysis: REST_API_ANALYSIS.md (in repo root)
+
+=================================================================================
+QUICK START FOR NEXT.JS DEVELOPERS
+=================================================================================
+
+1. Verify Backend Running
+   task start  # Starts compose.yml services
+   curl http://localhost:8080/api/products  # Test API
+
+2. Check OpenAPI Documentation
+   curl http://localhost:8080/api-docs > openapi.json
+   Visit http://localhost:8080/swagger-ui.html in browser
+
+3. Generate TypeScript Types
+   cd frontend-next
+   pnpm gen:types  # Uses openapi.json to generate types
+
+4. Configure Frontend
+   - Update lib/http.ts: add credentials: 'include'
+   - Set .env.local: NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+   - Configure TanStack Query: use credentials in fetching
+
+5. Update MSW Mocks (apps/web/mocks/handlers.ts)
+   - Replace mock endpoints with actual /api/* paths
+   - Ensure handlers match OpenAPI schema
+
+6. Test Cart (Session-based)
+   curl -c cookies.txt -X POST http://localhost:8080/api/cart/items \
+     -H "Content-Type: application/json" \
+     -d '{"code":"P100","quantity":1}'
+   curl -b cookies.txt http://localhost:8080/api/cart
+
+=================================================================================
+API ENDPOINTS CHEAT SHEET
+=================================================================================
+
+BASE URL: http://localhost:8080
+
+PRODUCTS:
+  GET  /api/products?page=1              → PagedResult<ProductDto>
+  GET  /api/products/{code}              → ProductDto
+
+CART (requires session/JSESSIONID cookie):
+  GET  /api/cart                         → CartDto
+  POST /api/cart/items                   → CartDto (body: {code, quantity})
+  PUT  /api/cart/items/{code}            → CartDto (body: {quantity})
+  DEL  /api/cart                         → 204 No Content
+
+ORDERS (requires session/JSESSIONID cookie):
+  POST /api/orders                       → CreateOrderResponse (body: see docs)
+  GET  /api/orders                       → List<OrderView>
+  GET  /api/orders/{orderNumber}         → OrderDto
+
+DOCUMENTATION:
+  GET  /api-docs                         → OpenAPI JSON spec
+  GET  /swagger-ui.html                  → Interactive API documentation
+  GET  /actuator/health                  → Health check
+  GET  /actuator/modulith                → Spring Modulith information
+
+=================================================================================
+KNOWN LIMITATIONS & NOTES
+=================================================================================
+
+1. Cart System
+   - Currently supports single item (can be extended)
+   - Session-based (requires sticky sessions in load balancing)
+   - 30-minute timeout
+
+2. Orders Processing
+   - Routes through gRPC client wrapper
+   - Requires valid product codes
+   - Email validation enforced
+   - No order history filtering by user (returns all orders)
+
+3. Session Management
+   - Hazelcast requires clustering configuration for multi-node deployments
+   - Session data not persisted to disk (ephemeral)
+   - JSESSIONID includes timestamps/signatures for security
+
+4. No Built-in Authentication/Authorization
+   - Current implementation: no user authentication
+   - All orders/carts accessible by any user
+   - Recommendation: Add Spring Security if needed
+
+=================================================================================
+RECOMMENDATIONS FOR NEXT.JS INTEGRATION
+=================================================================================
+
+IMMEDIATE (Required):
+✓ Add CORS configuration to WebConfig.java
+✓ Update HTTP client with credentials: 'include'
+✓ Configure TanStack Query for session persistence
+✓ Add NEXT_PUBLIC_API_BASE_URL environment variable
+
+SHORT TERM (Recommended):
+✓ Create Next.js API routes wrapping Spring endpoints (optional caching layer)
+✓ Implement error boundary components for API errors
+✓ Add loading states for async operations
+✓ Update MSW handlers to use real endpoints
+
+MEDIUM TERM (Enhancement):
+✓ Implement user authentication (JWT or OAuth2)
+✓ Add per-user cart separation (currently session-based)
+✓ Implement order filtering by customer
+✓ Add inventory checking before order creation
+
+LONG TERM (Scaling):
+✓ Consider API Gateway (Kong, Tyk) for rate limiting
+✓ Implement API versioning strategy
+✓ Add webhooks for order status updates
+✓ Consider GraphQL as alternative to REST
+
+=================================================================================
+ANALYSIS ARTIFACTS
+=================================================================================
+
+1. REST_API_ANALYSIS.md
+   - Comprehensive 12-section analysis document
+   - Complete endpoint specifications
+   - Configuration examples
+   - Integration checklists
+   - Located: /Users/cfh00805122/lab/springboot/modulith/spring-modular-monolith/
+
+2. This Summary (summary.txt)
+   - Executive overview
+   - Quick reference guide
+   - Critical action items
+
+=================================================================================
+END OF ANALYSIS
+=================================================================================

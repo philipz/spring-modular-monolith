@@ -1,29 +1,32 @@
-# Design Document: Next.js Frontend Integration
+# Design Document: Nuxt Frontend Integration
 
 ## Overview
 
-This design document defines the technical architecture for integrating the Next.js 14 frontend application with the Spring Boot modular monolith backend. The integration creates a unified full-stack bookstore application while maintaining the independence and architectural principles of both systems.
+This design document defines the technical architecture for integrating the Nuxt 3 frontend application with the Spring Boot modular monolith backend through an nginx reverse proxy. The integration creates a unified full-stack bookstore application while maintaining clear separation between frontend static assets (served by nginx) and backend APIs (served by Spring Boot).
 
 ### Key Design Goals
-- **Seamless API Integration**: Type-safe communication between Next.js frontend and Spring Boot REST APIs
+- **Seamless API Integration**: Type-safe communication between Nuxt frontend and Spring Boot REST APIs
 - **Development Independence**: Frontend and backend can be developed, tested, and deployed independently
-- **Production Efficiency**: Single JAR deployment with embedded frontend assets
+- **Production Efficiency**: Nginx serves optimized static assets while proxying API calls to backend
 - **Type Safety**: End-to-end type safety from database to UI through OpenAPI-generated types
 - **Session Management**: Distributed session handling via Hazelcast for stateful cart operations
+- **Reverse Proxy Architecture**: Nginx webproxy handles routing and static asset serving
 
 ## Steering Document Alignment
 
 ### Technical Standards (tech.md)
 - **Backend**: Spring Boot 3.5.5, Java 21, Spring Modulith 1.4.3
-- **Frontend**: Next.js 14 (App Router), TypeScript strict mode, React 18
+- **Frontend**: Nuxt 3, TypeScript strict mode, Vue 3
+- **Reverse Proxy**: Nginx 1.29.2 with OpenTelemetry module
 - **API Contract**: OpenAPI 3.0 with Springdoc OpenAPI
-- **Build System**: Maven with frontend-maven-plugin for unified builds
+- **Build System**: Separate builds - pnpm for frontend, Maven for backend, Docker for nginx
 - **Session Store**: Hazelcast for distributed HTTP sessions
 
 ### Project Structure (structure.md)
 - **Backend Modules**: `src/main/java/com/sivalabs/bookstore/{catalog,orders,inventory,notifications,web}`
-- **Frontend Location**: `frontend-nuxt/` directory (contains Next.js, not Nuxt despite directory name)
-- **Static Resources**: `src/main/resources/static/` for production frontend assets
+- **Frontend Location**: `frontend-nuxt/` directory (Nuxt 3 monorepo with apps/packages)
+- **Nginx Config**: `webproxy/` directory with Dockerfile, nginx.conf, and static assets
+- **Build Outputs**: `frontend-nuxt/apps/web/.output/` for Nuxt build, `webproxy/dist/` for nginx static files
 - **OpenAPI Config**: `src/main/java/com/sivalabs/bookstore/config/OpenApiConfig.java`
 
 ## Code Reuse Analysis
@@ -48,15 +51,16 @@ This design document defines the technical architecture for integrating the Next
 
 #### Frontend Components
 - **HTTP Client**: `apps/web/lib/http.ts` - basic GET/POST client (needs enhancement)
-- **TanStack Query**: Already configured for server state management
-- **MSW Mocks**: Mock Service Worker setup in `apps/web/mocks/` for API mocking
-- **Feature Modules**: Existing structure in `apps/web/features/{books,cart,orders}/`
+- **Pinia**: Vue state management already configured (replaces TanStack Query)
+- **MSW Mocks**: Mock Service Worker setup in `apps/web/mocks/` for API mocking (optional in Nuxt)
+- **Feature Modules**: Existing structure in `apps/web/features/{books,cart,orders}/` or Nuxt pages/composables
 
 ### Integration Points
 - **OpenAPI Endpoint**: `/api-docs` (backend serves JSON spec)
 - **Type Generation**: `openapi-typescript` tool generates `openapi.d.ts` from spec
-- **CORS**: Needs configuration for `localhost:3000` in development profile
-- **Static Assets**: Spring Boot's `ResourceHandlerRegistry` serves frontend from `/` path
+- **CORS**: Needed only for `localhost:3000` in development when running Nuxt dev server
+- **Static Assets**: Nginx serves pre-built Nuxt static files from `/usr/share/nginx/html/dist/`
+- **Reverse Proxy**: Nginx forwards `/api/*` requests to `monolith:8080`
 
 ## Authentication and Authorization Strategy
 
@@ -85,19 +89,20 @@ Planned for future release:
 ```mermaid
 sequenceDiagram
     participant B as Browser
-    participant N as Next.js App
+    participant N as Nginx Webproxy
+    participant V as Nuxt App (SSR)
     participant H as HTTP Client
-    participant C as CORS Filter
     participant R as REST Controller
     participant S as Service Layer
     participant D as Database
     participant HZ as Hazelcast
 
     B->>N: GET /products
-    N->>H: useProducts(page=1)
-    H->>C: GET /api/products?page=1<br/>(credentials: include)
-    C->>C: Validate CORS<br/>(localhost:3000 allowed)
-    C->>R: Forward request<br/>(session cookie)
+    N->>N: Check route<br/>(static or API)
+    N->>V: Serve Nuxt page
+    V->>H: useProducts(page=1)
+    H->>N: GET /api/products?page=1<br/>(credentials: include)
+    N->>R: Proxy to monolith:8080/api/products
     R->>HZ: Check session
     HZ-->>R: Session data
     R->>S: getProducts(page)
@@ -105,11 +110,12 @@ sequenceDiagram
     D-->>S: Product entities
     S-->>R: PagedResult<Product>
     R->>R: Map to ProductDto
-    R-->>H: JSON response<br/>(200 OK)
+    R-->>N: JSON response<br/>(200 OK)
+    N-->>H: Forward response
     H->>H: Parse & type check
-    H-->>N: Typed ProductDto[]
-    N->>N: React Query cache
-    N-->>B: Rendered product list
+    H-->>V: Typed ProductDto[]
+    V->>V: Pinia state update
+    V-->>B: Rendered product list
 ```
 
 ### System Architecture Diagram
@@ -117,35 +123,41 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Development Environment"
-        FE[Next.js Dev Server<br/>localhost:3000]
+        FE[Nuxt Dev Server<br/>localhost:3000]
         BE[Spring Boot Backend<br/>localhost:8080]
-        FE -->|CORS-enabled API calls| BE
+        FE -->|Direct API calls| BE
     end
 
-    subgraph "Production Environment"
-        JAR[Spring Boot JAR]
-        subgraph "Embedded in JAR"
-            STATIC[Static Frontend Assets<br/>/_next/static/*]
+    subgraph "Production Environment (Docker Compose)"
+        NGINX[Nginx Webproxy<br/>:80 exposed as :8080]
+        subgraph "Nginx Serves"
+            STATIC[Static Frontend Assets<br/>/dist/*]
+        end
+        MONO[Monolith Backend<br/>:8080 internal]
+        subgraph "Backend APIs"
             API[REST APIs<br/>/api/*]
         end
-        JAR --> STATIC
-        JAR --> API
+
+        NGINX --> STATIC
+        NGINX -->|Proxy /api/*| MONO
+        MONO --> API
     end
 
     subgraph "External Services"
         PG[(PostgreSQL)]
         RMQ[RabbitMQ]
-        HZ[Hazelcast]
+        HZST[Hazelcast]
+        HDX[HyperDX]
     end
 
-    BE --> PG
-    BE --> RMQ
-    BE --> HZ
-    API --> PG
-    API --> HZ
+    MONO --> PG
+    MONO --> RMQ
+    MONO --> HZST
+    NGINX --> HDX
+    MONO --> HDX
 
-    Browser[Browser] -->|/| STATIC
-    Browser -->|API Requests| API
+    Browser[Browser] -->|:8080/| NGINX
+    Browser -->|:8080/api/*| NGINX
 ```
 
 ### Build and Deployment Flow
@@ -154,29 +166,30 @@ graph TB
 sequenceDiagram
     participant Dev as Developer
     participant Script as build.sh
-    participant Next as Next.js Build
+    participant Nuxt as Nuxt Build
     participant FS as File System
-    participant Maven as Maven Build
-    participant Spring as Spring Boot
+    participant Docker as Docker Build
+    participant Compose as Docker Compose
 
     Dev->>Script: ./build.sh
     Script->>Script: Verify Node.js & pnpm
-    Script->>Next: cd frontend-nuxt && pnpm install
-    Next->>Next: Install dependencies
-    Script->>Next: pnpm build
-    Next->>Next: Build optimized bundle
-    Next-->>Script: .next/standalone + .next/static
-    Script->>FS: mkdir -p src/main/resources/static
-    Script->>FS: cp frontend assets → static/
+    Script->>Nuxt: cd frontend-nuxt && pnpm install
+    Nuxt->>Nuxt: Install dependencies
+    Script->>Nuxt: pnpm build
+    Nuxt->>Nuxt: Build static site (nuxt generate)
+    Nuxt-->>Script: apps/web/.output/public/*
+    Script->>FS: mkdir -p webproxy/dist
+    Script->>FS: cp .output/public/* → webproxy/dist/
     FS-->>Script: Assets copied
-    Script->>Maven: ./mvnw clean package -DskipTests
-    Maven->>Maven: Package JAR with frontend assets
-    Maven-->>Script: target/*.jar
+    Script->>Docker: docker build webproxy -t webproxy:latest
+    Docker->>Docker: Build nginx image with static assets
+    Docker-->>Script: webproxy:latest image ready
     Script-->>Dev: ✅ Build complete!
 
-    Dev->>Spring: java -jar target/*.jar
-    Spring->>Spring: Serve frontend at /
-    Spring->>Spring: Serve APIs at /api/*
+    Dev->>Compose: docker compose up
+    Compose->>Compose: Start nginx webproxy
+    Compose->>Compose: Start monolith backend
+    Compose-->>Dev: Services running on :8080
 ```
 
 ### API Type Generation Flow
@@ -202,9 +215,9 @@ sequenceDiagram
 
 ### Component 1: Shell Script Build Orchestration
 
-**Purpose**: Build frontend and backend independently using shell script coordination
+**Purpose**: Build frontend as static assets and copy to nginx webproxy directory
 
-**Design Rationale**: Frontend and backend maintain separate build processes for maximum independence and flexibility. A shell script orchestrates both builds and manages asset copying.
+**Design Rationale**: Nuxt generates static HTML/CSS/JS that nginx serves directly. The build script orchestrates frontend build and asset copying to the webproxy directory for Docker build.
 
 **Implementation**: `build.sh`
 
@@ -213,7 +226,7 @@ sequenceDiagram
 set -e  # Exit immediately on error
 
 echo "======================================"
-echo "Building Next.js Frontend"
+echo "Building Nuxt Frontend"
 echo "======================================"
 
 cd frontend-nuxt
@@ -233,12 +246,12 @@ fi
 echo "📦 Installing frontend dependencies..."
 pnpm install --frozen-lockfile
 
-echo "🔨 Building Next.js application..."
-pnpm build
+echo "🔨 Building Nuxt application (static generation)..."
+pnpm generate
 
 # Verify build output
-if [ ! -d "apps/web/.next" ]; then
-    echo "❌ Error: Frontend build failed - .next directory not found"
+if [ ! -d "apps/web/.output/public" ]; then
+    echo "❌ Error: Frontend build failed - .output/public directory not found"
     exit 1
 fi
 
@@ -246,43 +259,33 @@ echo "✅ Frontend build completed successfully"
 cd ..
 
 echo "======================================"
-echo "Copying Frontend Assets to Backend"
+echo "Copying Frontend Assets to Webproxy"
 echo "======================================"
 
 # Create target directory
-mkdir -p src/main/resources/static
+mkdir -p webproxy/dist
 
 # Clean old assets
 echo "🧹 Cleaning old frontend assets..."
-rm -rf src/main/resources/static/_next
-rm -f src/main/resources/static/*.html
+rm -rf webproxy/dist/*
 
-# Copy Next.js standalone output
-if [ -d "frontend-nuxt/apps/web/.next/standalone/apps/web" ]; then
-    echo "📋 Copying standalone files..."
-    cp -r frontend-nuxt/apps/web/.next/standalone/apps/web/* src/main/resources/static/
-fi
+# Copy Nuxt static output
+echo "📋 Copying static assets..."
+cp -r frontend-nuxt/apps/web/.output/public/* webproxy/dist/
 
-# Copy Next.js static assets
-if [ -d "frontend-nuxt/apps/web/.next/static" ]; then
-    echo "📋 Copying static assets..."
-    mkdir -p src/main/resources/static/_next/static
-    cp -r frontend-nuxt/apps/web/.next/static/* src/main/resources/static/_next/static/
-fi
-
-echo "✅ Frontend assets copied successfully"
+echo "✅ Frontend assets copied to webproxy/dist/"
 
 echo "======================================"
-echo "Building Spring Boot Backend"
+echo "Building Webproxy Docker Image"
 echo "======================================"
 
-./mvnw clean package -DskipTests
+docker build -t webproxy:latest webproxy/
 
 echo "======================================"
 echo "✨ Build Complete!"
 echo "======================================"
-echo "📦 JAR file: target/spring-modular-monolith-0.0.1-SNAPSHOT.jar"
-echo "🚀 Run with: java -jar target/spring-modular-monolith-0.0.1-SNAPSHOT.jar"
+echo "🐳 Webproxy image: webproxy:latest"
+echo "🚀 Run with: docker compose up"
 ```
 
 **Additional Utility Scripts**:
@@ -293,16 +296,14 @@ echo "🚀 Run with: java -jar target/spring-modular-monolith-0.0.1-SNAPSHOT.jar
 set -e
 
 cd frontend-nuxt
-pnpm install && pnpm build
+pnpm install && pnpm generate
 cd ..
 
-mkdir -p src/main/resources/static
-rm -rf src/main/resources/static/_next
-cp -r frontend-nuxt/apps/web/.next/standalone/apps/web/* src/main/resources/static/
-mkdir -p src/main/resources/static/_next/static
-cp -r frontend-nuxt/apps/web/.next/static/* src/main/resources/static/_next/static/
+mkdir -p webproxy/dist
+rm -rf webproxy/dist/*
+cp -r frontend-nuxt/apps/web/.output/public/* webproxy/dist/
 
-echo "✅ Frontend built and copied to backend resources"
+echo "✅ Frontend built and copied to webproxy/dist/"
 ```
 
 `clean.sh`:
@@ -310,24 +311,23 @@ echo "✅ Frontend built and copied to backend resources"
 #!/bin/bash
 set -e
 
-rm -rf frontend-nuxt/apps/web/.next
+rm -rf frontend-nuxt/apps/web/.output
 rm -rf frontend-nuxt/node_modules
-./mvnw clean
-rm -rf src/main/resources/static/_next
+rm -rf webproxy/dist
 echo "✅ Build artifacts cleaned"
 ```
 
 **Interfaces**:
-- Input: Source code in `frontend-nuxt/` and `src/`
-- Output: `target/spring-modular-monolith-0.0.1-SNAPSHOT.jar` with embedded frontend
+- Input: Source code in `frontend-nuxt/`
+- Output: Docker image `webproxy:latest` with static assets in `/usr/share/nginx/html/dist/`
 
 **Dependencies**:
 - Node.js 18+ (system prerequisite)
 - pnpm 9.0+ (install via: `npm install -g pnpm`)
-- Maven 3.8+ (via `./mvnw` wrapper)
+- Docker 20.10+ for image building
 - Bash shell (Linux/macOS/Git Bash on Windows)
 
-**Reuses**: None - new build orchestration approach
+**Reuses**: Existing `webproxy/` directory with Dockerfile and nginx.conf
 
 **CI/CD Integration**:
 ```yaml
@@ -340,15 +340,19 @@ echo "✅ Build artifacts cleaned"
   uses: pnpm/action-setup@v2
   with:
     version: 9
+- name: Setup Docker Buildx
+  uses: docker/setup-buildx-action@v2
 - name: Make script executable
   run: chmod +x build.sh
 - name: Build application
   run: ./build.sh
 ```
 
-### Component 2: CORS Configuration
+### Component 2: CORS Configuration (Development Only)
 
-**Purpose**: Enable cross-origin requests during development
+**Purpose**: Enable cross-origin requests when running Nuxt dev server separately from backend
+
+**Note**: In production, CORS is not needed because nginx serves both frontend and proxies API requests.
 
 **Implementation**: `src/main/java/com/sivalabs/bookstore/config/CorsConfig.java`
 
@@ -360,7 +364,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-            .allowedOrigins("http://localhost:3000")
+            .allowedOrigins("http://localhost:3000")  // Nuxt dev server
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
@@ -369,8 +373,13 @@ public class CorsConfig implements WebMvcConfigurer {
 }
 ```
 
+**Development Workflow**:
+- Terminal 1: `cd frontend-nuxt && pnpm dev` (starts Nuxt on :3000)
+- Terminal 2: `./mvnw spring-boot:run` (starts backend on :8080)
+- Browser accesses `http://localhost:3000`, API calls go to `:8080`
+
 **Interfaces**:
-- Input: HTTP requests from `localhost:3000`
+- Input: HTTP requests from `localhost:3000` (Nuxt dev server)
 - Output: CORS headers in HTTP responses
 
 **Dependencies**: Spring Web MVC, profile-based activation
@@ -431,7 +440,11 @@ export const client = {
 **Enhanced Implementation** (Phase 1 - Add alongside existing)
 
 ```typescript
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// In production (nginx), use relative URLs to leverage reverse proxy
+// In development, use full URL to backend
+const API_BASE_URL = process.env.NUXT_PUBLIC_API_URL || (
+  process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8080'
+);
 
 export interface ApiError {
   status: number;
@@ -523,9 +536,11 @@ export const client = {
 ```
 
 **Recommended Workflow**:
-1. **Development**: Use `gen:types:local` - fetches live spec from running backend
+1. **Development**: Use `gen:types:local` - fetches live spec from running backend on :8080
 2. **CI/CD**: Use `gen:types:spec` - uses committed OpenAPI YAML file
 3. **Default**: Use `gen:types` - respects `OPENAPI_SOURCE` environment variable
+
+**Note**: In development, type generation connects directly to `localhost:8080`. In production, types are generated during build time before the nginx container is created.
 
 **Interfaces**:
 - Input: OpenAPI JSON from `/api-docs` or YAML file
@@ -535,94 +550,228 @@ export const client = {
 
 **Reuses**: Existing type generation workflow, adds HTTP endpoint support
 
-### Component 5: API Query Hooks with Generated Types
+### Component 5: API Composables with Generated Types
 
-**Purpose**: Type-safe TanStack Query hooks for API calls
+**Purpose**: Type-safe Nuxt composables for API calls using Pinia and $fetch
 
-**Implementation**: `apps/web/features/books/api/queries.ts` (enhanced)
+**Implementation**: `apps/web/composables/useProducts.ts` (Nuxt pattern)
 
 ```typescript
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { client } from '@/lib/http';
 import type { paths } from '@/lib/types/openapi';
 
 // Extract types from OpenAPI schema
 type ProductsResponse = paths['/api/products']['get']['responses']['200']['content']['application/json'];
 type ProductResponse = paths['/api/products/{code}']['get']['responses']['200']['content']['application/json'];
 
-export const qk = {
-  products: (params?: { page?: number }) => ['products', 'list', params ?? {}] as const,
-  product: (code: string) => ['products', 'detail', code] as const,
+export const useProducts = () => {
+  const products = ref<ProductsResponse | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const fetchProducts = async (page: number = 1) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      products.value = await $fetch<ProductsResponse>(`/api/products?page=${page}`, {
+        credentials: 'include',
+      });
+    } catch (e) {
+      error.value = e as Error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return {
+    products: readonly(products),
+    loading: readonly(loading),
+    error: readonly(error),
+    fetchProducts,
+  };
 };
 
-export function useProducts(page: number = 1) {
-  return useQuery({
-    queryKey: qk.products({ page }),
-    queryFn: () => client.GET<ProductsResponse>(`/api/products?page=${page}`),
-  });
-}
+export const useProduct = (code: string) => {
+  const product = ref<ProductResponse | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
 
-export function useProduct(code: string) {
-  return useQuery({
-    queryKey: qk.product(code),
-    queryFn: () => client.GET<ProductResponse>(`/api/products/${code}`),
+  const fetchProduct = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      product.value = await $fetch<ProductResponse>(`/api/products/${code}`, {
+        credentials: 'include',
+      });
+    } catch (e) {
+      error.value = e as Error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Auto-fetch on mount
+  onMounted(() => {
+    fetchProduct();
   });
-}
+
+  return {
+    product: readonly(product),
+    loading: readonly(loading),
+    error: readonly(error),
+    refresh: fetchProduct,
+  };
+};
+```
+
+**Alternative with Pinia Store**: `apps/web/stores/products.ts`
+
+```typescript
+import { defineStore } from 'pinia';
+import type { paths } from '@/lib/types/openapi';
+
+type ProductsResponse = paths['/api/products']['get']['responses']['200']['content']['application/json'];
+
+export const useProductsStore = defineStore('products', () => {
+  const products = ref<ProductsResponse | null>(null);
+  const loading = ref(false);
+  const error = ref<Error | null>(null);
+
+  async function fetchProducts(page: number = 1) {
+    loading.value = true;
+    error.value = null;
+    try {
+      products.value = await $fetch<ProductsResponse>(`/api/products?page=${page}`, {
+        credentials: 'include',
+      });
+    } catch (e) {
+      error.value = e as Error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return { products, loading, error, fetchProducts };
+});
 ```
 
 **Interfaces**:
 - Input: Query parameters (page, code, etc.)
-- Output: Typed query results with loading/error states
+- Output: Typed refs with loading/error states
 
-**Dependencies**: TanStack Query, enhanced HTTP client, generated OpenAPI types
+**Dependencies**: Nuxt 3, Pinia, $fetch, generated OpenAPI types
 
-**Reuses**: Existing query key factory pattern, adds OpenAPI type constraints
+**Reuses**: OpenAPI type generation, composables pattern from Nuxt
 
-### Component 6: Static Resource Handler
+### Component 6: Nginx Configuration for Static Assets and Reverse Proxy
 
-**Purpose**: Serve frontend assets and handle SPA routing
+**Purpose**: Serve frontend static assets and proxy API requests to backend
 
-**Implementation**: `src/main/java/com/sivalabs/bookstore/config/StaticResourceConfig.java`
+**Design Rationale**: Nginx efficiently serves static files and acts as a reverse proxy for API calls, maintaining session cookies across the boundary.
 
-```java
-@Configuration
-public class StaticResourceConfig implements WebMvcConfigurer {
+**Implementation**: `webproxy/nginx.conf` (enhanced)
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve Next.js static assets
-        registry.addResourceHandler("/_next/static/**")
-            .addResourceLocations("classpath:/static/_next/static/")
-            .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic());
+```nginx
+load_module modules/ngx_otel_module.so;
 
-        // Serve other static assets
-        registry.addResourceHandler("/favicon.ico", "/images/**", "/css/**")
-            .addResourceLocations("classpath:/static/")
-            .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic());
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+    gzip            on;
+    gzip_types      text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    # OpenTelemetry configuration
+    otel_exporter {
+        endpoint hyperdx:4317;
+        header authorization ${HYPERDX_API_KEY};
     }
+    otel_service_name nginx-webproxy;
+    otel_trace on;
+    otel_trace_context propagate;
 
-    @Bean
-    @Order(Ordered.LOWEST_PRECEDENCE)
-    public WebMvcConfigurer spaRoutingConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addViewControllers(ViewControllerRegistry registry) {
-                // Forward all non-API routes to index.html for SPA routing
-                registry.addViewController("/{spring:[^\\.]*}")
-                    .setViewName("forward:/index.html");
+    access_log /var/log/nginx/access.log main;
+
+    server {
+        listen 80;
+
+        # Serve Nuxt static assets
+        location / {
+            root /usr/share/nginx/html/dist;
+            try_files $uri $uri/ /index.html;
+
+            # Cache static assets
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
             }
-        };
+
+            # No cache for HTML files
+            location ~* \.html$ {
+                expires -1;
+                add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+            }
+        }
+
+        # Proxy API requests to monolith backend
+        location /api/ {
+            resolver 127.0.0.11 valid=10s;
+            set $target http://monolith:8080;
+            proxy_pass $target;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $http_host;
+
+            # Pass cookies for session management
+            proxy_set_header Cookie $http_cookie;
+            proxy_pass_header Set-Cookie;
+
+            proxy_redirect off;
+        }
     }
 }
 ```
 
+**Dockerfile Enhancement**: `webproxy/Dockerfile`
+
+```dockerfile
+FROM nginx:1.29.2-alpine-otel
+
+RUN rm -rf /etc/nginx/conf.d/*
+
+# Copy static assets
+COPY dist/ /usr/share/nginx/html/dist/
+
+# Copy nginx configuration
+COPY nginx.conf /tmp/nginx.conf.template
+COPY entrypoint.sh /docker-entrypoint.d/40-envsubst-nginx-conf.sh
+RUN chmod +x /docker-entrypoint.d/40-envsubst-nginx-conf.sh
+```
+
 **Interfaces**:
-- Input: HTTP requests to `/` paths (non-API)
-- Output: Static assets or index.html for SPA routing
+- Input: HTTP requests to `:80` (exposed as `:8080` in Docker Compose)
+- Output: Static files or proxied API responses
 
-**Dependencies**: Spring Web MVC, classpath resources
+**Dependencies**: Nginx 1.29.2, Docker, existing nginx.conf structure
 
-**Reuses**: Spring Boot's static resource serving, adds Next.js-specific paths
+**Reuses**: Existing `webproxy/` directory, OpenTelemetry configuration
 
 ## Data Models
 
@@ -822,29 +971,33 @@ Frontend `HttpError` class captures this structure for consistent error handling
 ## Production Considerations
 
 ### Build Optimization
-- Next.js production build with `output: 'standalone'` for minimal bundle
-- Static asset compression (gzip/brotli) via Spring Boot
-- Cache busting with content hashes in filenames
+- Nuxt static generation with `nuxt generate` for pre-rendered HTML
+- Static asset compression (gzip/brotli) via Nginx
+- Cache busting with content hashes in filenames (handled by Nuxt)
 - Bundle size budget: <500KB initial load (gzipped)
+- Nginx serves static assets with 1-year cache for immutable files
 
 ### Session Management
 - Hazelcast distributed sessions for multi-instance deployment
 - Session timeout: 30 minutes (configurable)
 - Session cookie flags: HttpOnly, Secure (production), SameSite=Strict
+- Nginx proxies session cookies to backend transparently
 
 ### Monitoring and Observability
 - Backend: Micrometer metrics, OpenTelemetry traces to HyperDX
+- Nginx: OpenTelemetry module sends traces to HyperDX (gRPC endpoint)
 - Frontend: Web Vitals tracking (LCP, FID, CLS) - future enhancement
-- Health check: `/actuator/health` includes frontend asset verification
+- Health check: `/actuator/health` for backend, nginx logs for frontend
 
 ### Security
-- CORS restricted to production domain
-- HTTPS enforced in production
-- CSP headers configured for Next.js assets
-- Session cookies secured with Secure flag
+- CORS not needed (nginx serves both frontend and proxies API)
+- HTTPS enforced in production via nginx SSL termination
+- CSP headers configured in nginx for Nuxt assets
+- Session cookies secured with Secure flag via nginx proxy headers
 
 ### Scalability
 - Stateless backend instances (session in Hazelcast)
-- CDN-ready static asset structure
-- API response caching via HTTP cache headers
+- CDN-ready static asset structure via nginx
+- Multiple nginx instances with load balancer (future)
+- API response caching via HTTP cache headers at nginx level
 - Database connection pooling (Hikari, max 10 connections per instance)
