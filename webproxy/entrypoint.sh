@@ -7,7 +7,13 @@ if [ -z "${HYPERDX_API_KEY}" ]; then
   exit 1
 fi
 
-# Substitute environment variables in nginx config
-envsubst '${HYPERDX_API_KEY}' < /tmp/nginx.conf.template > /etc/nginx/nginx.conf
+# Use sed to replace only HYPERDX_API_KEY, preserving all nginx variables
+sed "s|\${HYPERDX_API_KEY}|${HYPERDX_API_KEY}|g" /tmp/nginx.conf.template > /etc/nginx/nginx.conf
+
+# Test nginx configuration
+nginx -t
 
 echo "Environment variables substituted in nginx.conf"
+
+# Execute the main command (nginx)
+exec "$@"

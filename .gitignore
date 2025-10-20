@@ -44,3 +44,4 @@ out/
 .env
 
 frontend-sdk/
+.DS_Store

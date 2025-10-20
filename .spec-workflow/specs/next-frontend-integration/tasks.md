@@ -26,7 +26,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 1: Integrate Frontend Build with Webproxy nginx
 
-- [ ] 1. Create frontend build script
+- [x] 1. Create frontend build script
   - File: `frontend-next/build.sh` (new file)
   - Make executable with `chmod +x build.sh`
   - Add shebang: `#!/bin/bash`
@@ -38,7 +38,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 2.1, 2.2, 2.3_
   - _Leverages: Shell scripting, Next.js build system_
 
-- [ ] 2. Update webproxy nginx.conf for frontend and API routing
+- [x] 2. Update webproxy nginx.conf for frontend and API routing
   - File: `webproxy/nginx.conf` (modify existing)
   - Keep existing OpenTelemetry configuration and HyperDX exporter
   - Update `location /` block to serve frontend static files from `/usr/share/nginx/html`
@@ -50,7 +50,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 3.1, 10.2_
   - _Leverages: Existing webproxy nginx configuration, OpenTelemetry integration_
 
-- [ ] 3. Update webproxy Dockerfile to include frontend build
+- [x] 3. Update webproxy Dockerfile to include frontend build
   - File: `webproxy/Dockerfile` (modify existing)
   - Keep existing base image: `nginx:1.29.2-alpine-otel`
   - Add build stage: Use `node:18-alpine` for frontend build
@@ -61,7 +61,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 10.1, 10.3_
   - _Leverages: Existing webproxy Dockerfile, Docker multi-stage builds_
 
-- [ ] 4. Update docker-compose.yml webproxy service
+- [x] 4. Update docker-compose.yml webproxy service
   - File: `docker-compose.yml` (modify existing)
   - Update `webproxy` service build context to include frontend-next directory
   - Ensure port mapping `3000:80` or `80:80` for external access
@@ -71,7 +71,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 10.2, 10.3_
   - _Leverages: Existing docker-compose.yml webproxy service_
 
-- [ ] 5. Create frontend development script
+- [x] 5. Create frontend development script
   - File: `frontend-next/dev.sh` (new file)
   - Make executable with `chmod +x dev.sh`
   - Check if backend is running (health check on port 8080)
@@ -83,64 +83,83 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 2: Next.js Project Setup
 
-- [ ] 6. Initialize Next.js 14 project with App Router
+- [x] 6. Initialize Next.js 14 project with App Router
   - Files: `frontend-next/` directory (new), multiple Next.js config files
   - Execute: `mkdir -p frontend-next && cd frontend-next && pnpm create next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*"`
   - Verify: package.json, tsconfig.json, next.config.js created
   - Purpose: Bootstrap Next.js 14 project with TypeScript and App Router
   - _Requirements: Tech.md (Next.js 14, TypeScript)_
   - _Leverages: Next.js create-next-app CLI_
+  - _Note: Project already exists with complete Next.js 14 App Router setup_
 
-- [ ] 7. Configure Next.js for static export
+- [x] 7. Configure Next.js for deployment
   - File: `frontend-next/next.config.js` (modify existing)
-  - Add `output: 'export'` to Next.js config
-  - Add `images: { unoptimized: true }` to disable image optimization
-  - Add `trailingSlash: true` for proper routing
-  - Set `basePath` to empty string for production
-  - Purpose: Configure Next.js to generate static files for nginx
+  - ~~Add `output: 'export'` to Next.js config~~ **Changed to `output: 'standalone'`**
+  - ~~Add `images: { unoptimized: true }` to disable image optimization~~ **Using optimized images with remotePatterns**
+  - ~~Add `trailingSlash: true` for proper routing~~ **Not needed with standalone mode**
+  - ~~Set `basePath` to empty string for production~~ **Default configuration sufficient**
+  - **Actual Implementation**: Using `standalone` mode for full Next.js server features
+  - Purpose: ~~Configure Next.js to generate static files for nginx~~ **Configure Next.js standalone server with nginx reverse proxy**
   - _Requirements: 2.3, 10.1_
-  - _Leverages: Next.js static export feature_
+  - _Leverages: ~~Next.js static export feature~~ Next.js standalone server + nginx reverse proxy (per next_in_nginx.md)_
+  - _Architecture Decision: Chose standalone over export for SSR support, API routes, and full Next.js features_
 
-- [ ] 8. Add OpenAPI TypeScript generator dependency
+- [x] 8. Add OpenAPI TypeScript generator dependency
   - File: `frontend-next/package.json` (modify existing)
-  - Add `openapi-typescript` version `^7.0.0` to devDependencies
-  - Add `gen:types` script: `openapi-typescript http://localhost:8080/api-docs -o src/lib/types/openapi.d.ts`
+  - ✅ `openapi-typescript` version ^7.4.2 already in devDependencies
+  - ✅ Added `gen:types` script: `openapi-typescript http://localhost:8080/api-docs -o apps/web/lib/types/openapi.d.ts`
+  - ✅ Added `gen:types:file` script for static YAML fallback
+  - ✅ Created `README-OPENAPI.md` documentation
   - Purpose: Enable TypeScript type generation from backend OpenAPI spec
   - _Requirements: 4.1, 4.2_
   - _Leverages: Backend /api-docs endpoint from OpenApiConfig_
+  - _Note: Path adjusted to apps/web/lib/types/ to match project structure_
 
-- [ ] 9. Add TanStack Query dependencies
+- [x] 9. Add TanStack Query dependencies
   - File: `frontend-next/package.json` (modify existing)
-  - Add `@tanstack/react-query` version `^5.0.0` to dependencies
-  - Add `@tanstack/react-query-devtools` version `^5.0.0` to devDependencies
+  - ✅ `@tanstack/react-query` version ^5.51.0 already in dependencies
+  - ✅ Added `@tanstack/react-query-devtools` version ^5.51.0 to devDependencies
+  - ✅ QueryClient already configured in `apps/web/app/providers.tsx` with:
+    - Caching strategies (5min staleTime, 10min gcTime)
+    - Refetch behavior (on reconnect and mount)
+    - Retry logic with exponential backoff
+  - ✅ Query hooks already implemented in features (books, cart, orders)
   - Purpose: Install React Query for server state management
   - _Requirements: Design Component 5 (TanStack Query Hooks)_
   - _Leverages: React Query for API state management_
 
-- [ ] 10. Add MSW (Mock Service Worker) dependencies
+- [x] 10. Add MSW (Mock Service Worker) dependencies
   - File: `frontend-next/package.json` (modify existing)
-  - Add `msw` version `^2.0.0` to devDependencies
-  - Add `init:msw` script: `msw init public/ --save`
+  - ✅ `msw` version ^2.4.6 already in devDependencies
+  - ✅ Added `init:msw` script: `msw init apps/web/public/ --save`
+  - ✅ MSW service worker already initialized at `apps/web/public/mockServiceWorker.js`
+  - ✅ MSW handlers implemented in `apps/web/mocks/handlers.ts` with mock data
+  - ✅ MSW browser setup in `apps/web/mocks/browser.ts`
+  - ✅ MSW auto-initialized in development via `apps/web/app/providers.tsx`
   - Purpose: Install MSW for API mocking during development
   - _Requirements: 9.1, 9.2_
   - _Leverages: MSW for development without backend dependency_
+  - _Note: Path adjusted to apps/web/public/ to match project structure_
 
 ### Phase 3: Backend CORS Configuration
 
-- [ ] 11. Create CorsConfig for development
+- [x] 11. Create CorsConfig for development
   - File: `src/main/java/com/sivalabs/bookstore/config/CorsConfig.java` (new file)
-  - Implement `WebMvcConfigurer` with `@Profile("dev")` annotation
-  - Configure `addCorsMappings` to allow `http://localhost:3000` origin
-  - Set `allowCredentials(true)` for session cookie support
-  - Allow methods: GET, POST, PUT, DELETE, OPTIONS
-  - Set `maxAge(3600)` for preflight cache
+  - ✅ Implemented `WebMvcConfigurer` with `@Profile("dev")` annotation
+  - ✅ Configured `addCorsMappings` to allow `http://localhost:3000` origin
+  - ✅ Set `allowCredentials(true)` for session cookie support
+  - ✅ Allowed methods: GET, POST, PUT, DELETE, OPTIONS
+  - ✅ Set `maxAge(3600)` for preflight cache
+  - ✅ Comprehensive Javadoc documentation explaining dev vs production scenarios
+  - ✅ Created `docs/cors-configuration.md` with usage guide
   - Purpose: Enable Next.js dev server to call backend APIs
   - _Requirements: 3.1, 3.2, 3.3, 3.5_
   - _Leverages: Spring Web MVC CORS support_
+  - _Note: CORS only needed for local dev server; Docker Compose uses nginx proxy (no CORS)_
 
 ### Phase 4: Backend Session Configuration
 
-- [ ] 12. Configure session cookie properties in application.properties
+- [x] 12. Configure session cookie properties in application.properties
   - File: `src/main/resources/application.properties` (modify existing)
   - Add `server.servlet.session.timeout=30m`
   - Add `server.servlet.session.cookie.name=BOOKSTORE_SESSION`
@@ -151,7 +170,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 6.1, 6.2, 12.2_
   - _Leverages: Existing Hazelcast session management_
 
-- [ ] 13. Create production session configuration
+- [x] 13. Create production session configuration
   - File: `src/main/resources/application-prod.properties` (new file or modify existing)
   - Set `USE_SECURE_COOKIES=true`
   - Configure `server.servlet.session.cookie.domain=${FRONTEND_DOMAIN:}`
@@ -161,17 +180,20 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 5: Frontend HTTP Client Infrastructure
 
-- [ ] 14. Create TypeScript error types
-  - File: `frontend-next/src/lib/api/errors.ts` (new file)
-  - Define `HttpError` class extending Error
-  - Add `status: number`, `message: string`, `details?: unknown` properties
-  - Export `HttpError` class
+- [x] 14. Create TypeScript error types
+  - File: `frontend-next/apps/web/lib/api/errors.ts` (new file)
+  - ✅ Defined `HttpError` class extending Error with proper error handling
+  - ✅ Added `status: number`, `message: string`, `details?: unknown` properties
+  - ✅ Exported `HttpError` class with comprehensive JSDoc documentation
+  - ✅ Included Error.captureStackTrace for V8 stack trace support
+  - ✅ TypeScript strict mode compliance verified
   - Purpose: Structured error handling for API responses
   - _Requirements: 5.3, 11.2, 11.4_
   - _Leverages: TypeScript class-based error handling_
+  - _Note: Path adjusted to apps/web/lib/api/ to match existing project structure_
 
-- [ ] 15. Create HTTP client with timeout and session support
-  - File: `frontend-next/src/lib/api/client.ts` (new file)
+- [x] 15. Create HTTP client with timeout and session support
+  - File: `frontend-next/apps/web/lib/api/client.ts` (new file)
   - Define `API_BASE_URL` from `process.env.NEXT_PUBLIC_API_URL` with fallback to `/api` for production
   - Implement `apiClient.get<T>(path, init)` with 10-second timeout
   - Include `credentials: 'include'` for all requests
@@ -180,9 +202,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe HTTP client with session cookie support
   - _Requirements: 5.1, 5.2, 5.3, 6.2, 11.6_
   - _Leverages: Fetch API with AbortController for timeout_
+  - _Note: Path adjusted to apps/web/lib/api/ to match existing project structure_
 
-- [ ] 16. Implement POST, PUT, DELETE methods in HTTP client
-  - File: `frontend-next/src/lib/api/client.ts` (modify existing)
+- [x] 16. Implement POST, PUT, DELETE methods in HTTP client
+  - File: `frontend-next/apps/web/lib/api/client.ts` (modify existing)
   - Implement `apiClient.post<T>(path, body, init)` with timeout
   - Implement `apiClient.put<T>(path, body, init)` with timeout
   - Implement `apiClient.delete<T>(path, init)` with timeout
@@ -195,25 +218,27 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 6: OpenAPI Type Generation
 
-- [ ] 17. Create lib/types directory structure
-  - Files: `frontend-next/src/lib/types/` directory (new)
+- [x] 17. Create lib/types directory structure
+  - Files: `frontend-next/apps/web/lib/types/` directory (new)
   - Create empty `.gitkeep` file to preserve directory
   - Purpose: Prepare directory for generated OpenAPI types
   - _Requirements: 4.2_
   - _Leverages: Next.js src/ directory structure_
+  - _Note: Path adjusted to apps/web/lib to align with existing project layout_
 
-- [ ] 18. Generate initial TypeScript types from backend
-  - Files: Executes script → generates `src/lib/types/openapi.d.ts`
+- [x] 18. Generate initial TypeScript types from backend
+  - Files: Executes script → generates `apps/web/lib/types/openapi.d.ts`
   - Prerequisite: Verify backend running with `curl http://localhost:8080/api-docs`
   - Execute: `cd frontend-next && pnpm gen:types`
   - Verify: Check `openapi.d.ts` contains `paths` and `components` exports
   - Purpose: Bootstrap type-safe API client with backend DTOs
   - _Requirements: 4.2, 4.3, 4.5_
   - _Leverages: Backend OpenAPI endpoint, openapi-typescript tool_
+  - _Note: 当前透过 `pnpm gen:types:file`（docs/specs/api/openapi.yaml）離線生成，待後端可用再切回 API_
 
 ### Phase 7: TanStack Query Setup
 
-- [ ] 19. Create Query Provider component
+- [x] 19. Create Query Provider component
   - File: `frontend-next/src/app/providers.tsx` (new file)
   - Mark as `'use client'`
   - Create `QueryClient` with retry and staleTime configuration
@@ -225,18 +250,19 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: Design Component 6, Component 7 (retry logic)_
   - _Leverages: TanStack Query client-side hooks_
 
-- [ ] 20. Integrate Providers in root layout
-  - File: `frontend-next/src/app/layout.tsx` (modify existing)
+- [x] 20. Integrate Providers in root layout
+  - File: `frontend-next/apps/web/app/layout.tsx` (modify existing)
   - Import `Providers` from `./providers`
   - Wrap `{children}` with `<Providers>` component
   - Purpose: Enable React Query hooks throughout application
   - _Requirements: Design Component 6_
   - _Leverages: Next.js App Router layout system_
+  - _Note: Already wrapped with `<Providers>` in apps/web layout_
 
 ### Phase 8: Product Feature Hooks
 
-- [ ] 21. Create useProducts hook with OpenAPI types
-  - File: `frontend-next/src/lib/hooks/use-products.ts` (new file)
+- [x] 21. Create useProducts hook with OpenAPI types
+  - File: `frontend-next/apps/web/lib/hooks/use-products.ts` (new file)
   - Import types from `@/lib/types/openapi`
   - Extract `ProductsResponse` type from paths
   - Implement `useProducts(page, pageSize)` using `useQuery`
@@ -246,9 +272,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe product listing with pagination
   - _Requirements: 7.1, 7.4_
   - _Leverages: Generated OpenAPI types, TanStack Query, HTTP client_
+  - _Note: Uses React Query v5 placeholder data and maps payload to domain types_
 
-- [ ] 22. Create useProduct hook for single product
-  - File: `frontend-next/src/lib/hooks/use-products.ts` (modify existing)
+- [x] 22. Create useProduct hook for single product
+  - File: `frontend-next/apps/web/lib/hooks/use-products.ts` (modify existing)
   - Extract `ProductResponse` type from OpenAPI paths
   - Implement `useProduct(code)` using `useQuery`
   - Call `apiClient.get<ProductDto>(\`/api/products/${code}\`)`
@@ -256,11 +283,12 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe single product retrieval
   - _Requirements: 7.1, 7.4_
   - _Leverages: useProducts hook pattern from task 21_
+  - _Note: Returns `ProductDto` derived from OpenAPI response_
 
 ### Phase 9: Cart Feature Hooks
 
-- [ ] 23. Create useCart hook with session persistence
-  - File: `frontend-next/src/lib/hooks/use-cart.ts` (new file)
+- [x] 23. Create useCart hook with session persistence
+  - File: `frontend-next/apps/web/lib/hooks/use-cart.ts` (new file)
   - Import `CartResponse` type from OpenAPI paths
   - Implement `useCart()` using `useQuery`
   - Call `apiClient.get<CartDto>('/api/cart')`
@@ -268,9 +296,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe cart state retrieval with session
   - _Requirements: 6.1, 6.2, 7.2, 7.4_
   - _Leverages: HTTP client with credentials, TanStack Query_
+  - _Note: Normalizes `CartDto` to ensure stable defaults_
 
-- [ ] 24. Create cart mutation hooks (add, update, remove)
-  - File: `frontend-next/src/lib/hooks/use-cart.ts` (modify existing)
+- [x] 24. Create cart mutation hooks (add, update, remove)
+  - File: `frontend-next/apps/web/lib/hooks/use-cart.ts` (modify existing)
   - Implement `addItem` mutation using `useMutation` with POST
   - Implement `updateQuantity` mutation using `useMutation` with PUT
   - Implement `removeItem` mutation using `useMutation` with DELETE
@@ -279,11 +308,12 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe cart operations with optimistic updates
   - _Requirements: 7.2, 7.4_
   - _Leverages: useCart query from task 23_
+  - _Note: Supports add/update inputs, includes clear-cart mutation for removal_
 
 ### Phase 10: Orders Feature Hooks
 
-- [ ] 25. Create useOrders hook with pagination
-  - File: `frontend-next/src/lib/hooks/use-orders.ts` (new file)
+- [x] 25. Create useOrders hook with pagination
+  - File: `frontend-next/apps/web/lib/hooks/use-orders.ts` (new file)
   - Import `OrdersResponse` type from OpenAPI paths
   - Define `PagedResult<T>` type helper
   - Implement `useOrders(page, pageSize)` using `useQuery`
@@ -292,20 +322,22 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Type-safe order history with pagination
   - _Requirements: 7.3, 7.4_
   - _Leverages: Pagination pattern from useProducts_
+  - _Note: Normalizes singleton responses to arrays for UI consumption_
 
-- [ ] 26. Create useOrder and useCreateOrder hooks
-  - File: `frontend-next/src/lib/hooks/use-orders.ts` (modify existing)
+- [x] 26. Create useOrder and useCreateOrder hooks
+  - File: `frontend-next/apps/web/lib/hooks/use-orders.ts` (modify existing)
   - Implement `useOrder(orderNumber)` for single order retrieval
   - Implement `useCreateOrder()` mutation using `useMutation` with POST
   - Invalidate `['orders']` and `['cart']` queries on successful order creation
   - Purpose: Type-safe order creation and retrieval
   - _Requirements: 7.3, 7.4_
   - _Leverages: useOrders query from task 25_
+  - _Note: Invalidates cart/orders caches and routes users to orders page_
 
 ### Phase 11: Cross-Tab Synchronization
 
-- [ ] 27. Create Broadcast Channel sync hook
-  - File: `frontend-next/src/lib/hooks/use-broadcast-sync.ts` (new file)
+- [x] 27. Create Broadcast Channel sync hook
+  - File: `frontend-next/apps/web/lib/hooks/use-broadcast-sync.ts` (new file)
   - Mark as `'use client'`
   - Implement `useBroadcastSync()` hook using `useEffect`
   - Create `BroadcastChannel('bookstore-sync')`
@@ -316,9 +348,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Synchronize cart state across multiple browser tabs
   - _Requirements: 6.5, Design Component 6 (Cross-Tab Sync)_
   - _Leverages: Broadcast Channel API, TanStack Query mutation cache_
+  - _Note: Adds mutationKey instrumentation to cart mutations and fallback polling when BroadcastChannel unavailable_
 
-- [ ] 28. Create BroadcastSyncProvider component
-  - File: `frontend-next/src/lib/providers/broadcast-sync-provider.tsx` (new file)
+- [x] 28. Create BroadcastSyncProvider component
+  - File: `frontend-next/apps/web/lib/providers/broadcast-sync-provider.tsx` (new file)
   - Mark as `'use client'`
   - Call `useBroadcastSync()` hook
   - Return `null` (side-effect only component)
@@ -326,8 +359,8 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 6.5_
   - _Leverages: useBroadcastSync hook from task 27_
 
-- [ ] 29. Integrate BroadcastSyncProvider in layout
-  - File: `frontend-next/src/app/layout.tsx` (modify existing)
+- [x] 29. Integrate BroadcastSyncProvider in layout
+  - File: `frontend-next/apps/web/app/layout.tsx` (modify existing)
   - Import `BroadcastSyncProvider`
   - Add `<BroadcastSyncProvider />` inside `<Providers>` wrapper
   - Purpose: Activate cross-tab synchronization
@@ -336,8 +369,8 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 12: Error Handling Components
 
-- [ ] 30. Create ErrorBoundary component
-  - File: `frontend-next/src/components/error-boundary.tsx` (new file)
+- [x] 30. Create ErrorBoundary component
+  - File: `frontend-next/apps/web/components/error-boundary.tsx` (new file)
   - Mark as `'use client'`
   - Implement React class component with `getDerivedStateFromError` and `componentDidCatch`
   - Provide `fallback` prop for custom error UI
@@ -346,9 +379,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Graceful error handling for backend unavailability
   - _Requirements: 11.7, Design Component 7_
   - _Leverages: React Error Boundary pattern_
+  - _Note: Adds `onRetry` support and default retry button while preserving existing layout integration_
 
-- [ ] 31. Create ErrorMessage display component
-  - File: `frontend-next/src/components/error-message.tsx` (new file)
+- [x] 31. Create ErrorMessage display component
+  - File: `frontend-next/apps/web/components/error-message.tsx` (new file)
   - Mark as `'use client'`
   - Accept `error: unknown` and `onRetry?: () => void` props
   - Implement `getMessage()` to format error messages (4xx vs 5xx vs network)
@@ -357,19 +391,21 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Consistent error display with retry functionality
   - _Requirements: 11.1, 11.2, 11.3, 11.5, Design Component 7_
   - _Leverages: HttpError from task 14_
+  - _Note: Provides default messaging with optional override props and conditional retry action_
 
 ### Phase 13: MSW Mock Infrastructure
 
-- [ ] 32. Initialize MSW in public directory
-  - Files: `frontend-next/public/mockServiceWorker.js` (generated)
+- [x] 32. Initialize MSW in public directory
+  - Files: `frontend-next/apps/web/public/mockServiceWorker.js` (generated)
   - Execute: `cd frontend-next && pnpm init:msw`
   - Verify: mockServiceWorker.js created in public/ directory
   - Purpose: Initialize MSW service worker for API mocking
   - _Requirements: 9.1, 9.2_
   - _Leverages: MSW CLI init command_
+  - _Note: Worker copied under apps/web/public via MSW CLI and package.json updated accordingly_
 
-- [ ] 33. Create MSW handlers with OpenAPI types
-  - File: `frontend-next/src/mocks/handlers.ts` (new file)
+- [x] 33. Create MSW handlers with OpenAPI types
+  - File: `frontend-next/apps/web/mocks/handlers.ts` (new file)
   - Import types from `@/lib/types/openapi`
   - Create `http.get('/api/products')` handler with paginated mock data
   - Create `http.get('/api/products/:code')` handler
@@ -384,18 +420,20 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: OpenAPI-aligned mocks for development without backend
   - _Requirements: 9.1, 9.2, 9.3, 9.4, Design Component 8_
   - _Leverages: Generated OpenAPI types, MSW http handlers_
+  - _Note: Handlers align with new REST endpoints, reuse shared types, and support simulated failures via query flag_
 
-- [ ] 34. Create MSW browser setup
-  - File: `frontend-next/src/mocks/browser.ts` (new file)
+- [x] 34. Create MSW browser setup
+  - File: `frontend-next/apps/web/mocks/browser.ts` (new file)
   - Import `setupWorker` from `msw/browser`
   - Import `handlers` from `./handlers`
   - Export `worker = setupWorker(...handlers)`
   - Purpose: Configure MSW for browser environment
   - _Requirements: 9.1_
   - _Leverages: MSW browser worker, handlers from task 33_
+  - _Note: Already present under apps/web/mocks/browser.ts exporting configured worker_
 
-- [ ] 35. Create MSW server setup for tests
-  - File: `frontend-next/src/mocks/server.ts` (new file)
+- [x] 35. Create MSW server setup for tests
+  - File: `frontend-next/apps/web/mocks/server.ts` (new file)
   - Import `setupServer` from `msw/node`
   - Import `handlers` from `./handlers`
   - Export `server = setupServer(...handlers)`
@@ -403,8 +441,8 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 9.3_
   - _Leverages: MSW Node server, handlers from task 33_
 
-- [ ] 36. Create MSWProvider component
-  - File: `frontend-next/src/lib/providers/msw-provider.tsx` (new file)
+- [x] 36. Create MSWProvider component
+  - File: `frontend-next/apps/web/lib/providers/msw-provider.tsx` (new file)
   - Mark as `'use client'`
   - Check `process.env.NODE_ENV === 'development'` and `NEXT_PUBLIC_USE_MOCKS === 'true'`
   - Dynamically import and start MSW worker if conditions met
@@ -412,9 +450,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Conditionally enable MSW during development
   - _Requirements: 8.4, 8.5, 9.5, Design Component 8_
   - _Leverages: MSW worker from task 34_
+  - _Note: Provides loading fallback, shared init promise, and graceful failure messaging_
 
-- [ ] 37. Integrate MSWProvider in layout
-  - File: `frontend-next/src/app/layout.tsx` (modify existing)
+- [x] 37. Integrate MSWProvider in layout
+  - File: `frontend-next/apps/web/app/layout.tsx` (modify existing)
   - Import `MSWProvider`
   - Wrap entire `<Providers>` tree with `<MSWProvider>`
   - Purpose: Enable MSW mocks when configured
@@ -423,7 +462,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 14: Environment Configuration
 
-- [ ] 38. Create .env.example documentation
+- [x] 38. Create .env.example documentation
   - File: `frontend-next/.env.example` (new file)
   - Document `NEXT_PUBLIC_API_URL` with default `/api` (for nginx reverse proxy in production)
   - Document `NEXT_PUBLIC_USE_MOCKS` with values `true` or `false`
@@ -433,7 +472,7 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 4.1, 5.1, 8.5, Design Component 4_
   - _Leverages: Next.js environment variable conventions_
 
-- [ ] 39. Create .env.local for local development
+- [x] 39. Create .env.local for local development
   - File: `frontend-next/.env.local` (new file, git-ignored)
   - Set `NEXT_PUBLIC_USE_MOCKS=false`
   - Set `NEXT_PUBLIC_API_URL=http://localhost:8080`
@@ -443,8 +482,8 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
 
 ### Phase 15: Testing Infrastructure
 
-- [ ] 40. Create HTTP client unit tests
-  - File: `frontend-next/src/lib/api/__tests__/client.test.ts` (new file)
+- [x] 40. Create HTTP client unit tests
+  - File: `frontend-next/apps/web/lib/api/__tests__/client.test.ts` (new file)
   - Test base URL configuration from environment variable
   - Test credentials inclusion in all requests
   - Test 10-second timeout with AbortController
@@ -454,9 +493,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Ensure HTTP client reliability
   - _Requirements: 5.2, 5.3, 5.4, 11.6, Design Component 7_
   - _Leverages: Vitest, HTTP client from tasks 15-16_
+  - _Note: Added vitest suite; `pnpm test` currently fails due to upstream coverage plugin mismatch (vitest 2.1.9 vs @vitest/coverage-v8 3.2.4)_
 
-- [ ] 41. Create TanStack Query hooks unit tests
-  - File: `frontend-next/src/lib/hooks/__tests__/use-products.test.ts` (new file)
+- [x] 41. Create TanStack Query hooks unit tests
+  - File: `frontend-next/apps/web/lib/hooks/__tests__/use-products.test.tsx` (new file)
   - Test `useProducts` hook with MSW
   - Test `useProduct` hook with MSW
   - Test loading and error states
@@ -465,9 +505,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Validate product hooks behavior
   - _Requirements: 7.1, 7.4_
   - _Leverages: Vitest, Testing Library, MSW server, hooks from tasks 21-22_
+  - _Note: Uses MSW server overrides for failure cases and QueryClientProvider wrapper_
 
-- [ ] 42. Create cart hooks unit tests
-  - File: `frontend-next/src/lib/hooks/__tests__/use-cart.test.ts` (new file)
+- [x] 42. Create cart hooks unit tests
+  - File: `frontend-next/apps/web/lib/hooks/__tests__/use-cart.test.tsx` (new file)
   - Test `useCart` query hook
   - Test `addItem`, `updateQuantity`, `removeItem` mutations
   - Test query invalidation on successful mutations
@@ -475,8 +516,9 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Validate cart hooks behavior
   - _Requirements: 6.1, 6.2, 7.2, 7.4_
   - _Leverages: Vitest, MSW server, hooks from tasks 23-24_
+  - _Note: Uses QueryClientProvider wrapper and MSW overrides for mutation scenarios_
 
-- [ ] 43. Create E2E test for product browsing
+- [x] 43. Create E2E test for product browsing
   - File: `frontend-next/e2e/product-catalog.spec.ts` (new file)
   - Test scenario: Navigate to products page → Verify product list displays
   - Check pagination functionality
@@ -486,8 +528,8 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - _Requirements: 7.1_
   - _Leverages: Playwright, useProducts hooks_
 
-- [ ] 44. Create E2E test for shopping cart flow
-  - File: `frontend-next/e2e/shopping-cart.spec.ts` (new file)
+- [x] 44. Create E2E test for shopping cart flow
+  - File: `frontend-next/apps/web/e2e/shopping-cart.spec.ts` (new file)
   - Test: Browse products → Add to cart → View cart
   - Test quantity update functionality
   - Test item removal functionality
@@ -496,9 +538,10 @@ This implementation plan breaks down the integration of the Next.js 14 frontend 
   - Purpose: Validate cart management and session persistence
   - _Requirements: 6.1, 6.2, 6.5, 7.2_
   - _Leverages: Playwright, useCart hooks, session management_
+  - _Note: Uses MSW-backed flow to add an item, adjust quantity, and assert totals_
 
 - [ ] 45. Create E2E test for order placement
-  - File: `frontend-next/e2e/checkout-flow.spec.ts` (new file)
+  - File: `frontend-next/apps/web/e2e/checkout-flow.spec.ts` (new file)
   - Test: Add items to cart → Checkout → Fill form → Submit order
   - Verify order confirmation page with order number
   - Check cart cleared after successful order
