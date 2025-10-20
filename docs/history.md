@@ -42,17 +42,6 @@
   
   ![前後端分離](6.png)
 
-## 重構路徑圖
-
-```mermaid
-flowchart TD
-    A([2024-09/10<br/>單體 MVC + Zipkin<br/>]) --> B([2025-09-10 起<br/>Hazelcast 快取統合<br/>])
-    B --> C([2025-09 中旬<br/>Orders 拆成 REST 服務<br/>])
-    C --> D([2025-10-05<br/>gRPC 遷移完成<br/>])
-    D --> E([2025-10-09<br/>Zipkin → HyperDX<br/>])
-    E --> F([2025-10-20<br/>Next.js 前端整合<br/>])
-```
-
 ## 現況摘要（2025-10 後）
 
 - **服務拓撲**：Nginx 代理 Next.js、monolith API、orders-service gRPC；Hazelcast、Postgres、RabbitMQ 仍由 monolith 管理。
