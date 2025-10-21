@@ -1,11 +1,11 @@
-package com.sivalabs.bookstore.web;
+package com.sivalabs.bookstore.orders.web.cart;
 
 import com.sivalabs.bookstore.catalog.api.ProductApi;
 import com.sivalabs.bookstore.catalog.api.ProductDto;
-import com.sivalabs.bookstore.web.dto.AddToCartRequest;
-import com.sivalabs.bookstore.web.dto.CartDto;
-import com.sivalabs.bookstore.web.dto.UpdateQuantityRequest;
-import com.sivalabs.bookstore.web.mapper.CartMapper;
+import com.sivalabs.bookstore.orders.web.cart.dto.AddToCartRequest;
+import com.sivalabs.bookstore.orders.web.cart.dto.CartDto;
+import com.sivalabs.bookstore.orders.web.cart.dto.UpdateQuantityRequest;
+import com.sivalabs.bookstore.orders.web.cart.mapper.CartMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/cart")
 @Tag(name = "Cart", description = "Shopping cart management API")
 public class CartRestController {
+
     private final ProductApi productApi;
 
     public CartRestController(ProductApi productApi) {
@@ -51,13 +52,11 @@ public class CartRestController {
     public ResponseEntity<CartDto> addItem(@Valid @RequestBody AddToCartRequest request, HttpSession session) {
         Cart cart = CartUtil.getCart(session);
 
-        // Get product from catalog
         ProductDto product = productApi
                 .getByCode(request.code())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Product with code '" + request.code() + "' not found"));
 
-        // Create or update cart item
         Cart.LineItem lineItem = new Cart.LineItem(product.code(), product.name(), product.price(), request.quantity());
 
         cart.setItem(lineItem);
@@ -81,12 +80,10 @@ public class CartRestController {
             @PathVariable String code, @Valid @RequestBody UpdateQuantityRequest request, HttpSession session) {
         Cart cart = CartUtil.getCart(session);
 
-        // Check if item exists in cart
         if (cart.getItem() == null || !cart.getItem().getCode().equals(code)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item with code '" + code + "' not found in cart");
         }
 
-        // Update quantity
         cart.updateItemQuantity(request.quantity());
         CartUtil.setCart(session, cart);
 

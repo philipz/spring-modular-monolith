@@ -78,7 +78,11 @@ public class OrdersRestController {
         @ApiResponse(
                 responseCode = "200",
                 description = "Order retrieved successfully",
-                content = @Content(schema = @Schema(implementation = OrderDto.class))),
+                content =
+                        @Content(
+                                array =
+                                        @io.swagger.v3.oas.annotations.media.ArraySchema(
+                                                schema = @Schema(implementation = OrderView.class)))),
         @ApiResponse(responseCode = "404", description = "Order not found"),
         @ApiResponse(responseCode = "503", description = "Orders service unavailable")
     })

@@ -1,3 +1,3 @@
 [submodule "frontend-next"]
 	path = frontend-next
-	url = git@github.com:philipz/next-mvp-lab.git
+	url = https://github.com/philipz/next-mvp-lab.git

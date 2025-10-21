@@ -1,4 +1,4 @@
-package com.sivalabs.bookstore.web;
+package com.sivalabs.bookstore.orders.web.cart;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 public class Cart implements Serializable {
     private static final long serialVersionUID = 1L;
+
     private LineItem item;
 
     public LineItem getItem() {
@@ -38,6 +39,7 @@ public class Cart implements Serializable {
 
     public static class LineItem implements Serializable {
         private static final long serialVersionUID = 1L;
+
         private String code;
         private String name;
         private BigDecimal price;

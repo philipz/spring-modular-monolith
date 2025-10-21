@@ -8,16 +8,23 @@ import io.grpc.StatusRuntimeException;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@RestControllerAdvice(assignableTypes = OrdersRestController.class)
-public class OrdersRestExceptionHandler {
+@RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class OrdersRestExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(OrdersRestExceptionHandler.class);
 
     /**
@@ -37,8 +44,10 @@ public class OrdersRestExceptionHandler {
     @ExceptionHandler(InvalidOrderException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrder(InvalidOrderException ex) {
         log.warn("Invalid order: {}", ex.getMessage());
-        ErrorResponse errorResponse =
-                new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), LocalDateTime.now());
+        String messagePrefix = "Validation failed";
+        String detail = ex.getMessage();
+        String message = detail != null && !detail.isBlank() ? messagePrefix + ": " + detail : messagePrefix;
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message, LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -88,32 +97,6 @@ public class OrdersRestExceptionHandler {
     }
 
     /**
-     * Handle validation errors from @Valid - maps to HTTP 400
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
-        StringBuilder messageBuilder = new StringBuilder("Validation failed: ");
-
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            if (error instanceof FieldError fieldError) {
-                messageBuilder
-                        .append(fieldError.getField())
-                        .append(" - ")
-                        .append(fieldError.getDefaultMessage())
-                        .append("; ");
-            } else {
-                messageBuilder.append(error.getDefaultMessage()).append("; ");
-            }
-        });
-
-        String message = messageBuilder.toString();
-        log.warn("Validation error: {}", message);
-
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message, LocalDateTime.now());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
-
-    /**
      * Handle ResponseStatusException - preserves the HTTP status from the exception
      */
     @ExceptionHandler(ResponseStatusException.class)
@@ -137,5 +120,33 @@ public class OrdersRestExceptionHandler {
                 "An unexpected error occurred. Please try again later.",
                 LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ErrorResponse errorResponse = buildValidationErrorResponse(ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    private ErrorResponse buildValidationErrorResponse(MethodArgumentNotValidException ex) {
+        StringBuilder messageBuilder = new StringBuilder("Validation failed: ");
+
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            if (error instanceof FieldError fieldError) {
+                messageBuilder
+                        .append(fieldError.getField())
+                        .append(" - ")
+                        .append(fieldError.getDefaultMessage())
+                        .append("; ");
+            } else {
+                messageBuilder.append(error.getDefaultMessage()).append("; ");
+            }
+        });
+
+        String message = messageBuilder.toString();
+        log.warn("Validation error: {}", message);
+
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message, LocalDateTime.now());
     }
 }

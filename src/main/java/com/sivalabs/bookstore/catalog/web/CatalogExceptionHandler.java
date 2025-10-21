@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@ControllerAdvice(assignableTypes = {ProductRestController.class})
+@ControllerAdvice
 class CatalogExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(CatalogExceptionHandler.class);
 
@@ -49,19 +49,24 @@ class CatalogExceptionHandler extends ResponseEntityExceptionHandler {
      * Checks both path pattern and Accept header
      */
     private boolean isRestApiRequest(HttpServletRequest request) {
-        String requestPath = request.getRequestURI();
-        String acceptHeader = request.getHeader("Accept");
-
-        // Check if path starts with /api/
-        if (requestPath != null && requestPath.startsWith("/api/")) {
+        // servletPath excludes contextPath; safe to match on "/api/"
+        final String servletPath = request.getServletPath();
+        if (servletPath != null && servletPath.startsWith("/api/")) {
             return true;
         }
-
-        // Check if Accept header prefers JSON
-        if (acceptHeader != null && acceptHeader.contains("application/json")) {
-            return true;
+        final String acceptHeader = request.getHeader(org.springframework.http.HttpHeaders.ACCEPT);
+        if (acceptHeader != null) {
+            try {
+                var mediaTypes = org.springframework.http.MediaType.parseMediaTypes(acceptHeader);
+                org.springframework.http.MediaType.sortBySpecificityAndQuality(mediaTypes);
+                if (mediaTypes.stream()
+                        .anyMatch(mt -> mt.isCompatibleWith(org.springframework.http.MediaType.APPLICATION_JSON))) {
+                    return true;
+                }
+            } catch (org.springframework.http.InvalidMediaTypeException ignore) {
+                // fall through
+            }
         }
-
         return false;
     }
 }
