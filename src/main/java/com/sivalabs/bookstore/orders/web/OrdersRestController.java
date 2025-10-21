@@ -44,7 +44,9 @@ public class OrdersRestController {
     })
     public ResponseEntity<CreateOrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         CreateOrderResponse response = ordersRemoteClient.createOrder(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header("Location", "/api/orders/" + response.orderNumber())
+                .body(response);
     }
 
     @GetMapping
