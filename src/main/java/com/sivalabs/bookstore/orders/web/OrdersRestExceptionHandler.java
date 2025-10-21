@@ -72,7 +72,8 @@ public class OrdersRestExceptionHandler extends ResponseEntityExceptionHandler {
             }
             case INVALID_ARGUMENT -> {
                 httpStatus = HttpStatus.BAD_REQUEST;
-                message = description;
+                String detail = (description != null && !description.isBlank()) ? ": " + description : "";
+                message = "Validation failed" + detail;
                 log.warn("gRPC INVALID_ARGUMENT: {}", description);
             }
             case UNAVAILABLE -> {

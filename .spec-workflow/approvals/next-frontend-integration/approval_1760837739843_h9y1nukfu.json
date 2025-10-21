@@ -1,12 +1,12 @@
 {
   "id": "approval_1760837739843_h9y1nukfu",
   "title": "Next.js Frontend Integration - Tasks Document (40 Atomic Tasks)",
-  "filePath": ".spec-workflow/specs/nextt-frontend-integration/tasks.md",
+  "filePath": ".spec-workflow/specs/next-frontend-integration/tasks.md",
   "type": "document",
   "status": "approved",
   "createdAt": "2025-10-19T01:35:39.843Z",
   "category": "spec",
-  "categoryName": "nextt-frontend-integration",
+  "categoryName": "next-frontend-integration",
   "response": "Approved via dashboard",
   "respondedAt": "2025-10-19T01:46:52.231Z"
 }

@@ -109,7 +109,12 @@ public class OrdersRestController {
 
         return switch (status.getCode()) {
             case NOT_FOUND -> new ResponseStatusException(HttpStatus.NOT_FOUND, description);
-            case INVALID_ARGUMENT -> new ResponseStatusException(HttpStatus.BAD_REQUEST, description);
+            case INVALID_ARGUMENT -> {
+                String message = (description != null && !description.isBlank())
+                        ? "Validation failed: " + description
+                        : "Validation failed";
+                yield new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+            }
             case UNAVAILABLE ->
                 new ResponseStatusException(
                         HttpStatus.SERVICE_UNAVAILABLE, "Orders service unavailable. Please try again later.");
