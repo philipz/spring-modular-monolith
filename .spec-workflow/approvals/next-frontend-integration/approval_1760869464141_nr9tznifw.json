@@ -1,0 +1,27 @@
+{
+  "id": "approval_1760869464141_nr9tznifw",
+  "title": "Review REVISED Tasks - Shell Script + Docker + nginx",
+  "filePath": ".spec-workflow/specs/next-frontend-integration/tasks.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-10-19T10:24:24.141Z",
+  "category": "spec",
+  "categoryName": "next-frontend-integration",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"- [ ] 3. Create frontend Dockerfile\n  - File: `fro...\": 將frontend-next跟 webproxy目錄中的nginx設定整合在一起，只需要nginx一個服務，負責提供前端網頁跟後端API的 Reverse proxy\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"將frontend-next跟 webproxy目錄中的nginx設定整合在一起，只需要nginx一個服務，負責提供前端網頁跟後端API的 Reverse proxy\",\n      \"timestamp\": \"2025-10-19T10:27:26.397Z\",\n      \"selectedText\": \"- [ ] 3. Create frontend Dockerfile\\n  - File: `frontend-next/Dockerfile` (new file)\\n  - Stage 1: Build - Use `node:18-alpine` as base\\n  - Install pnpm globally\\n  - Copy `package.json`, `pnpm-lock.yaml`\\n  - Run `pnpm install --frozen-lockfile`\\n  - Copy source code and build with `pnpm build`\\n  - Stage 2: Runtime - Use `nginx:alpine`\\n  - Copy nginx.conf to `/etc/nginx/conf.d/default.conf`\\n  - Copy built static files from build stage to `/usr/share/nginx/html`\\n  - Expose port 80\\n  - Purpose: Multi-stage Docker build for optimized frontend image\\n  - _Requirements: 10.1, 10.3_\\n  - _Leverages: Docker multi-stage builds, nginx_\\n\\n- [ ] 4. Update docker-compose.yml for frontend service\\n  - File: `docker-compose.yml` (modify existing)\\n  - Add `frontend` service\\n  - Build from `./frontend-next` context\\n  - Map port `3000:80` for external access\\n  - Add dependency on `backend` service\\n  - Configure network to allow backend communication\\n  - Set environment variables if needed\\n  - Purpose: Integrate frontend into Docker Compose orchestration\\n  - _Requirements: 10.2, 10.3_\\n  - _Leverages: Existing docker-compose.yml with backend services_\\n\\n- [ ] 5. Create frontend development script\\n  - File: `frontend-next/dev.sh` (new file)\\n  - Make executable with `chmod +x dev.sh`\\n  - Check if backend is running (health check on port 8080)\\n  - Execute `pnpm install` if node_modules missing\\n  - Execute `pnpm dev` to start Next.js dev server on port 3000\\n  - Purpose: Convenient development workflow script\\n  - _Requirements: 8.1, 8.2_\\n  - _Leverages: Next.js dev server, shell scripting_\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1760869646397_7oqy2n7tl\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"- [ ] 3. Create frontend Dockerfile\\n  - File: `fro...\\\": 將frontend-next跟 webproxy目錄中的nginx設定整合在一起，只需要nginx一個服務，負責提供前端網頁跟後端API的 Reverse proxy\\n\",\n  \"timestamp\": \"2025-10-19T10:27:30.753Z\"\n}",
+  "respondedAt": "2025-10-19T10:27:30.776Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "將frontend-next跟 webproxy目錄中的nginx設定整合在一起，只需要nginx一個服務，負責提供前端網頁跟後端API的 Reverse proxy",
+      "timestamp": "2025-10-19T10:27:26.397Z",
+      "selectedText": "- [ ] 3. Create frontend Dockerfile\n  - File: `frontend-next/Dockerfile` (new file)\n  - Stage 1: Build - Use `node:18-alpine` as base\n  - Install pnpm globally\n  - Copy `package.json`, `pnpm-lock.yaml`\n  - Run `pnpm install --frozen-lockfile`\n  - Copy source code and build with `pnpm build`\n  - Stage 2: Runtime - Use `nginx:alpine`\n  - Copy nginx.conf to `/etc/nginx/conf.d/default.conf`\n  - Copy built static files from build stage to `/usr/share/nginx/html`\n  - Expose port 80\n  - Purpose: Multi-stage Docker build for optimized frontend image\n  - _Requirements: 10.1, 10.3_\n  - _Leverages: Docker multi-stage builds, nginx_\n\n- [ ] 4. Update docker-compose.yml for frontend service\n  - File: `docker-compose.yml` (modify existing)\n  - Add `frontend` service\n  - Build from `./frontend-next` context\n  - Map port `3000:80` for external access\n  - Add dependency on `backend` service\n  - Configure network to allow backend communication\n  - Set environment variables if needed\n  - Purpose: Integrate frontend into Docker Compose orchestration\n  - _Requirements: 10.2, 10.3_\n  - _Leverages: Existing docker-compose.yml with backend services_\n\n- [ ] 5. Create frontend development script\n  - File: `frontend-next/dev.sh` (new file)\n  - Make executable with `chmod +x dev.sh`\n  - Check if backend is running (health check on port 8080)\n  - Execute `pnpm install` if node_modules missing\n  - Execute `pnpm dev` to start Next.js dev server on port 3000\n  - Purpose: Convenient development workflow script\n  - _Requirements: 8.1, 8.2_\n  - _Leverages: Next.js dev server, shell scripting_",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1760869646397_7oqy2n7tl"
+    }
+  ]
+}

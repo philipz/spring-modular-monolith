@@ -14,7 +14,7 @@ public final class OrderMapper {
 
     public static OrderEntity convertToEntity(CreateOrderRequest request) {
         OrderEntity entity = new OrderEntity();
-        entity.setOrderNumber(UUID.randomUUID().toString());
+        entity.setOrderNumber("ORD-" + UUID.randomUUID().toString());
         entity.setStatus(OrderStatus.NEW);
         entity.setCustomer(request.customer());
         entity.setDeliveryAddress(request.deliveryAddress());

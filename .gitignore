@@ -42,3 +42,6 @@ out/
 *.log
 
 .env
+
+frontend-sdk/
+.DS_Store

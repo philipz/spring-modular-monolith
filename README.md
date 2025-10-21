@@ -136,6 +136,12 @@ export SPRING_RABBITMQ_HOST=localhost
 - HyperDX Observability: http://localhost:8080/hyperdx (traces, metrics, and logs)
 - Hazelcast Management Center: http://localhost:38080
 
+**REST API Documentation:**
+- Swagger UI (Interactive): http://localhost:8080/swagger-ui.html
+- OpenAPI Spec (JSON): http://localhost:8080/api-docs
+- API Documentation: [README-API.md](README-API.md)
+- TypeScript SDK: [frontend-sdk/](frontend-sdk/)
+
 ### Orders Service Rollout
 
 The bundled `webproxy/nginx.conf` currently forwards all storefront traffic to the monolith. To test the extracted `orders-service`, point the monolith's gRPC client at `orders-service:9090` (already wired in `docker compose`) or adjust the proxy manually. Weighted routing and request overrides are tracked for future work; refer to `docs/orders-traffic-migration.md` for the proposed rollout playbook and adapt it to your proxy configuration.

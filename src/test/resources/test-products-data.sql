@@ -1,6 +1,8 @@
-truncate table catalog.products;
+SET search_path TO catalog;
 
-insert into catalog.products(code, name, description, image_url, price) values
+truncate table products;
+
+insert into products(code, name, description, image_url, price) values
 ('P100','The Hunger Games','Winning will make you famous. Losing means certain death...','https://images.gr-assets.com/books/1447303603l/2767052.jpg', 34.0),
 ('P101','To Kill a Mockingbird','The unforgettable novel of a childhood in a sleepy Southern town and the crisis of conscience that rocked it...','https://images.gr-assets.com/books/1361975680l/2657.jpg', 45.40),
 ('P102','The Chronicles of Narnia','Journeys to the end of the world, fantastic creatures, and epic battles between good and evil—what more could any reader ask for in one book?...','https://images.gr-assets.com/books/1449868701l/11127.jpg', 44.50),
