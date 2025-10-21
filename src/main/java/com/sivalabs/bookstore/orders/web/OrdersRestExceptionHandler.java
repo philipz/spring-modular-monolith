@@ -22,7 +22,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = OrdersRestController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class OrdersRestExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(OrdersRestExceptionHandler.class);
