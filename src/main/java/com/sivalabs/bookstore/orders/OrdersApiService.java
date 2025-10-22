@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -8,7 +9,6 @@ import com.sivalabs.bookstore.orders.api.OrdersApi;
 import com.sivalabs.bookstore.orders.domain.OrderService;
 import com.sivalabs.bookstore.orders.domain.ProductServiceClient;
 import com.sivalabs.bookstore.orders.mappers.OrderMapper;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ public class OrdersApiService implements OrdersApi {
     }
 
     @Override
-    public List<OrderView> findOrders() {
-        return OrderMapper.convertToOrderViews(orderService.findOrders());
+    public PagedResult<OrderView> findOrders(int page, int size) {
+        return OrderMapper.convertToOrderViewPage(orderService.findOrders(page, size));
     }
 }

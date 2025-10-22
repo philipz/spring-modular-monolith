@@ -8,11 +8,9 @@ import com.sivalabs.bookstore.orders.grpc.proto.GetOrderRequest;
 import com.sivalabs.bookstore.orders.grpc.proto.GetOrderResponse;
 import com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest;
 import com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse;
-import com.sivalabs.bookstore.orders.grpc.proto.OrderView;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.regex.Pattern;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
@@ -123,15 +121,22 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
         try {
             log.info("[ORDERS-SERVER] Received listOrders request");
 
-            log.debug("[ORDERS-SERVER] Querying OrdersApiService.findOrders()");
-            List<com.sivalabs.bookstore.orders.api.OrderView> orderViews = ordersApiService.findOrders();
+            int page = request.getPage() > 0 ? request.getPage() : 1;
+            int size = request.getPageSize() > 0 ? request.getPageSize() : 20;
 
-            log.debug("[ORDERS-SERVER] Converting {} orders to gRPC format", orderViews.size());
-            List<OrderView> protoViews = mapper.toProtoOrderViews(orderViews);
-            ListOrdersResponse response =
-                    ListOrdersResponse.newBuilder().addAllOrders(protoViews).build();
+            log.debug("[ORDERS-SERVER] Querying OrdersApiService.findOrders(page={}, size={})", page, size);
+            var pagedOrders = ordersApiService.findOrders(page, size);
 
-            log.info("[ORDERS-SERVER] Found {} orders", orderViews.size());
+            log.debug(
+                    "[ORDERS-SERVER] Converting {} orders to gRPC format",
+                    pagedOrders.data().size());
+            ListOrdersResponse response = mapper.toProto(pagedOrders);
+
+            log.info(
+                    "[ORDERS-SERVER] Found {} orders (page {}/{})",
+                    pagedOrders.data().size(),
+                    pagedOrders.pageNumber(),
+                    pagedOrders.totalPages());
             log.debug("[ORDERS-SERVER] Sending listOrders response");
 
             responseObserver.onNext(response);

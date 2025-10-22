@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.infrastructure.grpc;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
 import com.sivalabs.bookstore.orders.api.OrderView;
@@ -9,7 +10,6 @@ import com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest;
 import com.sivalabs.bookstore.orders.grpc.proto.OrdersServiceGrpc;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,21 +123,27 @@ public class OrdersGrpcClient {
      */
     // @CircuitBreaker(name = ORDERS_CIRCUIT_BREAKER, fallbackMethod = "handleFindOrdersFailure")
     // @Retry(name = ORDERS_CIRCUIT_BREAKER)
-    public List<OrderView> findOrders() {
+    public PagedResult<OrderView> findOrders(int page, int size) {
         try {
             log.info("[ORDERS-CLIENT] Finding all orders via gRPC");
 
-            ListOrdersRequest grpcRequest = ListOrdersRequest.newBuilder().build();
+            ListOrdersRequest grpcRequest = ListOrdersRequest.newBuilder()
+                    .setPage(Math.max(page, 1))
+                    .setPageSize(Math.max(size, 1))
+                    .build();
 
             log.debug("[ORDERS-CLIENT] Sending gRPC listOrders request");
             var grpcResponse = ordersServiceStub
                     .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .listOrders(grpcRequest);
 
-            List<OrderView> response =
-                    grpcResponse.getOrdersList().stream().map(mapper::toDomain).toList();
+            PagedResult<OrderView> response = mapper.toPagedResult(grpcResponse);
 
-            log.info("[ORDERS-CLIENT] Successfully found {} orders", response.size());
+            log.info(
+                    "[ORDERS-CLIENT] Successfully found {} orders (page {}/{})",
+                    response.data().size(),
+                    response.pageNumber(),
+                    response.totalPages());
 
             return response;
         } catch (StatusRuntimeException e) {
@@ -169,7 +175,7 @@ public class OrdersGrpcClient {
     /**
      * Fallback method for findOrders failures.
      */
-    List<OrderView> handleFindOrdersFailure(Throwable throwable) {
+    PagedResult<OrderView> handleFindOrdersFailure(Throwable throwable) {
         log.error("Orders gRPC service unavailable for findOrders: {}", throwable.getMessage());
         throw new OrdersServiceException("Unable to find orders via gRPC service", throwable);
     }

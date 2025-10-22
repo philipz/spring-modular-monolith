@@ -71,11 +71,22 @@ public class OrdersGrpcService extends OrdersServiceGrpc.OrdersServiceImplBase {
             com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest request,
             io.grpc.stub.StreamObserver<com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse> responseObserver) {
         try {
-            var orders = ordersApi.findOrders();
-            var grpcOrders = orders.stream().map(messageMapper::toOrderView).toList();
+            int page = request.getPage() > 0 ? request.getPage() : 1;
+            int size = request.getPageSize() > 0 ? request.getPageSize() : 20;
+
+            var pagedOrders = ordersApi.findOrders(page, size);
+            var grpcOrders =
+                    pagedOrders.data().stream().map(messageMapper::toOrderView).toList();
 
             var grpcResponse = com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse.newBuilder()
                     .addAllOrders(grpcOrders)
+                    .setTotalElements(pagedOrders.totalElements())
+                    .setPageNumber(pagedOrders.pageNumber())
+                    .setTotalPages(pagedOrders.totalPages())
+                    .setIsFirst(pagedOrders.isFirst())
+                    .setIsLast(pagedOrders.isLast())
+                    .setHasNext(pagedOrders.hasNext())
+                    .setHasPrevious(pagedOrders.hasPrevious())
                     .build();
             responseObserver.onNext(grpcResponse);
             responseObserver.onCompleted();

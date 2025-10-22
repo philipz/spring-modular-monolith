@@ -23,7 +23,7 @@ service OrdersService {
     rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
 
     /**
-     * Lists all orders in the system.
+     * Lists orders in the system using cursor-free pagination.
      */
     rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
 }
@@ -82,17 +82,60 @@ message GetOrderResponse {
  * Request message for listing orders.
  */
 message ListOrdersRequest {
-    // Empty for now - pagination/filtering may be added later
+    /**
+     * 1-based page number to retrieve. Defaults to 1 when omitted or <= 0.
+     */
+    int32 page = 1;
+
+    /**
+     * Page size determining how many orders to return per page. Defaults to 20 when omitted or <= 0.
+     */
+    int32 page_size = 2;
 }
 
 /**
- * Response message containing a list of orders.
+ * Response message containing a paginated list of orders.
  */
 message ListOrdersResponse {
     /**
-     * List of orders (to be defined in subsequent tasks).
+     * Orders for the requested page.
      */
     repeated OrderView orders = 1;
+
+    /**
+     * Total number of orders across all pages.
+     */
+    int64 total_elements = 2;
+
+    /**
+     * Current page number (1-based).
+     */
+    int32 page_number = 3;
+
+    /**
+     * Total number of pages.
+     */
+    int32 total_pages = 4;
+
+    /**
+     * Whether this is the first page.
+     */
+    bool is_first = 5;
+
+    /**
+     * Whether this is the last page.
+     */
+    bool is_last = 6;
+
+    /**
+     * Whether a next page exists.
+     */
+    bool has_next = 7;
+
+    /**
+     * Whether a previous page exists.
+     */
+    bool has_previous = 8;
 }
 
 /**

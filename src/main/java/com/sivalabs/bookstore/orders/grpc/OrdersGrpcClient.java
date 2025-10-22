@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.grpc;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.InvalidOrderException;
 import com.sivalabs.bookstore.orders.OrderNotFoundException;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
@@ -68,13 +69,25 @@ public class OrdersGrpcClient implements OrdersRemoteClient {
     }
 
     @Override
-    public List<OrderView> listOrders() {
-        var grpcRequest = com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest.getDefaultInstance();
+    public PagedResult<OrderView> listOrders(int page, int size) {
+        var grpcRequest = com.sivalabs.bookstore.orders.grpc.proto.ListOrdersRequest.newBuilder()
+                .setPage(Math.max(1, page))
+                .setPageSize(Math.max(1, size))
+                .build();
         try {
             var grpcResponse = stubWithDeadline().listOrders(grpcRequest);
-            return grpcResponse.getOrdersList().stream()
+            List<OrderView> orders = grpcResponse.getOrdersList().stream()
                     .map(messageMapper::toOrderViewDto)
                     .collect(Collectors.toList());
+            return new PagedResult<>(
+                    orders,
+                    grpcResponse.getTotalElements(),
+                    grpcResponse.getPageNumber(),
+                    grpcResponse.getTotalPages(),
+                    grpcResponse.getIsFirst(),
+                    grpcResponse.getIsLast(),
+                    grpcResponse.getHasNext(),
+                    grpcResponse.getHasPrevious());
         } catch (StatusRuntimeException ex) {
             throw mapStatusRuntimeException(ex);
         }

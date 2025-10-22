@@ -1,6 +1,6 @@
 package com.sivalabs.bookstore.orders.api;
 
-import java.util.List;
+import com.sivalabs.bookstore.common.models.PagedResult;
 import java.util.Optional;
 
 /**
@@ -12,5 +12,5 @@ public interface OrdersApi {
 
     Optional<OrderDto> findOrder(String orderNumber);
 
-    List<OrderView> findOrders();
+    PagedResult<OrderView> findOrders(int page, int size);
 }

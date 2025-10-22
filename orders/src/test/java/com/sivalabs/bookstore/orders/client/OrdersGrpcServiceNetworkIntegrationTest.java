@@ -268,18 +268,19 @@ class OrdersGrpcServiceNetworkIntegrationTest {
         OrderEntity savedOrder2 = orderService.createOrder(order2);
 
         // When
-        List<OrderView> orders = ordersGrpcClient.findOrders();
+        var orders = ordersGrpcClient.findOrders(1, 20);
 
         // Then
         assertThat(orders).isNotNull();
-        assertThat(orders).hasSize(2);
+        assertThat(orders.data()).hasSize(2);
 
-        List<String> orderNumbers = orders.stream().map(OrderView::orderNumber).toList();
+        List<String> orderNumbers =
+                orders.data().stream().map(OrderView::orderNumber).toList();
 
         assertThat(orderNumbers).containsExactlyInAnyOrder(order1.getOrderNumber(), savedOrder2.getOrderNumber());
 
         // Verify first order details
-        OrderView firstOrder = orders.stream()
+        OrderView firstOrder = orders.data().stream()
                 .filter(order -> order.orderNumber().equals(order1.getOrderNumber()))
                 .findFirst()
                 .orElseThrow();
@@ -299,10 +300,10 @@ class OrdersGrpcServiceNetworkIntegrationTest {
         assertThat(orderRepository.count()).isEqualTo(0);
 
         // When
-        List<OrderView> orders = ordersGrpcClient.findOrders();
+        var orders = ordersGrpcClient.findOrders(1, 20);
 
         // Then
         assertThat(orders).isNotNull();
-        assertThat(orders).isEmpty();
+        assertThat(orders.data()).isEmpty();
     }
 }

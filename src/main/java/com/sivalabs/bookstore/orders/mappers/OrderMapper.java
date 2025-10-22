@@ -1,12 +1,11 @@
 package com.sivalabs.bookstore.orders.mappers;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.OrderDto;
 import com.sivalabs.bookstore.orders.api.OrderView;
 import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.domain.OrderEntity;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public final class OrderMapper {
@@ -32,12 +31,11 @@ public final class OrderMapper {
                 order.getCreatedAt());
     }
 
-    public static List<OrderView> convertToOrderViews(List<OrderEntity> orders) {
-        List<OrderView> orderViews = new ArrayList<>();
-        for (OrderEntity order : orders) {
-            var orderView = new OrderView(order.getOrderNumber(), order.getStatus(), order.getCustomer());
-            orderViews.add(orderView);
-        }
-        return orderViews;
+    public static OrderView convertToOrderView(OrderEntity order) {
+        return new OrderView(order.getOrderNumber(), order.getStatus(), order.getCustomer());
+    }
+
+    public static PagedResult<OrderView> convertToOrderViewPage(PagedResult<OrderEntity> orders) {
+        return PagedResult.of(orders, OrderMapper::convertToOrderView);
     }
 }

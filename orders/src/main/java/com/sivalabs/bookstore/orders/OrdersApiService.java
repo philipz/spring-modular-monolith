@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -8,8 +9,9 @@ import com.sivalabs.bookstore.orders.api.OrdersApi;
 import com.sivalabs.bookstore.orders.domain.OrderService;
 import com.sivalabs.bookstore.orders.domain.ProductCatalogPort;
 import com.sivalabs.bookstore.orders.mappers.OrderMapper;
-import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,7 +56,21 @@ public class OrdersApiService implements OrdersApi {
     }
 
     @Override
-    public List<OrderView> findOrders() {
-        return OrderMapper.convertToOrderViews(orderService.findOrders());
+    public PagedResult<OrderView> findOrders(int page, int size) {
+        int pageNumber = Math.max(page, 1);
+        int pageSize = Math.max(size, 1);
+        PageRequest pageRequest =
+                PageRequest.of(pageNumber - 1, pageSize, Sort.by("id").descending());
+        var pageResult = orderService.findOrders(pageRequest);
+        var viewPage = pageResult.map(OrderMapper::convertToOrderView);
+        return new PagedResult<>(
+                viewPage.getContent(),
+                pageResult.getTotalElements(),
+                viewPage.getNumber() + 1,
+                viewPage.getTotalPages(),
+                viewPage.isFirst(),
+                viewPage.isLast(),
+                viewPage.hasNext(),
+                viewPage.hasPrevious());
     }
 }
