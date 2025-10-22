@@ -1,223 +1,149 @@
 # spring-modular-monolith
-An e-commerce application following Modular Monolith architecture using [Spring Modulith](https://spring.io/projects/spring-modulith).
-The goal of this application is to demonstrate various features of Spring Modulith with a practical application.
 
-![bookstore-modulith.png](docs/bookstore-modulith.png)
+An e-commerce application built with Spring Modulith. The backend publishes REST and gRPC APIs, persists data per module, and coordinates domain events through RabbitMQ. A Next.js 14 (App Router) storefront lives in `frontend-next/` and consumes the `/api/**` endpoints proxied by nginx when running under Docker Compose.
 
-This application follows modular monolith architecture with the following modules:
+![bookstore-modulith.png](docs/bookstore-microservices.png)
 
-* **Common:** This module contains the code that is shared by all modules, including distributed caching with Hazelcast.
-* **Catalog:** This module manages the catalog of products and store data in `catalog` schema.
-* **Orders:** This module implements the order management and stores the data in `orders` schema.
-* **Inventory:** This module implements the inventory management and stores the data in `inventory` schema.
-* **Notifications:** This module consumes published events and currently logs notification activity (placeholder for future email delivery).
-* **Web:** This module hosts the HTMX-enabled web controllers and integrates with the Orders gRPC client to render views.
+## Architecture Overview
 
-**Distributed Caching:**
-* The application uses **Hazelcast** for distributed caching to improve performance across all modules.
-* **Hazelcast Management Center** provides real-time monitoring and management of cache clusters.
-* Cache configurations include TTL (Time To Live), eviction policies, and backup strategies for high availability.
+- **common** – shared utilities, exception handling, cache helpers, and Hazelcast session integration that are intentionally exported for other modules.
+- **catalog** – product catalogue domain, Liquibase migrations for the `catalog` schema, and the `ProductRestController` REST surface.
+- **orders** – order lifecycle, cart REST endpoints, Hazelcast write-through cache, gRPC client/server adapters, and the `OrdersApi` facade for other modules.
+- **inventory** – inventory projections that react to `OrderCreatedEvent`, inventory cache configuration, and Liquibase migrations for the `inventory` schema.
+- **notifications** – listens to published domain events and records notification intents (currently via logging; ready for future email integration).
+- **config** – infrastructural wiring (Hazelcast bootstrap, OpenAPI, gRPC server, observability, health checks, and session/CORS configuration).
 
-**Observability:**
-* The application uses **OpenTelemetry** for distributed tracing, metrics collection, and observability.
-* **HyperDX** - All-in-one observability platform with integrated traces, metrics, and logs visualization.
-* Automatic instrumentation captures HTTP requests, database queries, cache operations, and inter-module communications.
-* Traces are exported to HyperDX for comprehensive monitoring and debugging.
+> The legacy Thymeleaf “web” module has been fully retired. UI traffic is now served by `frontend-next` or via `/api/**` for API clients.
 
-**Goals:**
-* Implement each module as independently as possible.
-* Prefer event-driven communication instead of direct module dependency wherever applicable.
-* Store data managed by each module in an isolated manner by using different schema or database.
-* Each module should be testable by loading only module-specific components.
+### Frontend & Integration Points
 
-**Module communication:**
+- `frontend-next/` hosts a Next.js 14 App Router application that uses React Query and the generated TypeScript SDK in `frontend-sdk/`.
+- Docker Compose entrypoint: `http://localhost` is served by the `webproxy` nginx container, forwarding `/` to Next.js and `/api/**` to the Spring Boot monolith.
+- Session state is stored in Hazelcast and exposed as the `BOOKSTORE_SESSION` cookie; when bypassing nginx ensure requests include credentials so the cookie is sent.
 
-* **Common** module is an OPEN module that can be used by other modules.
-* **Orders** module invokes the **Catalog** module public API to validate the order details
-* When an Order is successfully created, **Orders** module publishes **"OrderCreatedEvent"**
-* The **"OrderCreatedEvent"** will also be published to external broker like RabbitMQ. Other applications may consume and process those events.
-* **Inventory** module consumes "OrderCreatedEvent" and updates the stock level for the products.
-* **Notifications** module consumes "OrderCreatedEvent" and currently records the notification intent via logging (email dispatch planned for a future milestone).
+### Observability & Infrastructure
 
-### gRPC integration
+- Hazelcast provides distributed caching for catalog, orders, inventory data and serves as the Spring Session store. Management Center runs on port `38080`.
+- OpenTelemetry traces/metrics/logs are exported over OTLP gRPC (4317) to the bundled HyperDX all-in-one appliance (`compose.yml` service `hyperdx`).
+- RabbitMQ transports domain events and their dead-letter queues. Modulith events are also persisted to the `events` schema for replay.
 
-The monolith exposes Orders capabilities via a gRPC server and also consumes gRPC endpoints when the Orders module is deployed as a separate service.
+### Module Communication
 
-* **Server:** `GrpcServerConfig` enables a gRPC server on port `9091` (configurable with `bookstore.grpc.server.*` properties).
-* **Client:** `OrdersGrpcClient` targets `bookstore.grpc.client.target` (defaults to `localhost:9091`, pointing to the in-process server). In Docker Compose the target is overridden to `orders-service:9090`, allowing the UI to talk to the extracted Orders service.
-* **Health & observability:** Health checks and reflection can be toggled via properties; see `application.properties` for the full list.
-* **Deployment:** Ensure the chosen port is reachable in your environment. When running the monolith alone no extra setup is required—the gRPC client and server operate within the same process.
+- Catalog exports `ProductApi`, which the Orders module consumes for price validation.
+- Orders publishes `OrderCreatedEvent`; Inventory and Notifications consume it to update stock and log notification intents.
+- Common helpers are marked as exported modules and are the only shared implementation allowed across boundaries.
+- Cross-module interactions flow through exported APIs or domain events—direct repository access across modules is not permitted.
+
+### gRPC Integration
+
+- **Server:** `GrpcServerConfig` starts an in-process gRPC server (default port `9091`) exposing Orders operations to external consumers.
+- **Client:** `OrdersGrpcClient` targets `bookstore.grpc.client.target`; in Docker Compose it points to `orders-service:9090` so the monolith calls the extracted Orders service, while local development defaults to the in-process server.
+- Health checks, reflection, deadlines, and retry behaviour are fully configurable via `application.properties`.
 
 ## Prerequisites
 
-**Required Tools:**
-- Java 21+ (recommended 24, tested)
-- Docker and Docker Compose
-- Maven Wrapper (included)
-- Task runner
-- IDE: Recommended [IntelliJ IDEA](https://www.jetbrains.com/idea/)
+- Java 21+ (tested with Temurin via SDKMAN)
+- Docker & Docker Compose (for the full stack)
+- Node.js ≥ 18.17 with `pnpm` (for frontend work)
+- Go Task runner (`brew install go-task` or `go install github.com/go-task/task/v3/cmd/task@latest`)
+- Optional: k6 for load tests, Playwright for frontend E2E
 
-**Installation Guide:**
-
-Install JDK and related tools using [SDKMAN](https://sdkman.io/):
+Verify the toolchain:
 
 ```shell
-$ curl -s "https://get.sdkman.io" | bash
-$ source "$HOME/.sdkman/bin/sdkman-init.sh"
-$ sdk install java 24.0.1-tem
-$ sdk install maven
-```
-
-Install Task runner:
-
-```shell
-$ brew install go-task
-# or
-$ go install github.com/go-task/task/v3/cmd/task@latest
-```
-
-Verify installation:
-
-```shell
-$ java -version
-$ docker info
-$ docker compose version
-$ task --version
+java -version
+docker info
+docker compose version
+task --version
+pnpm --version
 ```
 
 ## Quick Start
 
-### 1. Docker Compose (Recommended)
+### Docker Compose (recommended)
 
 ```shell
-# Build and start all services
-$ task start
+# Build and start monolith, orders-service, postgres, rabbitmq, HyperDX, frontend-next, nginx proxy…
+task start
 
-# Stop services
-$ task stop
+# Stop everything
+task stop
 
-# Restart (rebuild images)
-$ task restart
+# Rebuild images and restart
+task restart
 ```
 
-### 2. Local Development
+When the stack is up:
+
+| Component | URL |
+| --- | --- |
+| Storefront (nginx → Next.js) | http://localhost |
+| Next.js (direct) | http://localhost:3000 |
+| Spring Boot API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/api-docs |
+| Actuator root | http://localhost:8080/actuator |
+| Modulith info | http://localhost:8080/actuator/modulith |
+| HyperDX UI | http://localhost:8081 |
+| RabbitMQ console | http://localhost:15672 (guest/guest) |
+| Hazelcast Management Center | http://localhost:38080 |
+
+### Backend development without Docker
+
+Provide PostgreSQL and RabbitMQ locally, then run:
 
 ```shell
-# Run tests
-$ task test
-
-# Format code
-$ task format
-
-# Build Docker image
-$ task build_image
-
-# Local run (requires external PostgreSQL and RabbitMQ)
-$ ./mvnw spring-boot:run
-```
-
-### 3. Running Without Docker
-
-Provide PostgreSQL and RabbitMQ locally, override via environment variables:
-
-```shell
-export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/bookstore
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/postgres
 export SPRING_RABBITMQ_HOST=localhost
 ./mvnw spring-boot:run
 ```
 
-### Application URLs
-
-**Local Development:**
-- Application: http://localhost:8080
-- Actuator: http://localhost:8080/actuator
-- Modulith Info: http://localhost:8080/actuator/modulith
-- RabbitMQ Admin: http://localhost:15672 (guest/guest)
-- HyperDX Observability: http://localhost:8080/hyperdx (traces, metrics, and logs)
-- Hazelcast Management Center: http://localhost:38080
-
-**REST API Documentation:**
-- Swagger UI (Interactive): http://localhost:8080/swagger-ui.html
-- OpenAPI Spec (JSON): http://localhost:8080/api-docs
-- API Documentation: [README-API.md](README-API.md)
-- TypeScript SDK: [frontend-sdk/](frontend-sdk/)
-
-### Orders Service Rollout
-
-The bundled `webproxy/nginx.conf` currently forwards all storefront traffic to the monolith. To test the extracted `orders-service`, point the monolith's gRPC client at `orders-service:9090` (already wired in `docker compose`) or adjust the proxy manually. Weighted routing and request overrides are tracked for future work; refer to `docs/orders-traffic-migration.md` for the proposed rollout playbook and adapt it to your proxy configuration.
-
-## Kubernetes Deployment
-
-### Install Required Tools
+### Frontend development
 
 ```shell
-$ brew install kubectl
-$ brew install kind
+cd frontend-next
+pnpm install
+pnpm dev   # serves on http://localhost:3000
 ```
 
-Documentation:
-- [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/)
-- [kind Installation Guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
+Enable the backend `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) so CORS allows `http://localhost:3000`. Make sure frontend fetches include `credentials: 'include'` to forward the `BOOKSTORE_SESSION` cookie.
 
-### Deployment Steps
+## Build, Test & QA
 
-```shell
-# Create KinD cluster
-$ task kind_create
+- Backend build: `./mvnw -ntp clean verify`
+- Formatting: `./mvnw spotless:apply`
+- Load tests: `k6 run k6.js` (supports overriding `BASE_URL`)
+- Modulith documentation: `./mvnw test` regenerates `target/spring-modulith-docs/`
+- Frontend: `pnpm test` (unit), `pnpm test:e2e` (Playwright after `pnpm build && pnpm start`)
 
-# Deploy app to K8s cluster
-$ task k8s_deploy
-
-# Undeploy app
-$ task k8s_undeploy
-
-# Destroy KinD cluster
-$ task kind_destroy
-```
-
-**K8s Environment URLs:**
-- Application: http://localhost:30090
-- RabbitMQ Admin: http://localhost:30091 (guest/guest)
-- HyperDX Observability: http://localhost:30092 (traces, metrics, and logs)
-- Hazelcast Management Center: http://localhost:30093
-
-## Development Guide
-
-### Code Structure
+## Project Layout
 
 ```
 src/main/java/com/sivalabs/bookstore/
-├── common/          # Shared module (open module)
-├── catalog/         # Product catalog module
-├── orders/          # Order management module
-├── inventory/       # Inventory management module
-├── notifications/   # Notification module
-├── web/             # Web UI and gRPC client integration
-└── config/          # Configuration files
+├── common/        # shared helpers, cache utilities, session support
+├── catalog/       # product domain + REST API + Liquibase changelog
+├── orders/        # order domain, cart REST, gRPC adapters, Hazelcast MapStore
+├── inventory/     # inventory projections & cache configuration
+├── notifications/ # domain event consumers
+└── config/        # infrastructure wiring (Hazelcast, OTEL, gRPC, CORS, sessions)
+
+src/main/resources/db/migration/ # Liquibase change sets (schemas: catalog, orders, inventory)
+frontend-next/                   # Next.js storefront
+frontend-sdk/                    # Generated TypeScript API client
 ```
 
-### Database Migration
+## Database & Migrations
 
-- Location: `src/main/resources/db/migration/`
-- Uses Liquibase for version control
-- Each module uses independent schema
+- Liquibase change sets reside in `src/main/resources/db/migration/`.
+- Schemas: `catalog`, `orders`, `inventory`, plus `events` for Modulith event persistence.
+- Apply locally with `./mvnw liquibase:update` (uses Spring datasource properties).
 
-### Module Boundary Guidelines
+## Troubleshooting
 
-- Respect `@ApplicationModule` defined boundaries
-- Cross-module access requires explicit APIs (e.g., `catalog.ProductApi`)
-- Inter-module communication prioritizes event-driven patterns
+- **Port conflicts:** adjust mappings in `compose.yml` (notably 80, 3000, 8080, 4317, 15672, 38080).
+- **Session issues:** confirm `BOOKSTORE_SESSION` cookie is issued and requests include credentials; inspect `/api/cart` logs for session reuse.
+- **CORS failures in dev:** ensure `SPRING_PROFILES_ACTIVE=dev` or override `cors.allowed-origins` to your frontend origin.
+- **Missing traces:** verify the `hyperdx` container is healthy and OTLP env vars (`OTLP_ENDPOINT`, `OTLP_GRPC_HEADERS_AUTHORIZATION`) are configured.
+- **Orders service offline:** fall back to the in-process gRPC server by setting `bookstore.grpc.client.target=localhost:9091`.
 
-### Troubleshooting
-
-**Port Conflicts:**
-- Stop conflicting services or modify port mappings in `compose.yml`
-
-**Hazelcast/Cache Issues:**
-- Tune `bookstore.cache.*` settings
-- Check `/actuator/health` and `/actuator/modulith`
-
-**Tracing Not Visible:**
-- Confirm HyperDX service is running
-- Verify OpenTelemetry endpoint configuration in `application.properties`
-- Check HyperDX dashboard at http://localhost:8080/hyperdx for traces and metrics
+Refer to the markdown files under `docs/` for historical context, API deep dives, and module-specific analyses.

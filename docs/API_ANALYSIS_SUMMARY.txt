@@ -21,7 +21,7 @@ KEY FINDINGS
    - GET /api/products (paginated list, page=1-based)
    - GET /api/products/{code} (single product by code)
    
-   Cart (Web Module, Session-based):
+   Cart (Orders Module, Session-based):
    - GET /api/cart (retrieve cart)
    - POST /api/cart/items (add item, requires code + quantity)
    - PUT /api/cart/items/{code} (update quantity)
@@ -33,17 +33,16 @@ KEY FINDINGS
    - GET /api/orders/{orderNumber} (get order details)
 
 3. SESSION MANAGEMENT
-   - Technology: Hazelcast distributed cache
-   - Cookie: JSESSIONID (HttpOnly, SameSite=Lax)
+   - Technology: Hazelcast (Spring Session)
+   - Cookie: BOOKSTORE_SESSION (HttpOnly, SameSite=Strict)
    - Timeout: 30 minutes
-   - Sticky sessions required (nginx handles this in docker-compose)
+   - Sticky sessions handled by nginx in docker-compose
    - Per-user cart data stored in session
 
 4. CORS STATUS
-   - NO explicit CORS configuration currently exists
-   - CRITICAL: Must add CORS config for Next.js (localhost:3000)
-   - Solution: Add to WebConfig.java with allowCredentials=true
-   - Alternative: Configure at nginx proxy level
+   - `CorsConfig` (dev profile) allows http://localhost:3000
+   - Production traffic shares origin via nginx, so no CORS required
+   - Ensure frontend requests include credentials when bypassing nginx
 
 5. OPENAPI SETUP
    - Configuration: OpenApiConfig.java (Spring Boot configuration class)
@@ -79,36 +78,23 @@ KEY FINDINGS
    - PagedResult: data[], totalElements, pageNumber, totalPages, pagination flags
 
 =================================================================================
-CRITICAL CONFIGURATION NEEDED FOR NEXT.JS
+NEXT.JS INTEGRATION CHECKLIST
 =================================================================================
 
-1. ADD CORS CONFIGURATION (WebConfig.java)
-   
-   @Configuration
-   public class WebConfig implements WebMvcConfigurer {
-       @Override
-       public void addCorsMappings(CorsRegistry registry) {
-           registry.addMapping("/api/**")
-                   .allowedOrigins("http://localhost:3000")
-                   .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                   .allowedHeaders("*")
-                   .allowCredentials(true)  // IMPORTANT for session cookies
-                   .maxAge(3600);
-       }
-   }
+1. BACKEND PROFILE
+   - Enable `dev` profile (`SPRING_PROFILES_ACTIVE=dev`) to activate `CorsConfig`.
+   - Configure `cors.allowed-origins` if using a custom frontend origin.
 
-2. UPDATE HTTP CLIENT (lib/http.ts)
-   - Add credentials: 'include' to all fetch calls
-   - Enables session cookie persistence
-   - Required for cart and order endpoints
+2. HTTP CLIENT (frontend-next/apps/web/lib/api/client.ts)
+   - Already sets `credentials: 'same-origin'`/`'include'` internally; ensure overrides keep this behaviour.
+   - `NEXT_PUBLIC_API_URL` defaults to `/api` in Docker; during local dev set to `http://localhost:8080`.
 
-3. ENVIRONMENT SETUP (.env.local)
-   - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+3. TANSTACK QUERY DEFAULTS
+   - React Query is configured in `app/providers.tsx` with retries and stale times; no additional session handling required beyond credentials.
 
-4. TANSTACK QUERY CONFIG
-   - Configure default credentials: 'include'
-   - Persist JSESSIONID between requests
-   - Handle session-dependent endpoints
+4. ENVIRONMENT
+   - `.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:8080`
+   - Docker Compose: `NEXT_API_PROXY_TARGET=http://monolith:8080`
 
 =================================================================================
 ARCHITECTURE OVERVIEW
@@ -120,8 +106,8 @@ Next.js (Port 3000)
        ↓
 Spring Boot Monolith (Port 8080)
    ├─ Catalog Module → ProductRestController
-   ├─ Web Module → CartRestController
    ├─ Orders Module → OrdersRestController → OrdersGrpcClient → gRPC (Port 9090)
+   │                     CartRestController (session-based cart)
    └─ Infrastructure
        ├─ Hazelcast (distributed sessions, cache)
        ├─ PostgreSQL (multiple schemas per module)
@@ -129,10 +115,10 @@ Spring Boot Monolith (Port 8080)
        └─ OpenAPI/Swagger UI
 
 Sticky Sessions Flow:
-   1. Browser requests /api/cart without JSESSIONID
-   2. Server creates session, returns Set-Cookie: JSESSIONID=...
+   1. Browser requests /api/cart without BOOKSTORE_SESSION
+   2. Server creates session, returns Set-Cookie: BOOKSTORE_SESSION=...
    3. Browser stores cookie, includes in subsequent requests
-   4. nginx routes all requests with same JSESSIONID to same monolith instance
+   4. nginx routes all requests with same BOOKSTORE_SESSION to the same backend
    5. Hazelcast ensures session data accessible across cluster nodes
 
 =================================================================================
@@ -140,24 +126,24 @@ FILE LOCATIONS & KEY REFERENCES
 =================================================================================
 
 Backend Implementation:
-- REST Controllers: src/main/java/com/sivalabs/bookstore/**/web/*Controller.java
+- REST Controllers: src/main/java/com/sivalabs/bookstore/**/web/**/*Controller.java
 - DTOs/Models: src/main/java/com/sivalabs/bookstore/**/*.java (api, dto packages)
 - Configuration: src/main/java/com/sivalabs/bookstore/config/
   - OpenApiConfig.java (OpenAPI setup)
-  - HttpSessionConfig.java (Hazelcast sessions)
-  - WebConfig.java (general web config - needs CORS)
-- Exception Handlers: OrdersRestExceptionHandler, CatalogExceptionHandler
-- Properties: src/main/resources/application.properties
+  - HazelcastConfig.java (session + cache base config)
+  - CorsConfig.java (dev-only CORS for Next.js)
+  - Exception Handlers: OrdersRestExceptionHandler, CatalogExceptionHandler
+  - Properties: src/main/resources/application.properties
 
 Build & Deployment:
 - Build: pom.xml (Maven configuration)
 - Docker: compose.yml (development environment)
 - Proxy: webproxy/nginx.conf (nginx configuration)
 
-Frontend (Next.js):
-- Location: frontend-next/ directory
-- HTTP Client: apps/web/lib/http.ts
-- Features: apps/web/features/ (products, cart, orders)
+- Frontend (Next.js):
+  - Location: frontend-next/ directory
+  - HTTP Client: apps/web/lib/api/client.ts
+  - Features: apps/web/features/ (products, cart, orders)
 - Configuration: apps/web/tsconfig.json, next.config.js
 
 Documentation:
@@ -206,13 +192,13 @@ PRODUCTS:
   GET  /api/products?page=1              → PagedResult<ProductDto>
   GET  /api/products/{code}              → ProductDto
 
-CART (requires session/JSESSIONID cookie):
+CART (requires session/BOOKSTORE_SESSION cookie):
   GET  /api/cart                         → CartDto
   POST /api/cart/items                   → CartDto (body: {code, quantity})
   PUT  /api/cart/items/{code}            → CartDto (body: {quantity})
   DEL  /api/cart                         → 204 No Content
 
-ORDERS (requires session/JSESSIONID cookie):
+ORDERS (requires session/BOOKSTORE_SESSION cookie):
   POST /api/orders                       → CreateOrderResponse (body: see docs)
   GET  /api/orders                       → List<OrderView>
   GET  /api/orders/{orderNumber}         → OrderDto
@@ -241,7 +227,7 @@ KNOWN LIMITATIONS & NOTES
 3. Session Management
    - Hazelcast requires clustering configuration for multi-node deployments
    - Session data not persisted to disk (ephemeral)
-   - JSESSIONID includes timestamps/signatures for security
+   - BOOKSTORE_SESSION includes hazelcast session identifiers for replication
 
 4. No Built-in Authentication/Authorization
    - Current implementation: no user authentication

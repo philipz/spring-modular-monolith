@@ -1,28 +1,34 @@
-# Orders 模組資料封裝與所有權分析
+# Orders 模組資料封裝與所有權分析（2025-10 更新）
 
-## 分析概要
-- **資料來源**：Liquibase 定義 (`src/main/resources/db/migration/V4__orders_create_orders_table.sql`、`V5__orders_add_orders_data.sql`) 僅在 `orders` schema 建立 `orders` 表與 `order_id_seq` 序號，未見其他 schema 直接操作 Orders 資料。
-- **持久層封裝**：`OrderRepository`、`OrderService` 等資料存取元件僅存在於 Orders 模組內，模組外僅透過 `OrdersApi` 或事件 (`OrderCreatedEvent`) 存取訂單資訊。
-- **外部依賴**：Orders 模組於建立訂單時只透過 `ProductServiceClient` 查 Catalog API，不直接讀寫他模組資料表；其他模組亦未直接查詢 `orders.orders` 表，僅透過事件或快取索引。
+## 資料來源
+- Liquibase changelog (`src/main/resources/db/migration/`) 中的 `V4__orders_create_orders_table.sql` 與 `V5__orders_add_orders_data.sql` 只在 `orders` schema 下建立/初始化資料。
+- Orders 模組內僅曝光 DTO (`orders.api.*`) 與事件物件 (`orders.api.events.OrderCreatedEvent`)，未向外公開 JPA entity。
 
-## 主要資料結構
-| Schema.Table | 說明 | 欄位重點 |
+## 存取範圍
+| 層級 | 位置 | 說明 |
 | --- | --- | --- |
-| `orders.orders` | 訂單主檔 | `id` (序號 `orders.order_id_seq`)、`order_number` (唯一值)、客戶與商品欄位、`status`、時間戳記 |
+| Repository | `orders/domain/OrderRepository` | 只被同模組的服務與 MapStore 使用。 |
+| 服務 | `orders/domain/OrderService` | 建立訂單、發佈事件、委派快取刷新。 |
+| REST/gRPC | `orders/web/**`, `orders/grpc/**` | 透過 DTO 與 Mapper 封裝 domain 實體。 |
+| 模組 API | `orders/api/OrdersApi` | 供其他模組呼叫，回傳 DTO / View。 |
 
-## 存取路徑
-- **JPA 與服務層**：`OrderService` 負責訂單 CRUD 與事件發佈，`OrderRepository` 僅被 Orders 模組內部 (服務與 MapStore) 呼叫。
-- **公開 API**：`OrdersApiService` 將控制器原有邏輯集中，外部模組只能透過 `OrdersApi` 取得 DTO/視圖或建立訂單。
-- **模組外存取**：Inventory/Notifications 透過 `OrderCreatedEvent` 回應，未直接觸及資料表。
+外部模組（inventory、notifications）僅透過 `OrderCreatedEvent` 取得所需資料；未見直接查詢 `orders.orders` 表或 JPA 實體的情況。
 
-## 觀察到的風險/耦合點
-| 項目 | 說明 |
-| --- | --- |
-| Hazelcast 設定跨模組引用 | `config/HazelcastConfig` 直接引用 `com.sivalabs.bookstore.orders.cache.OrderMapStore`，造成 Config → Orders 的反向依賴。需在 Task 8 將 MapStore 設定移至 Orders 模組或採 factory/export 方式解除耦合。 |
-| 事件公開位置 | `OrderCreatedEvent` 已移至 `orders.api.events`，Inventory / Notifications 透過 API 事件存取，避免載入 Orders 內部實作。 |
-| 金額欄位型態 | `product_price` 目前為 `text`，若未來獨立資料庫建議改為數值型態並定義幣別欄位。 |
+## Hazelcast 與快取
+- `orders/cache/OrderMapStore` 與 `orders/config/HazelcastOrderCacheConfig` 均位於 Orders 模組內，並透過 `SpringAwareMapStoreConfig` 將 MapStore 註冊給全域 Hazelcast。
+- `config/HazelcastConfig` 不再引用 Orders 內部類別，僅透過 `ObjectProvider<MapConfig>` 聚合各模組提供的設定。
+- Session 與 cart 狀態透過 Hazelcast Spring Session (`BOOKSTORE_SESSION`) 處理，與訂單資料隔離。
 
-## 結論與建議
-1. Orders 模組對 `orders` schema 擁有完整資料所有權，外部呼叫皆經由 API 或事件完成，符合拆分前的封裝要求。
-2. 應續推進 Task 7/8，以移除 Hazelcast MapStore 與事件的跨模組引用，確保待抽離時 Config 與其他模組不再依賴 Orders 內部型別。
-3. 規劃獨立服務時，留意資料型態改善與序號初始化策略 (`order_id_seq`) 是否需要調整以避免與舊系統衝突。
+## 事件與整合
+- `OrderCreatedEvent` 位於 `orders.api.events`，payload 有限於建立庫存與通知所需資料。
+- Inventory/Notifications 在各自模組內訂閱事件；未見跨 schema 直接讀取訂單資料的情況。
+
+## 觀察
+- **所有權清晰**：訂單資料的 schema、repository、快取均封裝在 orders 模組，對外只透過 API/事件。
+- **快取/序列設定**：`OrderMapStore` 使用 lazy load + 批次查詢（`findByOrderNumberIn`），並在錯誤處理上考量啟動期。
+- **資料型態**：`orders.orders` 將價格儲存為 `numeric`（由 Liquibase changelog 定義）；如未來抽離成獨立服務，序號 `order_id_seq` 可直接帶出。
+
+## 建議
+1. 若未來計畫支援多筆商品，多項欄位需改寫（目前 cart 只允許一筆 item）。
+2. 持續監控 `OrderMapStore` 的例外處理（目前以 WARN/DEBUG 區分啟動期 vs. 正常期）。
+3. 如果 orders-service 完全外部化，可將 `orders` schema 遷移出去並透過 gRPC/REST 回填，monolith 端保持 API/事件契約不變。

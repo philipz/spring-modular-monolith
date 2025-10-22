@@ -10,68 +10,81 @@ export const options = {
 }
 
 export default function main() {
-  const baseUrl = 'http://localhost:8080'
+  const baseUrl = __ENV.BASE_URL || 'http://localhost'
   const productCodes = ['P100', 'P101', 'P102', 'P103', 'P104']
 
   // Select random product code for this iteration
   const productCode = productCodes[Math.floor(Math.random() * productCodes.length)]
 
   group('Complete Order Flow', function () {
-    // Step 1: Add product to cart
-    const buyResponse = http.post(
-      `${baseUrl}/buy?code=${productCode}`,
-      null,
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-        redirects: 0, // Don't follow redirects automatically to capture session
-      }
-    )
+    // Step 1: Add product to cart via REST API
+    const addToCartPayload = JSON.stringify({ code: productCode, quantity: 1 })
 
-    check(buyResponse, {
-      'add to cart redirects to /cart': (r) => r.status === 302 && r.headers['Location'].includes('/cart'),
+    const cartResponse = http.post(`${baseUrl}/api/cart/items`, addToCartPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
     })
 
-    // Extract session cookie
-    const cookies = buyResponse.cookies
-    const sessionCookie = cookies['SESSION']
+    check(cartResponse, {
+      'item added to cart': (r) => r.status === 201,
+    })
+
+    const sessionCookie = cartResponse.cookies['BOOKSTORE_SESSION']?.[0]
 
     if (!sessionCookie) {
-      console.error('No session cookie found after adding to cart')
+      console.error('No BOOKSTORE_SESSION cookie found after adding to cart')
+      return
+    }
+
+    const cartBody = cartResponse.json()
+    const cartItem = cartBody?.items && cartBody.items.length > 0 ? cartBody.items[0] : null
+
+    if (!cartItem) {
+      console.error('Cart response did not include any items')
       return
     }
 
     // Step 2: Create order with customer details
-    const orderPayload = {
-      'customer.name': 'K6 Test User',
-      'customer.email': `k6test${__VU}@example.com`,
-      'customer.phone': '+1-555-0100',
-      'deliveryAddress': `${__VU} Test Street, K6 City`,
-    }
-
-    const orderResponse = http.post(
-      `${baseUrl}/orders`,
-      orderPayload,
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Cookie': `SESSION=${sessionCookie.value}`,
-        },
-        redirects: 0, // Don't follow redirects to check order number
-      }
-    )
-
-    check(orderResponse, {
-      'order created successfully': (r) => r.status === 302,
-      'redirects to order details': (r) => r.headers['Location'] && r.headers['Location'].includes('/orders/'),
+    const orderPayload = JSON.stringify({
+      customer: {
+        name: 'K6 Test User',
+        email: `k6test${__VU}@example.com`,
+        phone: '+1-555-0100',
+      },
+      deliveryAddress: `${__VU} Test Street, K6 City`,
+      item: {
+        code: cartItem.code,
+        name: cartItem.name,
+        price: cartItem.price,
+        quantity: cartItem.quantity,
+      },
     })
 
-    if (orderResponse.status === 302 && orderResponse.headers['Location']) {
-      const orderNumber = orderResponse.headers['Location'].split('/').pop()
-      console.log(`Order created: ${orderNumber} with product ${productCode}`)
+    const orderResponse = http.post(`${baseUrl}/api/orders`, orderPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Cookie: `BOOKSTORE_SESSION=${sessionCookie.value}`,
+      },
+    })
+
+    check(orderResponse, {
+      'order created successfully': (r) => r.status === 201,
+    })
+
+    if (orderResponse.status === 201) {
+      const responseBody = orderResponse.json()
+      const orderNumber =
+        responseBody?.orderNumber ||
+        (orderResponse.headers['Location'] && orderResponse.headers['Location'].split('/').pop())
+
+      if (orderNumber) {
+        console.log(`Order created: ${orderNumber} with product ${productCode}`)
+      } else {
+        console.warn('Order created but order number was not returned in body or Location header')
+      }
     }
   })
 

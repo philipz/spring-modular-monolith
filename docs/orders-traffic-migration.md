@@ -1,15 +1,20 @@
-# Orders Service Traffic Migration Playbook
+# Orders Service Traffic Migration Playbook (Updated for `/api/**`)
 
-This document describes how to gradually migrate traffic from the monolith to the extracted `orders-service`. The strategy is based on the Docker Compose `webproxy` gateway and can be replicated on any ingress capable of weighted routing. The current repository ships a static `webproxy/nginx.conf` that always proxies to the monolith—treat the steps below as the target rollout plan and adapt them to your custom Nginx template or ingress controller before executing in production.
+This playbook describes how to gradually shift order-related HTTP traffic from the monolith to the extracted `orders-service` while the Next.js storefront continues to call `/api/cart/**` and `/api/orders/**`. The current `webproxy/nginx.conf` always routes to the monolith; adapt the template below before running in production.
 
-## 1. Gateway Rollout Controls
+## 1. Gateway Controls
 
-When using a templated Nginx configuration (for example, a `proxy.conf.template` in your own deployment), use the `ORDERS_SERVICE_PERCENT` environment variable to control how many requests matching `/orders`, `/buy`, or `/cart` should be forwarded to the new service.
+When using a templated nginx config, introduce an `ORDERS_SERVICE_PERCENT` environment variable to control the split for **API** routes:
+
+```
+/api/cart/**      # cart REST endpoints
+/api/orders/**    # order REST endpoints
+```
 
 | Percentage | Behaviour |
 | --- | --- |
-| `0` (default) | All requests stay on the monolith (safe rollback). |
-| `1-99` | Requests are randomly split by client IP and request time. |
+| `0` (default) | All traffic stays on the monolith (`bookstore` service). |
+| `1-99` | Requests are distributed between monolith and orders-service based on hash of client IP + path. |
 | `100` | All traffic goes to `orders-service`. |
 
 Example (Docker Compose):
@@ -18,44 +23,46 @@ Example (Docker Compose):
 ORDERS_SERVICE_PERCENT=25 docker compose up webproxy
 ```
 
-> The rollout percentage is logged during container start-up and can be changed by restarting the proxy with the new value.
+**QA overrides**
 
-### Forced Routing for QA
+- Header: `X-Orders-Backend: monolith|orders`
+- Cookie: `orders_backend=monolith|orders`
 
-- **HTTP header:** `X-Orders-Backend: monolith|orders`
-- **Cookie:** `orders_backend=monolith|orders`
+These force the proxy decision regardless of the global percentage and are useful for smoke testing.
 
-These overrides allow targeted verification regardless of the global percentage.
+## 2. Observability
 
-## 2. Monitoring and Observability
-
-The proxy writes access logs with the backend label (`backend=monolith` or `backend=orders-service`). Example:
+nginx access logs are annotated with `backend=monolith` or `backend=orders-service`. Tail them via:
 
 ```bash
 docker compose logs -f webproxy | grep backend=
 ```
 
-The header `X-Orders-Backend` is also attached to responses so browser-based testing can confirm which backend responded. Combine this with existing Zipkin traces and service-specific metrics to compare latency and error rates.
+The proxy also returns the header `X-Orders-Backend` for quick verification in browser devtools. Combine nginx logs with:
 
-## 3. Kubernetes Adoption
+- HyperDX traces (compare latencies between backends).
+- RabbitMQ metrics (ensure order events are still published).
+- k6 load tests (`k6 run k6.js`) to stress both paths.
 
-For Kubernetes, mount the same template into an ingress controller or custom Nginx deployment and expose the `ORDERS_SERVICE_PERCENT` environment variable. The header/cookie overrides and logging format work unchanged.
+## 3. Kubernetes Adaptation
 
-A minimal adaptation plan:
+1. Build and push `webproxy` image with the weighted routing template.
+2. Deploy an nginx Deployment/Ingress that exposes the same env vars (`ORDERS_SERVICE_PERCENT`, optional overrides).
+3. Expose port 80 via Service/Ingress and direct storefront traffic through it.
 
-1. Build and push the `webproxy` image (`docker build -t <registry>/bookstore-webproxy webproxy`).
-2. Deploy a `Deployment` with the image and set `ORDERS_SERVICE_PERCENT` in the pod spec.
-3. Expose port 80 via `Service`/`Ingress` and direct storefront traffic through the proxy.
+Forced-route header and cookie logic transfers unchanged.
 
-## 4. Rollout Checklist
+## 4. Rollout Steps
 
-1. Start at 0% and validate observability (logs, Zipkin traces, health endpoints).
-2. Increase to 5-10% and monitor key metrics (HTTP 5xx, latency, RabbitMQ event throughput).
-3. Hold for at least 30 minutes; if stable, continue doubling until 100%.
-4. If issues arise, drop back to 0% and investigate with the forced-route header.
+1. Start at 0% and validate telemetry (logs, HyperDX traces, actuator health).
+2. Increase to 5–10% and monitor for HTTP 5xx, gRPC failures, cart/session anomalies.
+3. If stable after an agreed soak period, gradually raise the percentage (e.g. 25 → 50 → 75 → 100).
+4. If issues arise, revert to 0% (monolith) and inspect using forced-route overrides.
 
-## 5. Next Steps
+## 5. Requirements & Notes
 
-- Automate percentage changes via your CD pipeline (e.g., GitOps update or Compose variable change).
-- Stream webproxy access logs into your analytics platform for long-term backend comparison.
-- Enable alerting on differential error rates to detect regressions quickly.
+- The monolith REST controllers already delegate to `OrdersGrpcClient`; verify `BOOKSTORE_SESSION` affinity across both backends.
+- Ensure the extracted `orders-service` has access to the same Hazelcast cluster or consistently handles sessions (currently the monolith retains ownership—full extraction would require redistributing session state).
+- Keep OpenAPI schemas in sync if the external service evolves.
+
+Following this playbook keeps `/api/cart/**` and `/api/orders/**` stable for the Next.js frontend while you gradually shift execution to the independent orders-service.

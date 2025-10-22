@@ -55,7 +55,11 @@ public class OrdersRestController {
         @ApiResponse(
                 responseCode = "200",
                 description = "Orders retrieved successfully",
-                content = @Content(schema = @Schema(implementation = OrderView.class))),
+                content =
+                        @Content(
+                                array =
+                                        @io.swagger.v3.oas.annotations.media.ArraySchema(
+                                                schema = @Schema(implementation = OrderView.class)))),
         @ApiResponse(responseCode = "503", description = "Orders service unavailable")
     })
     public ResponseEntity<List<OrderView>> listOrders() {
