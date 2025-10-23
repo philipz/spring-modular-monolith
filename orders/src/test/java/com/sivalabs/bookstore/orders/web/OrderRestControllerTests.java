@@ -1,6 +1,7 @@
 package com.sivalabs.bookstore.orders.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -20,7 +22,6 @@ import com.sivalabs.bookstore.orders.api.model.OrderStatus;
 import com.sivalabs.bookstore.orders.infrastructure.catalog.CatalogServiceException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,14 +114,24 @@ class OrderRestControllerTests {
     @Test
     @DisplayName("Should return list of orders")
     void shouldReturnListOfOrders() throws Exception {
-        List<OrderView> orders = List.of(new OrderView(
-                "BK-123456", OrderStatus.IN_PROCESS, new Customer("Buyer", "buyer@example.com", "999-999-9999")));
-        given(ordersApi.findOrders()).willReturn(orders);
+        PagedResult<OrderView> orders = new PagedResult<>(
+                java.util.List.of(new OrderView(
+                        "BK-123456",
+                        OrderStatus.IN_PROCESS,
+                        new Customer("Buyer", "buyer@example.com", "999-999-9999"))),
+                1,
+                1,
+                1,
+                true,
+                true,
+                false,
+                false);
+        given(ordersApi.findOrders(anyInt(), anyInt())).willReturn(orders);
 
         mockMvc.perform(get("/api/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].orderNumber").value("BK-123456"))
-                .andExpect(jsonPath("$[0].status").value("IN_PROCESS"));
+                .andExpect(jsonPath("$.data[0].orderNumber").value("BK-123456"))
+                .andExpect(jsonPath("$.data[0].status").value("IN_PROCESS"));
     }
 
     private CreateOrderRequest createOrderRequest() {

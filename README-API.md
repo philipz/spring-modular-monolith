@@ -92,11 +92,11 @@ curl -i -X POST "http://localhost:8080/api/cart/items" \
 
 All order endpoints require the session cookie so the backend can read the cart.
 
-| Method | Path | Body | Description |
-| --- | --- | --- | --- |
-| `POST` | `/api/orders` | `CreateOrderRequest` | Create a new order (returns `201 Created`) |
-| `GET` | `/api/orders` | – | List orders as lightweight summaries (`List<OrderView>`) |
-| `GET` | `/api/orders/{orderNumber}` | – | Fetch full order details (`OrderDto`) |
+| Method | Path | Query | Body | Description |
+| --- | --- | --- | --- | --- |
+| `POST` | `/api/orders` | – | `CreateOrderRequest` | Create a new order (returns `201 Created`) |
+| `GET` | `/api/orders` | `page` (default 1), `pageSize` (default 10) | – | List orders as a paginated `PagedResult<OrderSummary>` |
+| `GET` | `/api/orders/{orderNumber}` | – | – | Fetch full order details (`OrderDto`) |
 
 `CreateOrderRequest`:
 
@@ -121,6 +121,31 @@ Successful response (`201`):
 
 ```json
 { "orderNumber": "ORD-2025-000123" }
+```
+
+Paginated list (`GET /api/orders?page=1&pageSize=10`):
+
+```jsonc
+{
+  "data": [
+    {
+      "orderNumber": "ORD-2025-000123",
+      "status": "NEW",
+      "customer": {
+        "name": "Jane Doe",
+        "email": "jane@example.com",
+        "phone": "+1-555-0100"
+      }
+    }
+  ],
+  "totalElements": 42,
+  "pageNumber": 1,
+  "totalPages": 5,
+  "isFirst": true,
+  "isLast": false,
+  "hasNext": true,
+  "hasPrevious": false
+}
 ```
 
 ## Error Handling

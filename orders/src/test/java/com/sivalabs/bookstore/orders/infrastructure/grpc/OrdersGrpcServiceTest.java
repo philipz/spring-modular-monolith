@@ -145,11 +145,14 @@ class OrdersGrpcServiceTest {
     }
 
     // Test fixtures for domain OrderView list
-    private List<com.sivalabs.bookstore.orders.api.OrderView> createDomainOrderViews() {
+    private com.sivalabs.bookstore.common.models.PagedResult<com.sivalabs.bookstore.orders.api.OrderView>
+            createDomainOrderViews() {
         var customer =
                 new com.sivalabs.bookstore.orders.api.model.Customer("Buyer", "buyer@example.com", "999-999-9999");
-        return List.of(new com.sivalabs.bookstore.orders.api.OrderView(
-                "BK-123456", com.sivalabs.bookstore.orders.api.model.OrderStatus.NEW, customer));
+        var view = new com.sivalabs.bookstore.orders.api.OrderView(
+                "BK-123456", com.sivalabs.bookstore.orders.api.model.OrderStatus.NEW, customer);
+        return new com.sivalabs.bookstore.common.models.PagedResult<>(
+                java.util.List.of(view), 1, 1, 1, true, true, false, false);
     }
 
     // Test fixtures for gRPC OrderView list
@@ -176,6 +179,13 @@ class OrdersGrpcServiceTest {
     private ListOrdersResponse createListOrdersResponse() {
         return ListOrdersResponse.newBuilder()
                 .addAllOrders(createGrpcOrderViews())
+                .setTotalElements(1)
+                .setPageNumber(1)
+                .setTotalPages(1)
+                .setIsFirst(true)
+                .setIsLast(true)
+                .setHasNext(false)
+                .setHasPrevious(false)
                 .build();
     }
 

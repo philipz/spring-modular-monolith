@@ -1,6 +1,6 @@
 package com.sivalabs.bookstore.orders.api;
 
-import java.util.List;
+import com.sivalabs.bookstore.common.models.PagedResult;
 
 /**
  * Remote client abstraction for interacting with the Orders service via non-local transports (e.g. gRPC).
@@ -11,5 +11,5 @@ public interface OrdersRemoteClient {
 
     OrderDto getOrder(String orderNumber);
 
-    List<OrderView> listOrders();
+    PagedResult<OrderView> listOrders(int page, int size);
 }

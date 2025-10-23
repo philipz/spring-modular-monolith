@@ -39,7 +39,7 @@ The Spring Modulith backend exposes a cohesive REST surface under `/api/**` that
 - Surface provided by `OrdersRestController`, delegating to the gRPC-backed `OrdersRemoteClient`.
 - Endpoints:
   - `POST /api/orders` – accepts `CreateOrderRequest`, returns `201 Created` with `CreateOrderResponse` and `Location` header. Requires the cart session to be populated.
-  - `GET /api/orders` – returns `List<OrderView>` (summary).
+  - `GET /api/orders` – returns a `PagedResult<OrderView>` (supports `page` and `pageSize` query parameters).
   - `GET /api/orders/{orderNumber}` – returns full `OrderDto` or `404`.
 - Validation errors surface via `OrdersRestExceptionHandler` with rich error payloads.
 

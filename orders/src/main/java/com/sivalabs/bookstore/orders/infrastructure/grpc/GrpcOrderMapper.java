@@ -1,6 +1,7 @@
 package com.sivalabs.bookstore.orders.infrastructure.grpc;
 
 import com.google.protobuf.Timestamp;
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -90,6 +91,33 @@ public class GrpcOrderMapper {
 
     public List<com.sivalabs.bookstore.orders.grpc.proto.OrderView> toProtoOrderViews(List<OrderView> orderViews) {
         return orderViews.stream().map(this::toProto).toList();
+    }
+
+    public com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse toProto(PagedResult<OrderView> pagedOrders) {
+        return com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse.newBuilder()
+                .addAllOrders(toProtoOrderViews(pagedOrders.data()))
+                .setTotalElements(pagedOrders.totalElements())
+                .setPageNumber(pagedOrders.pageNumber())
+                .setTotalPages(pagedOrders.totalPages())
+                .setIsFirst(pagedOrders.isFirst())
+                .setIsLast(pagedOrders.isLast())
+                .setHasNext(pagedOrders.hasNext())
+                .setHasPrevious(pagedOrders.hasPrevious())
+                .build();
+    }
+
+    public PagedResult<OrderView> toPagedResult(com.sivalabs.bookstore.orders.grpc.proto.ListOrdersResponse response) {
+        List<OrderView> views =
+                response.getOrdersList().stream().map(this::toDomain).toList();
+        return new PagedResult<>(
+                views,
+                response.getTotalElements(),
+                response.getPageNumber(),
+                response.getTotalPages(),
+                response.getIsFirst(),
+                response.getIsLast(),
+                response.getHasNext(),
+                response.getHasPrevious());
     }
 
     public List<com.sivalabs.bookstore.orders.grpc.proto.OrderDto> toProtoOrderDtos(List<OrderDto> orderDtos) {

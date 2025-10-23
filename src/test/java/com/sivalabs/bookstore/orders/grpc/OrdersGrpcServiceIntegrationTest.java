@@ -248,9 +248,12 @@ class OrdersGrpcServiceIntegrationTest {
             createdOrderNumbers.add(createOrderResponse.getOrderNumber());
         }
 
-        var listOrdersResponse = blockingStub.listOrders(ListOrdersRequest.getDefaultInstance());
+        var listOrdersResponse = blockingStub.listOrders(
+                ListOrdersRequest.newBuilder().setPage(1).setPageSize(5).build());
 
         assertThat(listOrdersResponse.getOrdersCount()).isEqualTo(3);
+        assertThat(listOrdersResponse.getTotalElements()).isEqualTo(3);
+        assertThat(listOrdersResponse.getPageNumber()).isEqualTo(1);
 
         var returnedOrderNumbers = listOrdersResponse.getOrdersList().stream()
                 .map(com.sivalabs.bookstore.orders.grpc.proto.OrderView::getOrderNumber)

@@ -1,5 +1,6 @@
 package com.sivalabs.bookstore.orders.web;
 
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -50,20 +51,23 @@ public class OrdersRestController {
     }
 
     @GetMapping
-    @Operation(summary = "List orders", description = "Retrieves a list of all orders")
+    @Operation(summary = "List orders", description = "Retrieves a paginated list of orders")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
                 description = "Orders retrieved successfully",
                 content =
                         @Content(
-                                array =
-                                        @io.swagger.v3.oas.annotations.media.ArraySchema(
-                                                schema = @Schema(implementation = OrderView.class)))),
+                                schema =
+                                        @Schema(
+                                                implementation =
+                                                        com.sivalabs.bookstore.common.models.PagedResult.class))),
         @ApiResponse(responseCode = "503", description = "Orders service unavailable")
     })
-    public ResponseEntity<List<OrderView>> listOrders() {
-        List<OrderView> orders = ordersRemoteClient.listOrders();
+    public ResponseEntity<PagedResult<OrderView>> listOrders(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(name = "pageSize", defaultValue = "10") int size) {
+        PagedResult<OrderView> orders = ordersRemoteClient.listOrders(page, size);
         return ResponseEntity.ok(orders);
     }
 

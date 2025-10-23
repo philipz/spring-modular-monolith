@@ -153,16 +153,17 @@ class OrdersEndToEndTests {
             }
         });
 
-        ResponseEntity<java.util.List<com.sivalabs.bookstore.orders.api.OrderView>> ordersResponse =
-                restTemplate.exchange(
+        ResponseEntity<com.sivalabs.bookstore.common.models.PagedResult<com.sivalabs.bookstore.orders.api.OrderView>>
+                ordersResponse = restTemplate.exchange(
                         "/api/orders",
                         org.springframework.http.HttpMethod.GET,
                         null,
                         new org.springframework.core.ParameterizedTypeReference<
-                                java.util.List<com.sivalabs.bookstore.orders.api.OrderView>>() {});
+                                com.sivalabs.bookstore.common.models.PagedResult<
+                                        com.sivalabs.bookstore.orders.api.OrderView>>() {});
         assertThat(ordersResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(ordersResponse.getBody()).isNotNull();
-        assertThat(ordersResponse.getBody())
+        assertThat(ordersResponse.getBody().data())
                 .extracting(com.sivalabs.bookstore.orders.api.OrderView::orderNumber)
                 .contains(orderNumber);
     }

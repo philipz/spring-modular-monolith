@@ -23,8 +23,7 @@ import org.slf4j.LoggerFactory;
 public class GrpcRetryInterceptor implements ClientInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(GrpcRetryInterceptor.class);
-    private static final Set<Status.Code> RETRYABLE_CODES =
-            EnumSet.of(Status.Code.UNAVAILABLE, Status.Code.DEADLINE_EXCEEDED);
+    private static final Set<Status.Code> RETRYABLE_CODES = EnumSet.of(Status.Code.UNAVAILABLE);
     private static final long BASE_DELAY_MILLIS = 100L;
 
     private final ClientProperties clientProperties;
@@ -45,7 +44,7 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         if (!clientProperties.isRetryEnabled() || method.getType() != MethodDescriptor.MethodType.UNARY) {
             return next.newCall(method, callOptions);
         }
-        return new RetryingClientCall<>(next, method, callOptions);
+        return new RetryingClientCall<>(next, method, callOptions, clientProperties);
     }
 
     private final class RetryingClientCall<ReqT, RespT> extends ClientCall<ReqT, RespT> {
@@ -53,6 +52,7 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         private final Channel channel;
         private final MethodDescriptor<ReqT, RespT> method;
         private final CallOptions callOptions;
+        private final ClientProperties clientProperties;
 
         private Listener<RespT> responseListener;
         private Metadata headers;
@@ -63,10 +63,15 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
         private int attempt;
         private volatile boolean completed;
 
-        private RetryingClientCall(Channel channel, MethodDescriptor<ReqT, RespT> method, CallOptions callOptions) {
+        private RetryingClientCall(
+                Channel channel,
+                MethodDescriptor<ReqT, RespT> method,
+                CallOptions callOptions,
+                ClientProperties clientProperties) {
             this.channel = channel;
             this.method = method;
             this.callOptions = callOptions;
+            this.clientProperties = clientProperties;
         }
 
         @Override
@@ -81,7 +86,8 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
                 return;
             }
             attempt++;
-            delegate = channel.newCall(method, callOptions);
+            CallOptions optionsForAttempt = withFreshDeadline(callOptions);
+            delegate = channel.newCall(method, optionsForAttempt);
             delegate.start(new RetryListener(attempt), headers);
             if (messageSent) {
                 delegate.sendMessage(requestMessage);
@@ -172,5 +178,12 @@ public class GrpcRetryInterceptor implements ClientInterceptor {
 
     private long computeBackoffDelay(int attempt) {
         return (long) (BASE_DELAY_MILLIS * Math.pow(2, attempt - 1));
+    }
+
+    private CallOptions withFreshDeadline(CallOptions base) {
+        if (clientProperties.getDeadlineMs() <= 0) {
+            return base;
+        }
+        return base.withDeadlineAfter(clientProperties.getDeadlineMs(), TimeUnit.MILLISECONDS);
     }
 }

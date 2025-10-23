@@ -268,14 +268,15 @@ class RestApiIntegrationTests {
         restTemplate.postForEntity("/api/orders", createRequest, CreateOrderResponse.class);
 
         // List orders
-        ResponseEntity<OrderView[]> response = restTemplate.getForEntity("/api/orders", OrderView[].class);
+        ResponseEntity<PagedResult<OrderView>> response = restTemplate.exchange(
+                "/api/orders", HttpMethod.GET, null, new ParameterizedTypeReference<PagedResult<OrderView>>() {});
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        OrderView[] orders = response.getBody();
+        PagedResult<OrderView> orders = response.getBody();
         assertThat(orders).isNotNull();
-        assertThat(orders).hasSizeGreaterThanOrEqualTo(1);
-        assertThat(orders[0].orderNumber()).isNotEmpty();
-        assertThat(orders[0].customer()).isNotNull();
+        assertThat(orders.data()).isNotEmpty();
+        assertThat(orders.data().get(0).orderNumber()).isNotEmpty();
+        assertThat(orders.data().get(0).customer()).isNotNull();
     }
 
     @Test

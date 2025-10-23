@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
 import com.sivalabs.bookstore.orders.api.OrderDto;
@@ -24,7 +26,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -147,25 +148,27 @@ class OrdersRestControllerTests {
         Customer customer = new Customer("John Doe", "john.doe@example.com", "+1-555-123-4567");
         OrderView order1 = new OrderView("ORD-2025-001234", OrderStatus.NEW, customer);
         OrderView order2 = new OrderView("ORD-2025-001235", OrderStatus.DELIVERED, customer);
-        List<OrderView> orders = List.of(order1, order2);
+        PagedResult<OrderView> orders =
+                new PagedResult<>(java.util.List.of(order1, order2), 2, 1, 1, true, true, false, false);
 
-        when(ordersRemoteClient.listOrders()).thenReturn(orders);
+        when(ordersRemoteClient.listOrders(anyInt(), anyInt())).thenReturn(orders);
 
         // When: Listing orders
-        mockMvc.perform(get("/api/orders"))
+        mockMvc.perform(get("/api/orders").param("page", "1").param("pageSize", "20"))
                 // Then: Returns orders successfully
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].orderNumber", is("ORD-2025-001234")))
-                .andExpect(jsonPath("$[0].status", is("NEW")))
-                .andExpect(jsonPath("$[1].orderNumber", is("ORD-2025-001235")))
-                .andExpect(jsonPath("$[1].status", is("DELIVERED")));
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].orderNumber", is("ORD-2025-001234")))
+                .andExpect(jsonPath("$.data[0].status", is("NEW")))
+                .andExpect(jsonPath("$.totalElements", is(2)))
+                .andExpect(jsonPath("$.pageNumber", is(1)));
     }
 
     @Test
     void shouldReturnServiceUnavailableWhenListOrdersFails() throws Exception {
         // Given: gRPC service unavailable
-        when(ordersRemoteClient.listOrders()).thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
+        when(ordersRemoteClient.listOrders(anyInt(), anyInt()))
+                .thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
 
         // When: Listing orders when service unavailable
         mockMvc.perform(get("/api/orders"))

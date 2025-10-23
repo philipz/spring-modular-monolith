@@ -18,7 +18,6 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -214,12 +213,12 @@ class OrdersGrpcServiceInProcessTest {
         grpcClient.createOrder(new CreateOrderRequest(customer3, "333 List Boulevard", item3));
 
         // Act
-        List<OrderView> orders = grpcClient.findOrders();
+        var orders = grpcClient.findOrders(1, 20);
 
         // Assert
-        assertThat(orders).hasSize(3);
-        assertThat(orders).extracting(OrderView::orderNumber).isNotEmpty();
-        assertThat(orders).allMatch(order -> order.orderNumber() != null);
+        assertThat(orders.data()).hasSize(3);
+        assertThat(orders.data()).extracting(OrderView::orderNumber).isNotEmpty();
+        assertThat(orders.data()).allMatch(order -> order.orderNumber() != null);
     }
 
     @Test

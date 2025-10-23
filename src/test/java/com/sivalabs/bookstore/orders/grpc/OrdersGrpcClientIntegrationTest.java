@@ -9,6 +9,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import com.sivalabs.bookstore.BookStoreApplication;
 import com.sivalabs.bookstore.catalog.api.ProductApi;
 import com.sivalabs.bookstore.catalog.api.ProductDto;
+import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.InvalidOrderException;
 import com.sivalabs.bookstore.orders.OrderNotFoundException;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
@@ -177,9 +178,9 @@ class OrdersGrpcClientIntegrationTest {
                         new OrderItem("P301", "List Product B", new BigDecimal("22.00"), 2)))
                 .orderNumber();
 
-        List<OrderView> orderViews = ordersGrpcClient.listOrders();
+        PagedResult<OrderView> orderViews = ordersGrpcClient.listOrders(1, 20);
         List<String> orderNumbers =
-                orderViews.stream().map(OrderView::orderNumber).toList();
+                orderViews.data().stream().map(OrderView::orderNumber).toList();
 
         assertThat(orderNumbers).contains(firstOrderNumber, secondOrderNumber);
     }

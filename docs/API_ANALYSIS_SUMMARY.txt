@@ -29,7 +29,7 @@ KEY FINDINGS
    
    Orders (Orders Module, gRPC-backed):
    - POST /api/orders (create order, HTTP 201)
-   - GET /api/orders (list all orders)
+   - GET /api/orders?page=&pageSize= (paginated order list)
    - GET /api/orders/{orderNumber} (get order details)
 
 3. SESSION MANAGEMENT
