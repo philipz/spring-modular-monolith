@@ -104,6 +104,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_RABBITMQ_CACHE_CHANNEL_SIZE: 300
       # OpenTelemetry configuration for HyperDX (gRPC protocol)
       OTLP_ENDPOINT: http://hyperdx:4317
       OTLP_GRPC_HEADERS_AUTHORIZATION: ${HYPERDX_API_KEY}
