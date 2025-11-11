@@ -74,7 +74,7 @@ class GrpcMessageMapperTest {
                 "221B Baker Street",
                 new OrderItem("BOOK-123", "The Adventures", new BigDecimal("29.99"), 2));
 
-        var proto = mapper.toCreateOrderRequestProto(request);
+        com.sivalabs.bookstore.orders.grpc.proto.CreateOrderRequest proto = mapper.toCreateOrderRequestProto(request);
 
         assertThat(proto.getDeliveryAddress()).isEqualTo("221B Baker Street");
         assertThat(proto.getCustomer())
@@ -103,7 +103,7 @@ class GrpcMessageMapperTest {
                 OrderStatus.DELIVERED,
                 createdAt);
 
-        var proto = mapper.toOrderDto(dto);
+        com.sivalabs.bookstore.orders.grpc.proto.OrderDto proto = mapper.toOrderDto(dto);
         assertThat(proto.getOrderNumber()).isEqualTo("ORDER-1");
         assertThat(proto.getDeliveryAddress()).isEqualTo("221B Baker Street");
         assertThat(proto.getStatus()).isEqualTo(com.sivalabs.bookstore.orders.grpc.proto.OrderStatus.DELIVERED);
@@ -143,10 +143,10 @@ class GrpcMessageMapperTest {
     @Test
     void createOrderResponseConversionShouldBeSymmetric() {
         var response = new CreateOrderResponse("ORDER-3");
-        var proto = mapper.toCreateOrderResponse(response);
+        com.sivalabs.bookstore.orders.grpc.proto.CreateOrderResponse proto = mapper.toCreateOrderResponse(response);
         assertThat(proto.getOrderNumber()).isEqualTo("ORDER-3");
 
-        var roundtrip = mapper.toCreateOrderResponseDto(proto);
+        CreateOrderResponse roundtrip = mapper.toCreateOrderResponseDto(proto);
         assertThat(roundtrip.orderNumber()).isEqualTo("ORDER-3");
     }
 }

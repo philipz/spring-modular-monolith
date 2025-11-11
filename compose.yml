@@ -82,8 +82,6 @@ services:
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     networks:
       - proxy
 
@@ -115,6 +113,27 @@ services:
       PRODUCT_API_BASE_URL: http://monolith:8080
     ports:
       - "9090:9090"  # gRPC server port
+    networks:
+      - proxy
+
+  amqp-modulith:
+    image: philipz/amqp-modulith:0.0.1-SNAPSHOT
+    depends_on:
+      orders-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://orders-postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_RABBITMQ_CACHE_CHANNEL_SIZE: 300
+    ports:
+      - "8082:8082"
     networks:
       - proxy
 
