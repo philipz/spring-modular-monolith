@@ -48,24 +48,24 @@ Exceptions["Exception Handling"]
 CacheHelpers["Cache Helpers"]
 SessionMgmt["Session Management"]
 
-Catalog --> Utilities
-Catalog --> Exceptions
-Catalog --> CacheHelpers
-Orders --> Utilities
-Orders --> Exceptions
-Orders --> CacheHelpers
-Orders --> SessionMgmt
-Inventory --> Utilities
-Inventory --> Exceptions
-Inventory --> CacheHelpers
+Catalog -->|"Uses"| Utilities
+Catalog -->|"Uses"| Exceptions
+Catalog -->|"Uses"| CacheHelpers
+Orders -->|"Uses"| Utilities
+Orders -->|"Uses"| Exceptions
+Orders -->|"Uses"| CacheHelpers
+Orders -->|"Uses"| SessionMgmt
+Inventory -->|"Uses"| Utilities
+Inventory -->|"Uses"| Exceptions
+Inventory -->|"UsesUsesUsesUsesUsesUsesUsesUsesUsesUsesUsesUses"| CacheHelpers
 Notifications --> Utilities
-Notifications --> Exceptions
+Notifications -->|"Uses"| Exceptions
 
 subgraph subGraph2 ["Infrastructure Module (Open)"]
     Common
     Common --> Utilities
     Common --> Exceptions
-    Common --> CacheHelpers
+    Common -->|"Uses"| CacheHelpers
     Common --> SessionMgmt
 
 subgraph subGraph1 ["Exported Components"]
@@ -170,12 +170,12 @@ ProductRepository["ProductRepository"]
 OrderRepository["OrderRepository"]
 InventoryRepository["InventoryRepository"]
 
-ProductMapStore --> SpringAwareMapStoreConfig
-OrderMapStore --> SpringAwareMapStoreConfig
-InventoryMapStore --> SpringAwareMapStoreConfig
-SpringAwareMapStoreConfig --> ProductRepository
-SpringAwareMapStoreConfig --> OrderRepository
-SpringAwareMapStoreConfig --> InventoryRepository
+ProductMapStore -->|"Uses helper"| SpringAwareMapStoreConfig
+OrderMapStore -->|"Uses helper"| SpringAwareMapStoreConfig
+InventoryMapStore -->|"Uses helper"| SpringAwareMapStoreConfig
+SpringAwareMapStoreConfig -->|"Provides access"| ProductRepository
+SpringAwareMapStoreConfig -->|"Provides access"| OrderRepository
+SpringAwareMapStoreConfig -->|"Provides access"| InventoryRepository
 
 subgraph subGraph2 ["Spring Context"]
     ProductRepository
@@ -231,12 +231,12 @@ HZSession["Hazelcast<br>spring:session:sessions<br>TTL: 30 min"]
 CartState["Cart State"]
 UserData["User Data"]
 
-Browser --> Monolith
-NextJS --> Monolith
-Monolith --> HZSession
-OrdersService --> HZSession
-HZSession --> CartState
-HZSession --> UserData
+Browser -->|"BOOKSTORE_SESSION cookie"| Monolith
+NextJS -->|"credentials: 'include'"| Monolith
+Monolith -->|"Read/Write session"| HZSession
+OrdersService -->|"Read/Write session"| HZSession
+HZSession -->|"Stores"| CartState
+HZSession -->|"Stores"| UserData
 
 subgraph subGraph2 ["Session Storage (Common)"]
     HZSession
@@ -321,10 +321,10 @@ Orders["orders"]
 Inventory["inventory"]
 Notifications["notifications"]
 
-Catalog --> Common
-Orders --> Common
-Inventory --> Common
-Notifications --> Common
+Catalog -->|"cache, exceptions"| Common
+Orders -->|"cache, events, session"| Common
+Inventory -->|"cache, exceptions"| Common
+Notifications -->|"events"| Common
 ```
 
 ### Outbound Dependencies (What Common Uses)

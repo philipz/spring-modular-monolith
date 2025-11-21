@@ -45,10 +45,10 @@ Monolith --> OTelAgent1
 OrdersSvc --> OTelAgent2
 AMQPMod --> OTelAgent3
 Nginx --> OTelModule
-OTelAgent1 --> HyperDX
-OTelAgent2 --> HyperDX
-OTelAgent3 --> HyperDX
-OTelModule --> HyperDX
+OTelAgent1 -->|"OTLP gRPCPort 4317"| HyperDX
+OTelAgent2 -->|"OTLP gRPCPort 4317"| HyperDX
+OTelAgent3 -->|"OTLP gRPCPort 4317"| HyperDX
+OTelModule -->|"OTLP gRPCPort 4317"| HyperDX
 HyperDX --> Traces
 HyperDX --> Metrics
 HyperDX --> Logs
@@ -97,8 +97,8 @@ OtlpProps["OtlpProperties<br>endpoint, timeout, compression, headers"]
 OtlpConfig["OtlpGrpcTracingConfig<br>@Bean SpanExporter"]
 OTLPReceiver["OTLP gRPC Receiver<br>hyperdx:4317"]
 
-MonolithApp --> OTLPReceiver
-OrdersApp --> OTLPReceiver
+MonolithApp -->|"gzip compressed10s timeoutAuthorization header"| OTLPReceiver
+OrdersApp -->|"gzip compressed10s timeoutAuthorization header"| OTLPReceiver
 OtlpConfig --> MonolithApp
 
 subgraph subGraph2 ["HyperDX Ingestion"]

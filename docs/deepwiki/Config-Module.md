@@ -66,17 +66,17 @@ HZCluster["HazelcastInstance<br>bookstore-cluster"]
 GrpcServer["gRPC Server<br>Port 9091"]
 HyperDX["HyperDX<br>OTLP gRPC :4317"]
 
-Catalog --> HZConfig
-Orders --> HZConfig
-Inventory --> HZConfig
-HZConfig --> HZCluster
-GrpcServerCfg --> GrpcServer
-OtlpCfg --> HyperDX
-SessionCfg --> HZCluster
-Orders --> GrpcClientCfg
-Orders --> HZConfig
-Catalog --> HZConfig
-Inventory --> HZConfig
+Catalog -->|"Provides MapConfig"| HZConfig
+Orders -->|"Provides MapConfig"| HZConfig
+Inventory -->|"Provides MapConfig"| HZConfig
+HZConfig -->|"Creates"| HZCluster
+GrpcServerCfg -->|"Starts"| GrpcServer
+OtlpCfg -->|"Exports to"| HyperDX
+SessionCfg -->|"Uses"| HZCluster
+Orders -->|"Consumes ManagedChannel"| GrpcClientCfg
+Orders -->|"Consumes HazelcastInstance"| HZConfig
+Catalog -->|"Consumes HazelcastInstance"| HZConfig
+Inventory -->|"Consumes HazelcastInstance"| HZConfig
 
 subgraph subGraph2 ["External Infrastructure"]
     HZCluster
@@ -144,13 +144,13 @@ InventoryCfg["HazelcastInventoryCacheConfig<br>@Bean MapConfig"]
 HZConfig["HazelcastConfig<br>ObjectProvider"]
 HZInstance["HazelcastInstance<br>bookstore-cluster"]
 
-CatalogModule --> CatalogCfg
-OrdersModule --> OrdersCfg
-InventoryModule --> InventoryCfg
-CatalogCfg --> HZConfig
-OrdersCfg --> HZConfig
-InventoryCfg --> HZConfig
-HZConfig --> HZInstance
+CatalogModule -->|"Defines"| CatalogCfg
+OrdersModule -->|"Defines"| OrdersCfg
+InventoryModule -->|"Defines"| InventoryCfg
+CatalogCfg -->|"Provides"| HZConfig
+OrdersCfg -->|"Defines"| HZConfig
+InventoryCfg -->|"Provides"| HZConfig
+HZConfig -->|"Aggregates & Creates"| HZInstance
 ```
 
 **Diagram**: Hazelcast Configuration Aggregation Pattern
@@ -213,15 +213,15 @@ ReflectionSvc["ProtoReflectionService"]
 GrpcServer["Server<br>gRPC Server Instance"]
 Lifecycle["GrpcServerLifecycle<br>SmartLifecycle"]
 
-GrpcProps --> GrpcServerCfg
-BindableServices --> GrpcServerCfg
-HealthMgr --> GrpcServerCfg
-GrpcServerCfg --> ServerBuilder
-ServerBuilder --> BindableServices
-ServerBuilder --> HealthMgr
-ServerBuilder --> ReflectionSvc
-ServerBuilder --> GrpcServer
-GrpcServer --> Lifecycle
+GrpcProps -->|"Injects"| GrpcServerCfg
+BindableServices -->|"Auto-discovered"| GrpcServerCfg
+HealthMgr -->|"Optional"| GrpcServerCfg
+GrpcServerCfg -->|"Builds"| ServerBuilder
+ServerBuilder -->|"Injects"| BindableServices
+ServerBuilder -->|"addService"| HealthMgr
+ServerBuilder -->|"addService"| ReflectionSvc
+ServerBuilder -->|"build()"| GrpcServer
+GrpcServer -->|"Managed by"| Lifecycle
 ```
 
 **Diagram**: gRPC Server Bean Construction Flow
@@ -271,10 +271,10 @@ RetryInterceptor["GrpcRetryInterceptor<br>Exponential backoff"]
 Server1["In-process gRPC<br>localhost:9091"]
 Server2["orders-service<br>orders-service:9090"]
 
-GrpcClient --> Channel
-Channel --> RetryInterceptor
-Channel --> Server1
-Channel --> Server2
+GrpcClient -->|"Uses"| Channel
+Channel -->|"Intercepts with"| RetryInterceptor
+Channel -->|"Connects to"| Server1
+Channel -->|"OR Connects to"| Server2
 ```
 
 **Diagram**: gRPC Client Channel Configuration
@@ -382,9 +382,9 @@ HealthSvc["grpc.health.v1.Health"]
 EmptyService["'' (empty service name)"]
 OrdersSvc["sivalabs.bookstore.OrdersService"]
 
-HealthMgr --> HealthSvc
-HealthMgr --> EmptyService
-HealthMgr --> OrdersSvc
+HealthMgr -->|"Provides"| HealthSvc
+HealthMgr -->|"Sets SERVING"| EmptyService
+HealthMgr -->|"Sets SERVING"| OrdersSvc
 ```
 
 **Diagram**: gRPC Health Service Registration
@@ -430,11 +430,11 @@ HZCluster["HazelcastInstance<br>spring:session:sessions IMap"]
 SessionCookie["Cookie: BOOKSTORE_SESSION="]
 SessionData["Session Data:<br>- Cart items<br>- User preferences<br>- CSRF tokens"]
 
-Browser --> Nginx
-Nginx --> Monolith
-Monolith --> HZCluster
-Browser --> SessionCookie
-HZCluster --> SessionData
+Browser -->|"HTTP Request"| Nginx
+Nginx -->|"Proxy"| Monolith
+Monolith -->|"Read/Write"| HZCluster
+Browser -->|"Stores"| SessionCookie
+HZCluster -->|"Contains"| SessionData
 ```
 
 **Diagram**: Session Management Flow with Hazelcast
@@ -465,9 +465,9 @@ Backend["Spring Boot API<br>localhost:8080"]
 CorsConfig["CorsConfig<br>@Profile('dev')"]
 CorsAllowlist["cors.allowed-origins<br>Unsupported markdown: link"]
 
-Frontend --> Backend
-Backend --> Frontend
-CorsConfig --> CorsAllowlist
+Frontend -->|"Preflight OPTIONS"| Backend
+Backend -->|"Access-Control-Allow-Origin"| Frontend
+CorsConfig -->|"Configures"| CorsAllowlist
 ```
 
 **Diagram**: CORS Configuration for Development
@@ -555,19 +555,19 @@ ProductMapCfg["HazelcastProductCacheConfig<br>catalog"]
 OrderMapCfg["HazelcastOrderCacheConfig<br>orders"]
 InventoryMapCfg["HazelcastInventoryCacheConfig<br>inventory"]
 
-GrpcProps --> GrpcServerCfg
-GrpcProps --> GrpcClientCfg
-CacheProps --> HZConfig
-OtlpProps --> OtlpCfg
-ProductMapCfg --> HZConfig
-OrderMapCfg --> HZConfig
-InventoryMapCfg --> HZConfig
-HZConfig --> HZInstance
-GrpcServerCfg --> GrpcServer
-GrpcClientCfg --> GrpcChannel
-OtlpCfg --> OtlpExporter
-SessionCfg --> HZInstance
-CorsCfg --> CorsProps
+GrpcProps -->|"Injected into"| GrpcServerCfg
+GrpcProps -->|"Injected into"| GrpcClientCfg
+CacheProps -->|"Injected into"| HZConfig
+OtlpProps -->|"Injected into"| OtlpCfg
+ProductMapCfg -->|"Provides MapConfig"| HZConfig
+OrderMapCfg -->|"Provides MapConfig"| HZConfig
+InventoryMapCfg -->|"Provides MapConfig"| HZConfig
+HZConfig -->|"Creates"| HZInstance
+GrpcServerCfg -->|"Creates"| GrpcServer
+GrpcClientCfg -->|"Creates"| GrpcChannel
+OtlpCfg -->|"Creates"| OtlpExporter
+SessionCfg -->|"Configures"| HZInstance
+CorsCfg -->|"Creates"| CorsProps
 
 subgraph subGraph3 ["Business Module Contributions"]
     ProductMapCfg

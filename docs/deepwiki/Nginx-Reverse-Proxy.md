@@ -50,15 +50,15 @@ LocationRouter["Path-Based Router"]
 ProxyFrontend["proxy_pass $frontend"]
 ProxyAPI["proxy_pass $target"]
 
-Client --> Nginx
-Nginx --> LocationRouter
-LocationRouter --> ProxyFrontend
-LocationRouter --> ProxyAPI
-ProxyFrontend --> Frontend
-ProxyAPI --> Monolith
-Frontend --> Nginx
-Monolith --> Nginx
-Nginx --> Client
+Client -->|"HTTP Request"| Nginx
+Nginx -->|"Location Match"| LocationRouter
+LocationRouter -->|"/ (root)"| ProxyFrontend
+LocationRouter -->|"/api/"| ProxyAPI
+ProxyFrontend -->|"resolver 127.0.0.11"| Frontend
+ProxyAPI -->|"resolver 127.0.0.11"| Monolith
+Frontend -->|"Response"| Nginx
+Monolith -->|"Response"| Nginx
+Nginx -->|"Response"| Client
 ```
 
 The nginx configuration uses two primary location blocks:
@@ -105,13 +105,13 @@ TraceGen["Trace Generation"]
 CtxProp["Context Propagation"]
 Monolith["Downstream Services"]
 
-Nginx --> OTelModule
-OTelModule --> OTelConfig
-OTelConfig --> HyperDX
-OTelModule --> TraceGen
-OTelModule --> CtxProp
-TraceGen --> HyperDX
-CtxProp --> Monolith
+Nginx -->|"loads"| OTelModule
+OTelModule -->|"configures"| OTelConfig
+OTelConfig -->|"endpoint hyperdx:4317header authorization"| HyperDX
+OTelModule -->|"otel_trace on"| TraceGen
+OTelModule -->|"otel_trace_context propagate"| CtxProp
+TraceGen -->|"gRPC"| HyperDX
+CtxProp -->|"HTTP Headers(traceparent, tracestate)"| Monolith
 ```
 
 The nginx proxy includes OpenTelemetry instrumentation using the native `ngx_otel_module.so`:
@@ -156,13 +156,13 @@ RuntimeConfig["nginx.conf"]
 ComposeEnv["compose.yml<br>HYPERDX_API_KEY"]
 OTelModule["ngx_otel_module.so"]
 
-Dockerfile --> BaseImage
-Dockerfile --> Template
-Dockerfile --> Entrypoint
-Entrypoint --> RuntimeConfig
-ComposeEnv --> Entrypoint
-BaseImage --> OTelModule
-RuntimeConfig --> OTelModule
+Dockerfile -->|"FROM"| BaseImage
+Dockerfile -->|"COPY as template"| Template
+Dockerfile -->|"COPY + chmod"| Entrypoint
+Entrypoint -->|"sed substitution"| RuntimeConfig
+ComposeEnv -->|"environment variable"| Entrypoint
+BaseImage -->|"includes"| OTelModule
+RuntimeConfig -->|"loads"| OTelModule
 ```
 
 ### Dockerfile Structure
@@ -385,14 +385,14 @@ ProxyNetwork["proxy Network"]
 MonolithIP["172.x.x.x:8080"]
 FrontendIP["172.x.x.x:3000"]
 
-NginxWorker --> DNSResolver
-DNSResolver --> DockerDNS
-DockerDNS --> ProxyNetwork
-ProxyNetwork --> DockerDNS
-DockerDNS --> DNSResolver
-DNSResolver --> NginxWorker
-ProxyNetwork --> MonolithIP
-ProxyNetwork --> FrontendIP
+NginxWorker -->|"Resolve hostname"| DNSResolver
+DNSResolver -->|"Query"| DockerDNS
+DockerDNS -->|"Lookup in network"| ProxyNetwork
+ProxyNetwork -->|"Return IP"| DockerDNS
+DockerDNS -->|"IP Address"| DNSResolver
+DNSResolver -->|"Cached 10s"| NginxWorker
+ProxyNetwork -->|"Service: monolith"| MonolithIP
+ProxyNetwork -->|"Service: frontend-next"| FrontendIP
 ```
 
 The nginx configuration uses Docker's internal DNS server for dynamic service discovery:
@@ -473,13 +473,13 @@ Monolith["monolith:8080<br>Spring Boot"]
 Frontend["frontend-next:3000<br>Next.js"]
 HyperDX["hyperdx:4317<br>OTLP gRPC"]
 
-Browser --> NginxPort80
-APIClient --> NginxPort80
-LocationAPI --> Monolith
-LocationRoot --> Frontend
-OTelExporter --> HyperDX
-Monolith --> LocationAPI
-LocationAPI --> Browser
+Browser -->|"HTTP"| NginxPort80
+APIClient -->|"HTTP"| NginxPort80
+LocationAPI -->|"proxy_pass"| Monolith
+LocationRoot -->|"proxy_pass"| Frontend
+OTelExporter -->|"traces + metrics"| HyperDX
+Monolith -->|"BOOKSTORE_SESSION cookie"| LocationAPI
+LocationAPI -->|"proxy_pass_header Set-Cookie"| Browser
 
 subgraph Observability ["Observability"]
     HyperDX

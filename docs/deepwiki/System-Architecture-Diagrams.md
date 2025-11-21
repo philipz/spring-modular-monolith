@@ -40,19 +40,19 @@ PostgresMain["postgres<br>postgres:17-alpine<br>Port 5432<br>max_connections=300
 PostgresOrders["orders-postgres<br>postgres:17-alpine<br>Dedicated DB"]
 HyperDX["hyperdx<br>docker.hyperdx.io/hyperdx/hyperdx-all-in-one<br>UI: 8081<br>OTLP gRPC: 4317<br>OTLP HTTP: 4318"]
 
-Client --> Nginx
-Nginx --> Frontend
-Nginx --> Monolith
-Monolith --> Hazelcast
-Monolith --> RabbitMQ
-Monolith --> PostgresMain
-Monolith --> HyperDX
-OrdersSvc --> Hazelcast
-OrdersSvc --> RabbitMQ
-OrdersSvc -->|"Monitored byHZ_CLUSTERNAME=bookstore-cluster"| PostgresOrders
-OrdersSvc --> HyperDX
-AMQPMod --> RabbitMQ
-AMQPMod --> PostgresOrders
+Client -->|"HTTP/HTTPS"| Nginx
+Nginx -->|"/ → proxy_pass"| Frontend
+Nginx -->|"/api/** → traffic split"| Monolith
+Monolith -->|"Read/Writespring.session.hazelcast"| Hazelcast
+Monolith -->|"spring.rabbitmq.host"| RabbitMQ
+Monolith -->|"HTTP/HTTPS"| PostgresMain
+Monolith -->|"OTLP_ENDPOINTUnsupported markdown: link"| HyperDX
+OrdersSvc -->|"Read/Write"| Hazelcast
+OrdersSvc -->|"SPRING_RABBITMQ_HOST"| RabbitMQ
+OrdersSvc -->|"SPRING_DATASOURCE_URL"| PostgresOrders
+OrdersSvc -->|"OTLP_ENDPOINT"| HyperDX
+AMQPMod -->|"Consume Events"| RabbitMQ
+AMQPMod -->|"SPRING_DATASOURCE_URL"| PostgresOrders
 
 subgraph subGraph6 ["Observability Layer"]
     HyperDX
@@ -70,7 +70,7 @@ end
 subgraph subGraph3 ["Caching & Session Layer"]
     Hazelcast
     HZMgmt
-    Hazelcast --> HZMgmt
+    Hazelcast -->|"Monitored byHZ_CLUSTERNAME=bookstore-cluster"| HZMgmt
 end
 
 subgraph subGraph2 ["Application Layer"]
@@ -78,8 +78,8 @@ subgraph subGraph2 ["Application Layer"]
     Monolith
     OrdersSvc
     AMQPMod
-    Frontend --> Monolith
-    Monolith --> OrdersSvc
+    Frontend -->|"NEXT_API_PROXY_TARGETUnsupported markdown: link"| Monolith
+    Monolith -->|"BOOKSTORE_GRPC_CLIENT_TARGETorders-service:9090"| OrdersSvc
 end
 
 subgraph subGraph1 ["Entry Point Layer"]
@@ -141,9 +141,9 @@ EventsSchema["events schema<br>EVENT_PUBLICATION table"]
 RestAPI --> OrderService
 RestAPI --> ProductService
 GrpcAPI --> OrderService
-OrderService --> ModulithEvents
-ModulithEvents --> InventoryService
-ModulithEvents --> NotificationEventListener
+OrderService -->|"PublishesOrderCreatedEvent"| ModulithEvents
+ModulithEvents -->|"@ApplicationModuleListener"| InventoryService
+ModulithEvents -->|"@ApplicationModuleListener"| NotificationEventListener
 ProductRepo --> CatalogSchema
 OrderRepo --> OrdersSchema
 InventoryRepo --> InventorySchema
@@ -159,16 +159,16 @@ end
 subgraph subGraph8 ["Event Bus"]
     ModulithEvents
     RabbitExternalization
-    ModulithEvents --> RabbitExternalization
+    ModulithEvents -->|"@Externalized"| RabbitExternalization
 end
 
 subgraph subGraph7 ["Spring Modulith Modules"]
-    HazelcastConfig --> ProductMapStore
-    HazelcastConfig --> OrderMapStore
-    HazelcastConfig --> InventoryMapStore
-    CacheService --> ProductMapStore
-    CacheService --> OrderMapStore
-    OrderService --> ProductApi
+    HazelcastConfig -->|"Provides beans"| ProductMapStore
+    HazelcastConfig -->|"Used by"| OrderMapStore
+    HazelcastConfig -->|"Provides beans"| InventoryMapStore
+    CacheService -->|"Used by"| ProductMapStore
+    CacheService -->|"Provides beans"| OrderMapStore
+    OrderService -->|"API callproductApi.getProductByCode()"| ProductApi
 
 subgraph subGraph6 ["notifications module"]
     NotificationEventListener
@@ -266,13 +266,13 @@ OrdersSchema["orders schema<br>orders, order_items tables"]
 InventorySchema["inventory schema<br>inventory table"]
 EventsSchema["events schema<br>event_publication table<br>spring.modulith.events.jdbc.schema"]
 
-CatalogSvc --> ProductCache
-OrdersSvc --> OrderCache
-InventorySvc --> InventoryCache
-InventorySvc --> InventoryIndex
-ProductMS --> CatalogSchema
-OrderMS --> OrdersSchema
-InventoryMS --> InventorySchema
+CatalogSvc -->|"Read/Write"| ProductCache
+OrdersSvc -->|"Provides"| OrderCache
+InventorySvc -->|"Provides"| InventoryCache
+InventorySvc -->|"Provides"| InventoryIndex
+ProductMS -->|"JDBCJpaRepository"| CatalogSchema
+OrderMS -->|"JDBC"| OrdersSchema
+InventoryMS -->|"JDBC"| InventorySchema
 
 subgraph subGraph4 ["PostgreSQL Multi-Schema"]
     CatalogSchema
@@ -285,14 +285,14 @@ subgraph subGraph3 ["Hazelcast Distributed Cache"]
     HZInstance
     SessionStore
     CircuitBreaker
-    ProductCache --> ProductMS
-    OrderCache --> OrderMS
-    InventoryCache --> InventoryMS
-    HZInstance --> ProductCache
-    HZInstance --> OrderCache
-    HZInstance --> InventoryCache
-    HZInstance --> SessionStore
-    HZInstance --> CircuitBreaker
+    ProductCache -->|"Cache Miss/Write-Throughwrite-batch-size=1"| ProductMS
+    OrderCache -->|"Cache Miss/Write-Through"| OrderMS
+    InventoryCache -->|"Cache Miss/Write-Through"| InventoryMS
+    HZInstance -->|"Provides"| ProductCache
+    HZInstance -->|"Provides"| OrderCache
+    HZInstance -->|"Provides"| InventoryCache
+    HZInstance -->|"Provides"| SessionStore
+    HZInstance -->|"Protects"| CircuitBreaker
 
 subgraph subGraph2 ["MapStore Layer"]
     ProductMS
@@ -358,17 +358,17 @@ OrdersGRPC["orders-service<br>OrdersGrpcServiceImpl<br>:9090"]
 OpenAPI["OpenAPI 3.0 Spec<br>springdoc.api-docs.path=/api-docs"]
 SwaggerUI["Swagger UI<br>/swagger-ui.html"]
 
-Browser --> Nginx
-APIClient --> Nginx
-PathRouter --> NextJS
-TrafficSplit --> MonolithREST
-TrafficSplit --> OrdersGRPC
-MonolithREST --> OpenAPI
+Browser -->|"HTTP"| Nginx
+APIClient -->|"HTTP/JSON"| Nginx
+PathRouter -->|"/ → proxy_pass Unsupported markdown: link"| NextJS
+TrafficSplit -->|"Legacy path0-99%"| MonolithREST
+TrafficSplit -->|"New path via gRPC1-100%"| OrdersGRPC
+MonolithREST -->|"Exposes"| OpenAPI
 
 subgraph subGraph4 ["API Documentation"]
     OpenAPI
     SwaggerUI
-    OpenAPI --> SwaggerUI
+    OpenAPI -->|"Renders"| SwaggerUI
 end
 
 subgraph subGraph3 ["Backend Services"]
@@ -376,19 +376,19 @@ subgraph subGraph3 ["Backend Services"]
     MonolithREST
     MonolithGRPC
     OrdersGRPC
-    NextJS --> MonolithREST
-    MonolithREST --> MonolithGRPC
-    MonolithGRPC --> OrdersGRPC
+    NextJS -->|"Dev ModeNEXT_API_PROXY_TARGET"| MonolithREST
+    MonolithREST -->|"Internal delegationOrdersRemoteClient"| MonolithGRPC
+    MonolithGRPC -->|"gRPC ProtocolOrdersServiceGrpc.newBlockingStub()"| OrdersGRPC
 end
 
 subgraph subGraph2 ["webproxy - nginx"]
     Nginx
-    Nginx --> PathRouter
+    Nginx -->|"Route by Path"| PathRouter
 
 subgraph subGraph1 ["Routing Logic"]
     PathRouter
     TrafficSplit
-    PathRouter --> TrafficSplit
+    PathRouter -->|"/api/** → evaluate split"| TrafficSplit
 end
 end
 
@@ -453,13 +453,13 @@ SpringBootAuto1 --> RabbitClient
 SpringBootAuto1 --> gRPCComm
 OrdersSvc --> SpringBootAuto2
 SpringBootAuto2 --> WebMVC
-SpringBootAuto2 --> JDBC
-SpringBootAuto2 --> RabbitClient
-SpringBootAuto2 --> gRPCComm
+SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10sgRPCOTLP_ENDPOINTgRPCHYPERDX_API_KEY"| JDBC
+SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10sgRPCOTLP_ENDPOINTgRPCHYPERDX_API_KEY"| RabbitClient
+SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10s"| gRPCComm
 Nginx --> OTelModule
-SpringBootAuto1 --> OTLPGrpc
-SpringBootAuto2 --> OTLPGrpc
-OTelModule --> OTLPGrpc
+SpringBootAuto1 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10s"| OTLPGrpc
+SpringBootAuto2 -->|"gRPCOTLP_ENDPOINT"| OTLPGrpc
+OTelModule -->|"gRPCHYPERDX_API_KEY"| OTLPGrpc
 
 subgraph subGraph9 ["HyperDX All-in-One"]
     HyperDX

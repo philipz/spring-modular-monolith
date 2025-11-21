@@ -564,12 +564,12 @@ subgraph DockerNetwork ["Docker Network: proxy"]
     Monolith
     OrdersService
     AMQPModulith
-    Monolith --> PostgresMain
-    OrdersService --> PostgresOrders
-    AMQPModulith --> PostgresOrders
-    PostgresMain --> Monolith
-    PostgresOrders --> OrdersService
-    PostgresOrders --> AMQPModulith
+    Monolith -->|"SPRING_DATASOURCE_URL:postgres:5432"| PostgresMain
+    OrdersService -->|"SPRING_DATASOURCE_URL:orders-postgres:5432"| PostgresOrders
+    AMQPModulith -->|"SPRING_DATASOURCE_URL:orders-postgres:5432"| PostgresOrders
+    PostgresMain -->|"depends_on:service_healthy"| Monolith
+    PostgresOrders -->|"depends_on:service_healthy"| OrdersService
+    PostgresOrders -->|"depends_on:service_healthy"| AMQPModulith
 
 subgraph OrdersDB ["orders-postgres service"]
     PostgresOrders

@@ -50,7 +50,7 @@ OtlpGrpcSpanExporter["OtlpGrpcSpanExporter<br>SpanExporter Bean"]
 OTLPReceiver["OTLP gRPC Receiver<br>Port 4317"]
 TraceStorage["Trace Storage<br>100% Sampling"]
 
-OtlpGrpcSpanExporter --> OTLPReceiver
+OtlpGrpcSpanExporter -->|"gRPC ProtocolBinary/HTTP2Compression: gzip"| OTLPReceiver
 
 subgraph subGraph2 ["HyperDX Platform"]
     OTLPReceiver

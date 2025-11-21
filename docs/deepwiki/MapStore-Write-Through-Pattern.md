@@ -119,18 +119,18 @@ InventoryRepo["InventoryRepository"]
 InventoryCache["IMap<br>inventory-cache"]
 SpringAwareConfig["SpringAwareMapStoreConfig<br>extends MapStoreConfig"]
 
-ProductMapConfig --> HZConfig
-OrderMapConfig --> HZConfig
-InventoryMapConfig --> HZConfig
-ProductMapConfig --> SpringAwareConfig
-OrderMapConfig --> SpringAwareConfig
-InventoryMapConfig --> SpringAwareConfig
-SpringAwareConfig --> ProductMapStore
-SpringAwareConfig --> OrderMapStore
-SpringAwareConfig --> InventoryMapStore
-HZInstance --> ProductCache
-HZInstance --> OrderCache
-HZInstance --> InventoryCache
+ProductMapConfig -->|"contributes MapConfig"| HZConfig
+OrderMapConfig -->|"contributes MapConfig"| HZConfig
+InventoryMapConfig -->|"contributes MapConfig"| HZConfig
+ProductMapConfig -->|"configures"| SpringAwareConfig
+OrderMapConfig -->|"configures"| SpringAwareConfig
+InventoryMapConfig -->|"configures"| SpringAwareConfig
+SpringAwareConfig -->|"setImplementation"| ProductMapStore
+SpringAwareConfig -->|"setImplementation"| OrderMapStore
+SpringAwareConfig -->|"triggers MapStore callbacks"| InventoryMapStore
+HZInstance -->|"getMap"| ProductCache
+HZInstance -->|"getMap"| OrderCache
+HZInstance -->|"getMap"| InventoryCache
 
 subgraph subGraph4 ["common Module"]
     SpringAwareConfig
@@ -141,8 +141,8 @@ subgraph subGraph3 ["inventory Module"]
     InventoryMapStore
     InventoryRepo
     InventoryCache
-    InventoryMapStore --> InventoryRepo
-    InventoryCache --> InventoryMapStore
+    InventoryMapStore -->|"uses ObjectProvider"| InventoryRepo
+    InventoryCache -->|"triggers MapStore callbacks"| InventoryMapStore
 end
 
 subgraph subGraph2 ["orders Module"]
@@ -150,8 +150,8 @@ subgraph subGraph2 ["orders Module"]
     OrderMapStore
     OrderRepo
     OrderCache
-    OrderMapStore --> OrderRepo
-    OrderCache --> OrderMapStore
+    OrderMapStore -->|"uses ObjectProvider"| OrderRepo
+    OrderCache -->|"triggers MapStore callbacks"| OrderMapStore
 end
 
 subgraph subGraph1 ["catalog Module"]
@@ -159,8 +159,8 @@ subgraph subGraph1 ["catalog Module"]
     ProductMapStore
     ProductRepo
     ProductCache
-    ProductMapStore --> ProductRepo
-    ProductCache --> ProductMapStore
+    ProductMapStore -->|"uses ObjectProvider"| ProductRepo
+    ProductCache -->|"triggers MapStore callbacks"| ProductMapStore
 end
 
 subgraph subGraph0 ["config Module"]
@@ -168,7 +168,7 @@ subgraph subGraph0 ["config Module"]
     CacheProps
     HZInstance
     CacheProps --> HZConfig
-    HZConfig --> HZInstance
+    HZConfig -->|"creates"| HZInstance
 end
 ```
 
@@ -342,36 +342,36 @@ SpringAwareConfig["SpringAwareMapStoreConfig"]
 HZInstance["HazelcastInstance"]
 MapStoreInit["MapStore.init() callback"]
 
-SpringContext --> MapStoreBeans
-HZConfig --> SpringManagedContext
-SpringAwareConfig --> MapStoreBeans
-HZConfig --> HZInstance
-SpringManagedContext --> MapStoreInit
+SpringContext -->|"creates @Component"| MapStoreBeans
+HZConfig -->|"setManagedContext"| SpringManagedContext
+SpringAwareConfig -->|"references"| MapStoreBeans
+HZConfig -->|"creates"| HZInstance
+SpringManagedContext -->|"injects dependencies into"| MapStoreInit
 
 subgraph subGraph3 ["MapStore Initialization"]
     HZInstance
     MapStoreInit
-    HZInstance --> MapStoreInit
+    HZInstance -->|"calls @SpringAware"| MapStoreInit
 end
 
 subgraph subGraph2 ["Hazelcast Configuration"]
     HZConfig
     MapConfigs
     SpringAwareConfig
-    MapConfigs --> HZConfig
-    MapConfigs --> SpringAwareConfig
+    MapConfigs -->|"contribute to"| HZConfig
+    MapConfigs -->|"setImplementation"| SpringAwareConfig
 end
 
 subgraph subGraph1 ["MapStore Bean Creation"]
     MapStoreBeans
     ObjectProvider
-    MapStoreBeans --> ObjectProvider
+    MapStoreBeans -->|"injected with"| ObjectProvider
 end
 
 subgraph subGraph0 ["Spring Context Initialization"]
     SpringContext
     SpringManagedContext
-    SpringContext --> SpringManagedContext
+    SpringContext -->|"provides"| SpringManagedContext
 end
 ```
 
@@ -423,12 +423,12 @@ ReturnNull["Return null or empty"]
 ReturnData["Return data"]
 
 Operation --> TryCatch
-TryCatch --> CheckWindow
-CheckWindow --> DebugLog
-CheckWindow --> WarnLog
+TryCatch -->|"Exception"| CheckWindow
+CheckWindow -->|"Yes"| DebugLog
+CheckWindow -->|"No"| WarnLog
 DebugLog --> ReturnNull
 WarnLog --> ReturnNull
-TryCatch --> ReturnData
+TryCatch -->|"Success"| ReturnData
 ```
 
 **Load operation error handling example:**

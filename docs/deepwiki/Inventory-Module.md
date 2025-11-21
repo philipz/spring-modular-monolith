@@ -55,17 +55,17 @@ InventoryCache["inventory-cache<br>IMap<Long, Object><br>TTL: 1800s"]
 InventoryIndex["inventory-by-product-code-cache<br>IMap<String, Object><br>Index Only"]
 InventorySchema["inventory schema<br>inventory table"]
 
-OrderCreated --> EventLog
-EventLog --> EventListener
-OrderCreated --> OrderQueue
-OrderQueue --> EventListener
-InventorySvc --> InventoryCache
-InventorySvc --> InventoryIndex
-InventoryCache --> InventoryMS
-InventoryMS --> InventorySchema
-HZConfig --> InventoryCache
-HZConfig --> InventoryIndex
-InventoryRepo --> InventorySchema
+OrderCreated -->|"persisted"| EventLog
+EventLog -->|"consumed internally"| EventListener
+OrderCreated -->|"republished"| OrderQueue
+OrderQueue -->|"consumed externally"| EventListener
+InventorySvc -->|"cache read/write"| InventoryCache
+InventorySvc -->|"index lookup"| InventoryIndex
+InventoryCache -->|"write-through"| InventoryMS
+InventoryMS -->|"JDBC"| InventorySchema
+HZConfig -->|"provides MapConfig"| InventoryCache
+HZConfig -->|"provides MapConfig"| InventoryIndex
+InventoryRepo -->|"JDBC"| InventorySchema
 
 subgraph PostgreSQL ["PostgreSQL"]
     InventorySchema
@@ -90,14 +90,14 @@ subgraph subGraph1 ["Inventory Module"]
     InventoryRepo
     InventoryMS
     HZConfig
-    EventListener --> InventorySvc
-    InventorySvc --> InventoryRepo
+    EventListener -->|"adjusts stock"| InventorySvc
+    InventorySvc -->|"JPA queries"| InventoryRepo
 end
 
 subgraph subGraph0 ["Orders Module"]
     OrderService
     OrderCreated
-    OrderService --> OrderCreated
+    OrderService -->|"publishes"| OrderCreated
 end
 ```
 
@@ -217,23 +217,23 @@ MapStore["InventoryMapStore"]
 SpringAware["SpringAwareMapStoreConfig"]
 InventoryRepo["InventoryRepository"]
 
-CacheConfig --> DataMapConfig
-CacheConfig --> IndexMapConfig
-DataMapConfig --> HZConfig
-IndexMapConfig --> HZConfig
-DataMapConfig --> SpringAware
-MapStore --> InventoryRepo
+CacheConfig -->|"defines"| DataMapConfig
+CacheConfig -->|"defines"| IndexMapConfig
+DataMapConfig -->|"registers viaObjectProvider"| HZConfig
+IndexMapConfig -->|"registers viaObjectProvider"| HZConfig
+DataMapConfig -->|"uses"| SpringAware
+MapStore -->|"@Autowired"| InventoryRepo
 
 subgraph subGraph3 ["MapStore Implementation"]
     MapStore
     SpringAware
-    SpringAware --> MapStore
+    SpringAware -->|"instantiates"| MapStore
 end
 
 subgraph subGraph2 ["Global Hazelcast Config"]
     HZConfig
     HZInstance
-    HZConfig --> HZInstance
+    HZConfig -->|"aggregates allmodule MapConfigs"| HZInstance
 end
 
 subgraph subGraph1 ["Provided MapConfig Beans"]
@@ -363,13 +363,13 @@ Listener["InventoryEventListener"]
 Service["InventoryService"]
 AssertStock["assert stock == 598"]
 
-TestClass --> Scenario
-TestClass --> TestConfig
-TestClass --> TestData
-Scenario --> EventBus
-EventBus --> Listener
-Listener --> Service
-Scenario --> AssertStock
+TestClass -->|"@ApplicationModuleTest"| Scenario
+TestClass -->|"@Import"| TestConfig
+TestClass -->|"@Sql test-products-data.sql"| TestData
+Scenario -->|"publish event"| EventBus
+EventBus -->|"triggers"| Listener
+Listener -->|"calls"| Service
+Scenario -->|"andWaitForStateChange"| AssertStock
 ```
 
 **Diagram: Integration Test Flow**

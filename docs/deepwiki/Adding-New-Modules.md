@@ -357,13 +357,13 @@ EventBus["Spring Modulith<br>Event Bus"]
 Schema["{modulename} schema<br>Tables, Sequences"]
 IMap["{entities}-cache<br>IMap<Long, {Entity}>"]
 
-Config --> HazelcastConfig
-HazelcastConfig --> IMap
-IMap --> Cache
-Domain --> Schema
-LiquibaseConfig --> Schema
-Domain --> EventBus
-Events --> EventBus
+Config -->|"@Bean MapConfig"| HazelcastConfig
+HazelcastConfig -->|"Registers MapStore"| IMap
+IMap -->|"Cache Miss"| Cache
+Domain -->|"JDBC"| Schema
+LiquibaseConfig -->|"Migrations"| Schema
+Domain -->|"Consumed by other modules"| EventBus
+Events -->|"Migrations"| EventBus
 
 subgraph subGraph3 ["Hazelcast Cluster"]
     IMap
@@ -385,8 +385,8 @@ subgraph subGraph0 ["New Module Package"]
     Config
     API
     Events
-    Cache --> Domain
-    API --> Domain
+    Cache -->|"Read/Write"| Domain
+    API -->|"Exported Interface"| Domain
 end
 ```
 
@@ -645,10 +645,10 @@ DB["payments schema<br>PostgreSQL"]
 HZ["Hazelcast<br>payments-cache IMap"]
 Events["Spring Modulith<br>Event Bus"]
 
-PaymentRepo --> DB
-HZ --> PaymentMapStore
+PaymentRepo -->|"To"| DB
+HZ -->|"Cache Miss"| PaymentMapStore
 PaymentEvent --> Events
-PaymentCacheConfig --> HZ
+PaymentCacheConfig -->|"Contributes"| HZ
 
 subgraph Infrastructure ["Infrastructure"]
     DB
@@ -658,9 +658,9 @@ end
 
 subgraph subGraph5 ["payments (New Module Example)"]
     PackageInfo
-    PaymentController --> PaymentsApi
-    PaymentMapStore --> PaymentRepo
-    PaymentSvc --> PaymentEvent
+    PaymentController -->|"Calls"| PaymentsApi
+    PaymentMapStore -->|"Uses"| PaymentRepo
+    PaymentSvc -->|"Publishes"| PaymentEvent
 
 subgraph subGraph4 ["web/ (Optional)"]
     PaymentController
@@ -679,8 +679,8 @@ subgraph subGraph1 ["domain/ (Internal)"]
     PaymentRepo
     PaymentSvc
     PaymentApiImpl
-    PaymentSvc --> PaymentRepo
-    PaymentApiImpl --> PaymentSvc
+    PaymentSvc -->|"Uses"| PaymentRepo
+    PaymentApiImpl -->|"Delegates to"| PaymentSvc
 end
 
 subgraph subGraph0 ["api/ (Exported)"]

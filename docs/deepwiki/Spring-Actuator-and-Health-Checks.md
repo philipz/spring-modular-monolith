@@ -97,9 +97,9 @@ HealthAggregator --> RabbitHealth
 HealthAggregator --> DiskSpaceHealth
 HealthAggregator --> PingHealth
 HealthAggregator --> GrpcHealth
-DataSourceHealth --> PostgreSQL
-RabbitHealth --> RabbitMQ
-GrpcHealth --> GrpcServer
+DataSourceHealth -->|"JDBC connection"| PostgreSQL
+RabbitHealth -->|"AMQP connection"| RabbitMQ
+GrpcHealth -->|"Server state"| GrpcServer
 
 subgraph subGraph3 ["Custom Health Indicators"]
     GrpcHealth
@@ -187,14 +187,14 @@ Terminated["Terminated?"]
 UP["UP status"]
 DOWN["DOWN status"]
 
-GrpcHealthIndicator --> Server
-GrpcHealthIndicator --> Health
-Server --> Shutdown
-Server --> Terminated
-Shutdown --> UP
-Terminated --> UP
-Shutdown --> DOWN
-Terminated --> DOWN
+GrpcHealthIndicator -->|"queries state"| Server
+GrpcHealthIndicator -->|"builds"| Health
+Server -->|"isShutdown?"| Shutdown
+Server -->|"isTerminated?"| Terminated
+Shutdown -->|"No"| UP
+Terminated -->|"No"| UP
+Shutdown -->|"Yes"| DOWN
+Terminated -->|"Yes"| DOWN
 ```
 
 **Code Structure:**
@@ -490,14 +490,14 @@ NodeCheck["HTTP GET Unsupported markdown: link<br>interval: 10s, timeout: 5s, re
 Monolith["monolith<br>Spring Boot app"]
 OrdersService["orders-service<br>Extracted microservice"]
 
-Postgres --> PgCheck
-OrdersPostgres --> PgCheck
-RabbitMQ --> RabbitCheck
-FrontendNext --> NodeCheck
-PgCheck --> Monolith
-RabbitCheck --> Monolith
-PgCheck --> OrdersService
-RabbitCheck --> OrdersService
+Postgres -->|"provides"| PgCheck
+OrdersPostgres -->|"provides"| PgCheck
+RabbitMQ -->|"provides"| RabbitCheck
+FrontendNext -->|"provides"| NodeCheck
+PgCheck -->|"depends_on: service_healthy"| Monolith
+RabbitCheck -->|"depends_on: service_healthy"| Monolith
+PgCheck -->|"depends_on: service_healthy"| OrdersService
+RabbitCheck -->|"depends_on: service_healthy"| OrdersService
 
 subgraph subGraph2 ["Dependent Services"]
     Monolith
@@ -697,7 +697,7 @@ OTLPReceiver["OTLP gRPC Receiver<br>:4317"]
 MetricsStore["Metrics Storage"]
 Dashboard["HyperDX UI<br>:8081"]
 
-OTLP --> OTLPReceiver
+OTLP -->|"gRPC with gzip"| OTLPReceiver
 
 subgraph subGraph1 ["HyperDX Platform"]
     OTLPReceiver

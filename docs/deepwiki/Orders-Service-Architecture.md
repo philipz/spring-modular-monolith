@@ -47,7 +47,7 @@ EventPublisher --> EventSchema
 EventPublisher --> RabbitMQ
 AppLogic --> Hazelcast
 GrpcServer --> HyperDX
-ProductClient --> Monolith
+ProductClient -->|"HTTP GET /api/products/{code}"| Monolith
 
 subgraph subGraph2 ["Shared Infrastructure"]
     RabbitMQ
@@ -139,10 +139,10 @@ RabbitMQ["rabbitmq<br>Health Check Required"]
 HealthCheck1["PostgreSQL Ready"]
 HealthCheck2["RabbitMQ Ready"]
 
-OrdersService --> OrdersDB
-OrdersService --> RabbitMQ
-OrdersDB --> HealthCheck1
-RabbitMQ --> HealthCheck2
+OrdersService -->|"depends_on"| OrdersDB
+OrdersService -->|"depends_on"| RabbitMQ
+OrdersDB -->|"pg_isreadyinterval: 10s"| HealthCheck1
+RabbitMQ -->|"rabbitmq-diagnosticscheck_running"| HealthCheck2
 ```
 
 **Sources:** [compose.yml L90-L94](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/compose.yml#L90-L94)
@@ -182,10 +182,10 @@ EventsSchema["orders_events schema<br>Spring Modulith event log:<br>- event_publ
 OrdersService["orders-service"]
 Liquibase["Liquibase Migrations"]
 
-OrdersService --> PublicSchema
-OrdersService --> EventsSchema
-Liquibase --> PublicSchema
-Liquibase --> EventsSchema
+OrdersService -->|"JPA/HibernateOrder CRUD"| PublicSchema
+OrdersService -->|"Spring Modulith EventsJDBC Backend"| EventsSchema
+Liquibase -->|"Manages schemas"| PublicSchema
+Liquibase -->|"Manages schemas"| EventsSchema
 
 subgraph subGraph0 ["orders-postgres Database"]
     PublicSchema
@@ -278,9 +278,9 @@ GrpcEndpoint --> Validator
 GrpcEndpoint --> Mapper
 GrpcEndpoint --> OrdersApi
 GrpcEndpoint --> ExceptionHandler
-Validator --> ExceptionHandler
-OrdersApi --> ExceptionHandler
-ExceptionHandler --> Client
+Validator -->|"ConstraintViolationException"| ExceptionHandler
+OrdersApi -->|"InvalidOrderExceptionOrderNotFoundException"| ExceptionHandler
+ExceptionHandler -->|"StatusRuntimeExceptionINVALID_ARGUMENTNOT_FOUND"| Client
 ```
 
 **Sources:** [src/main/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcService.java L1-L107](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/main/java/com/sivalabs/bookstore/orders/grpc/OrdersGrpcService.java#L1-L107)
@@ -412,10 +412,10 @@ RabbitMQ["RabbitMQ<br>new-orders queue"]
 AMQPModulith["amqp-modulith<br>Event Consumer<br>Port 8082"]
 OrdersDB["orders-postgres<br>Shared Database"]
 
-OrdersService --> RabbitMQ
-RabbitMQ --> AMQPModulith
-AMQPModulith --> OrdersDB
-OrdersService --> OrdersDB
+OrdersService -->|"PublishOrderCreatedEvent"| RabbitMQ
+RabbitMQ -->|"Consume@RabbitListener"| AMQPModulith
+AMQPModulith -->|"Secondary ProcessingAnalytics, Notifications"| OrdersDB
+OrdersService -->|"Primary Write"| OrdersDB
 ```
 
 **Sources:** [compose.yml L119-L138](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/compose.yml#L119-L138)
@@ -450,10 +450,10 @@ HZMgmt["hazelcast-mgmt<br>Management Center<br>Port 38080"]
 
 MonolithCache --> OrdersMap
 OrdersCache --> OrdersMap
-MonolithCache --> SessionMap
+MonolithCache -->|"Cluster MembershipAutomatic Discovery"| SessionMap
 OrdersCache --> SessionMap
-HZMgmt --> MonolithCache
-HZMgmt --> OrdersCache
+HZMgmt -->|"Monitors"| MonolithCache
+HZMgmt -->|"Monitors"| OrdersCache
 
 subgraph subGraph1 ["Distributed Data Structures"]
     OrdersMap
@@ -463,7 +463,7 @@ end
 subgraph subGraph0 ["Hazelcast Cluster: bookstore-cluster"]
     MonolithCache
     OrdersCache
-    MonolithCache --> OrdersCache
+    MonolithCache -->|"Cluster MembershipAutomatic Discovery"| OrdersCache
 end
 ```
 
@@ -512,7 +512,7 @@ gRPC["gRPC Server<br>Request/Response"]
 RabbitMQInst["RabbitMQ Client<br>Message Publish"]
 
 OrdersService --> OTelAgent
-OTelAgent --> HyperDX
+OTelAgent -->|"gzip compressed10s timeoutauth: HYPERDX_API_KEY"| HyperDX
 OTelAgent --> JDBC
 OTelAgent --> gRPC
 OTelAgent --> RabbitMQInst
@@ -699,7 +699,7 @@ TestClass --> TestContainers
 TestContainers --> PostgresContainer
 TestContainers --> RabbitMQContainer
 TestClass --> InProcessGrpc
-InProcessGrpc --> GrpcService
+InProcessGrpc -->|"Embedded gRPCNo network required"| GrpcService
 ```
 
 **Sources:** [src/test/java/com/sivalabs/bookstore/TestcontainersConfiguration.java L1-L33](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/test/java/com/sivalabs/bookstore/TestcontainersConfiguration.java#L1-L33)

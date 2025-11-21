@@ -37,18 +37,18 @@ AMQPMod["amqp-modulith<br>Consumes events from RabbitMQ"]
 Browser["Web Browser<br>Management UI Access"]
 K8sNode["Kubernetes Node<br>NodePort: 30091"]
 
-K8sNode --> Service
+K8sNode -->|"forwards toPort 15672"| Service
 
 subgraph subGraph3 ["External Access"]
     Browser
     K8sNode
-    Browser --> K8sNode
+    Browser -->|"HTTP :30091"| K8sNode
 end
 
 subgraph subGraph2 ["Kubernetes Cluster"]
-    Monolith --> Service
-    OrdersSvc --> Service
-    AMQPMod --> Service
+    Monolith -->|"AMQP Port 5672Service DNS"| Service
+    OrdersSvc -->|"AMQP Port 5672Service DNS"| Service
+    AMQPMod -->|"AMQP Port 5672Service DNS"| Service
 
 subgraph subGraph1 ["Application Pods"]
     Monolith
@@ -61,11 +61,11 @@ subgraph subGraph0 ["RabbitMQ Resources"]
     Deployment
     Pod
     Container
-    Deployment --> Pod
-    Pod --> Container
-    Service --> Pod
-    Service --> Container
-    Service --> Container
+    Deployment -->|"manages"| Pod
+    Pod -->|"runs"| Container
+    Service -->|"selector:app=spring-modular-monolith-rabbitmq-pod"| Pod
+    Service -->|"targetPort: 15672"| Container
+    Service -->|"targetPort: 5672"| Container
 end
 end
 ```
@@ -136,10 +136,10 @@ ContainerPort15672["containerPort: 15672<br>Management UI"]
 InternalClient["In-Cluster Services<br>spring-modular-monolith<br>orders-service<br>amqp-modulith"]
 ExternalClient["External Browser<br>NodeIP:30091"]
 
-InternalClient --> Port5672
-Port5672 --> ContainerPort5672
-ExternalClient --> Port15672
-Port15672 --> ContainerPort15672
+InternalClient -->|"Service DNS:5672"| Port5672
+Port5672 -->|"targetPort: 5672"| ContainerPort5672
+ExternalClient -->|"NodePort 30091"| Port15672
+Port15672 -->|"targetPort: 15672"| ContainerPort15672
 
 subgraph Clients ["Clients"]
     InternalClient
@@ -268,10 +268,10 @@ Service["Service<br>spring-modular-monolith-rabbitmq-svc<br>Port 15672"]
 Container["Container: rabbitmq<br>Port 15672<br>Management UI"]
 Browser["Web Browser"]
 
-Browser --> NodePort
-NodePort --> Service
-Service --> Container
-Container --> Browser
+Browser -->|"HTTP GETUnsupported markdown: link"| NodePort
+NodePort -->|"forwards to Service:15672"| Service
+Service -->|"routes to PodtargetPort: 15672"| Container
+Container -->|"serves Management UIcredentials: guest/guest"| Browser
 
 subgraph Pod ["Pod"]
     Container
@@ -326,15 +326,15 @@ Service["Service<br>spring-modular-monolith-rabbitmq-svc<br>ClusterIP + NodePort
 Pod["Pod<br>Label: app=spring-modular-monolith-rabbitmq-pod"]
 Container["Container: rabbitmq<br>Port 5672<br>Credentials: guest/guest"]
 
-Monolith --> Service
-OrdersSvc --> Service
-AMQPMod --> Service
-Service --> Pod
+Monolith -->|"Publishes:OrderCreatedEventInventoryUpdatedEvent"| Service
+OrdersSvc -->|"Publishes:OrderCreatedEvent"| Service
+AMQPMod -->|"Consumes:All events from queue"| Service
+Service -->|"selector matches"| Pod
 
 subgraph subGraph2 ["RabbitMQ Pod"]
     Pod
     Container
-    Pod --> Container
+    Pod -->|"runs"| Container
 end
 
 subgraph subGraph1 ["RabbitMQ Service"]

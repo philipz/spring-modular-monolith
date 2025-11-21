@@ -96,15 +96,15 @@ GrpcServer["Server (io.grpc.Server)"]
 GrpcServerLifecycle["GrpcServerLifecycle<br>(SmartLifecycle)"]
 GrpcHealthIndicator["GrpcHealthIndicator<br>(/actuator/health)"]
 
-GrpcProperties --> GrpcServerConfig
-GrpcServerConfig --> ServerBuilder
-ServerBuilder --> HealthManager
-ServerBuilder --> OrdersGrpcService
-ServerBuilder --> ReflectionService
-ServerBuilder --> GrpcServer
-GrpcServerConfig --> GrpcServerLifecycle
-GrpcServer --> GrpcHealthIndicator
-HealthManager --> OrdersGrpcService
+GrpcProperties -->|"enabled=trueport=9091maxInboundMessageSize=4MB"| GrpcServerConfig
+GrpcServerConfig -->|"creates"| ServerBuilder
+ServerBuilder -->|"addService"| HealthManager
+ServerBuilder -->|"addService"| OrdersGrpcService
+ServerBuilder -->|"addService (if reflectionEnabled)"| ReflectionService
+ServerBuilder -->|"build()"| GrpcServer
+GrpcServerConfig -->|"wraps in"| GrpcServerLifecycle
+GrpcServer -->|"monitors"| GrpcHealthIndicator
+HealthManager -->|"setStatus(SERVING)"| OrdersGrpcService
 ```
 
 **gRPC Server Configuration Lifecycle**
@@ -149,13 +149,13 @@ ManagedChannel["ManagedChannel"]
 OrdersGrpcClient["OrdersGrpcClient<br>(OrdersRemoteClient)"]
 BlockingStub["OrdersServiceBlockingStub<br>(with deadlines)"]
 
-ClientProperties --> GrpcClientConfig
-GrpcClientConfig --> ManagedChannelBuilder
-ManagedChannelBuilder --> GrpcRetryInterceptor
-ManagedChannelBuilder --> ManagedChannel
-ManagedChannel --> OrdersGrpcClient
-OrdersGrpcClient --> BlockingStub
-GrpcRetryInterceptor --> BlockingStub
+ClientProperties -->|"target=orders-service:9090deadlineMs=5000retryEnabled=true"| GrpcClientConfig
+GrpcClientConfig -->|"creates"| ManagedChannelBuilder
+ManagedChannelBuilder -->|"intercept"| GrpcRetryInterceptor
+ManagedChannelBuilder -->|"build()"| ManagedChannel
+ManagedChannel -->|"injected into"| OrdersGrpcClient
+OrdersGrpcClient -->|"@PostConstruct"| BlockingStub
+GrpcRetryInterceptor -->|"retries UNAVAILABLEmax 3 attempts100ms * 2^attempt"| BlockingStub
 ```
 
 **gRPC Client Configuration and Retry Logic**
@@ -201,10 +201,10 @@ CreateOrderRequestProto["CreateOrderRequest<br>(orders.grpc.proto)"]
 CustomerProto["Customer (proto)"]
 OrderItemProto["OrderItem (proto)"]
 
-CreateOrderRequestDTO --> GrpcMessageMapper
+CreateOrderRequestDTO -->|"toCreateOrderRequestProto()"| GrpcMessageMapper
 CustomerDTO --> GrpcMessageMapper
 OrderItemDTO --> GrpcMessageMapper
-GrpcMessageMapper --> CreateOrderRequestProto
+GrpcMessageMapper -->|"Builder pattern"| CreateOrderRequestProto
 GrpcMessageMapper --> CustomerProto
 GrpcMessageMapper --> OrderItemProto
 
@@ -269,12 +269,12 @@ ExceptionHandler["GrpcExceptionHandler.handleException()"]
 StatusRuntimeException["StatusRuntimeException"]
 
 Request --> OrdersGrpcService
-OrdersGrpcService --> Mapper
-OrdersGrpcService --> Validator
-OrdersGrpcService --> OrdersApi
-OrdersGrpcService --> ResponseMapper
+OrdersGrpcService -->|"1.Map to DTO"| Mapper
+OrdersGrpcService -->|"2.Validate"| Validator
+OrdersGrpcService -->|"3.Execute"| OrdersApi
+OrdersGrpcService -->|"4.Map response"| ResponseMapper
 ResponseMapper --> ResponseObserver
-OrdersGrpcService --> ExceptionHandler
+OrdersGrpcService -->|"catch Exception"| ExceptionHandler
 ExceptionHandler --> StatusRuntimeException
 StatusRuntimeException --> ResponseObserver
 ```
@@ -327,9 +327,9 @@ INTERNAL["Status.INTERNAL<br>(Other exceptions)"]
 StatusRuntimeException["StatusRuntimeException<br>(with description + cause)"]
 
 DomainException --> GrpcExceptionHandler
-GrpcExceptionHandler --> NOT_FOUND
-GrpcExceptionHandler --> INVALID_ARGUMENT
-GrpcExceptionHandler --> INTERNAL
+GrpcExceptionHandler -->|"instanceof check"| NOT_FOUND
+GrpcExceptionHandler -->|"instanceof check"| INVALID_ARGUMENT
+GrpcExceptionHandler -->|"fallback"| INTERNAL
 NOT_FOUND --> StatusRuntimeException
 INVALID_ARGUMENT --> StatusRuntimeException
 INTERNAL --> StatusRuntimeException
@@ -394,16 +394,16 @@ OrdersGrpcClient_Remote["OrdersGrpcClient<br>(target=orders-service:9090)"]
 ManagedChannel_Remote["ManagedChannel<br>(orders-service:9090)"]
 ExternalOrdersService["orders-service<br>(:9090)"]
 
-OrdersRestController --> OrdersRemoteClient
-OrdersRemoteClient --> OrdersGrpcClient_Local
-OrdersRemoteClient --> OrdersGrpcClient_Remote
+OrdersRestController -->|"depends on"| OrdersRemoteClient
+OrdersRemoteClient -->|"Mode 1:In-process"| OrdersGrpcClient_Local
+OrdersRemoteClient -->|"Mode 2:Remote"| OrdersGrpcClient_Remote
 
 subgraph subGraph1 ["Extracted Service Configuration"]
     OrdersGrpcClient_Remote
     ManagedChannel_Remote
     ExternalOrdersService
     OrdersGrpcClient_Remote --> ManagedChannel_Remote
-    ManagedChannel_Remote --> ExternalOrdersService
+    ManagedChannel_Remote -->|"network call"| ExternalOrdersService
 end
 
 subgraph subGraph0 ["Monolith Configuration"]

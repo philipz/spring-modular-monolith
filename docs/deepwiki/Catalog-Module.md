@@ -70,8 +70,8 @@ HZCache["products-cache<br>IMap<br>TTL: 3600s"]
 OrdersModule["Orders Module<br>ProductServiceClient"]
 Frontend["Next.js Frontend"]
 
-OrdersModule --> ProductApi
-Frontend --> RestController
+OrdersModule -->|"consumes"| ProductApi
+Frontend -->|"HTTP GET"| RestController
 
 subgraph subGraph7 ["External Consumers"]
     OrdersModule
@@ -85,7 +85,7 @@ subgraph subGraph6 ["Catalog Module"]
     ProductEntity --> CatalogSchema
     CacheService --> HZCache
     MapStore --> ProductRepo
-    HZCache --> MapStore
+    HZCache -->|"backed by"| MapStore
 
 subgraph subGraph5 ["Cache Infrastructure"]
     HZCache
@@ -94,7 +94,7 @@ end
 subgraph Database ["Database"]
     CatalogSchema
     Liquibase
-    Liquibase --> CatalogSchema
+    Liquibase -->|"manages"| CatalogSchema
 end
 
 subgraph subGraph3 ["Caching Layer"]
@@ -113,7 +113,7 @@ end
 subgraph subGraph1 ["API Layer (Exported)"]
     ProductApi
     ProductApiService
-    ProductApi --> ProductApiService
+    ProductApi -->|"implements"| ProductApiService
 end
 
 subgraph subGraph0 ["Presentation Layer"]
@@ -178,9 +178,9 @@ ProductApiService["ProductApiService<br>@Service"]
 ProductService["ProductService"]
 OrdersModule["Orders Module<br>ProductServiceClient"]
 
-ProductApi --> ProductApiService
-ProductApiService --> ProductService
-OrdersModule --> ProductApi
+ProductApi -->|"implements"| ProductApiService
+ProductApiService -->|"delegates to"| ProductService
+OrdersModule -->|"@Autowiredconsumes"| ProductApi
 ```
 
 **Diagram: ProductApi Contract and Consumption**
@@ -224,24 +224,24 @@ ProductMapStore["ProductMapStore<br>MapStore<br>writeDelaySeconds: 0"]
 ProductRepo["ProductRepository"]
 CatalogDB["catalog.products table"]
 
-ProductService --> ProductCacheService
-ProductService --> ProductRepo
-ProductService --> ProductCacheService
-ProductsCache --> ProductMapStore
+ProductService -->|"1.Try cache"| ProductCacheService
+ProductService -->|"2.On miss"| ProductRepo
+ProductService -->|"3.Cache result"| ProductCacheService
+ProductsCache -->|"load on miss"| ProductMapStore
 
 subgraph subGraph2 ["Persistence Layer"]
     ProductMapStore
     ProductRepo
     CatalogDB
-    ProductMapStore --> ProductRepo
-    ProductMapStore --> ProductRepo
+    ProductMapStore -->|"JDBC read"| ProductRepo
+    ProductMapStore -->|"write-through"| ProductRepo
     ProductRepo --> CatalogDB
 end
 
 subgraph subGraph1 ["Cache Layer"]
     ProductCacheService
     ProductsCache
-    ProductCacheService --> ProductsCache
+    ProductCacheService -->|"get(code)"| ProductsCache
 end
 
 subgraph subGraph0 ["Application Layer"]
@@ -403,8 +403,8 @@ LiquibaseConfig["LiquibaseConfig"]
 CatalogLB["Catalog Liquibase<br>default-schema: catalog<br>change-log: db/migration/<br>V*_catalog*.sql"]
 CatalogSchema["catalog schema"]
 
-LiquibaseConfig --> CatalogLB
-CatalogLB --> CatalogSchema
+LiquibaseConfig -->|"creates"| CatalogLB
+CatalogLB -->|"applies migrations"| CatalogSchema
 ```
 
 **Diagram: Catalog Schema Management with Liquibase**

@@ -160,15 +160,15 @@ subgraph subGraph0 ["Docker Network: proxy"]
     ordersService
     ordersPostgres
     webproxy
-    monolith --> postgres
-    monolith --> rabbitmq
-    monolith --> hyperdx
-    monolith --> ordersService
-    ordersService --> ordersPostgres
-    ordersService --> rabbitmq
-    ordersService --> hyperdx
-    webproxy --> monolith
-    webproxy --> ordersService
+    monolith -->|"jdbc:postgresql://postgres:5432"| postgres
+    monolith -->|"rabbitmq:5672"| rabbitmq
+    monolith -->|"Unsupported markdown: link"| hyperdx
+    monolith -->|"orders-service:9090"| ordersService
+    ordersService -->|"jdbc:postgresql://orders-postgres:5432"| ordersPostgres
+    ordersService -->|"rabbitmq:5672"| rabbitmq
+    ordersService -->|"Unsupported markdown: link"| hyperdx
+    webproxy -->|"Unsupported markdown: link"| monolith
+    webproxy -->|"orders-service:9090"| ordersService
 end
 ```
 
@@ -447,17 +447,17 @@ inventoryCache["inventory-cache<br>IMap"]
 sessionCache["spring:session:sessions<br>IMap"]
 hazelcastMgmt["hazelcast-mgmt<br>Management Center<br>Port 38080"]
 
-hazelcastMgmt --> monolithHz
-hazelcastMgmt --> ordersHz
+hazelcastMgmt -->|"Monitors"| monolithHz
+hazelcastMgmt -->|"Monitors"| ordersHz
 
 subgraph subGraph1 ["Hazelcast Cluster: bookstore-cluster"]
     monolithHz
     ordersHz
-    monolithHz --> ordersHz
+    monolithHz -->|"Cluster Sync"| ordersHz
     monolithHz --> productCache
     monolithHz --> orderCache
     monolithHz --> inventoryCache
-    monolithHz --> sessionCache
+    monolithHz -->|"Cluster Sync"| sessionCache
     ordersHz --> orderCache
     ordersHz --> sessionCache
 
@@ -710,12 +710,12 @@ frontendNext["frontend-next<br>(independent)"]
 webproxy["webproxy<br>depends_on: monolith, orders-service, frontend-next"]
 hazelcastMgmt["hazelcast-mgmt<br>depends_on: monolith"]
 
-postgres --> monolith
-rabbitmq --> monolith
-ordersPostgres --> ordersService
-rabbitmq --> ordersService
-ordersPostgres --> amqpModulith
-rabbitmq --> amqpModulith
+postgres -->|"service_healthy"| monolith
+rabbitmq -->|"service_healthy"| monolith
+ordersPostgres -->|"service_healthy"| ordersService
+rabbitmq -->|"service_healthy"| ordersService
+ordersPostgres -->|"service_healthy"| amqpModulith
+rabbitmq -->|"service_healthy"| amqpModulith
 monolith --> webproxy
 ordersService --> webproxy
 frontendNext --> webproxy
@@ -1095,7 +1095,7 @@ appPropsValue["spring.datasource.url=<br>jdbc:postgresql://localhost:5432/postgr
 envVarsValue["SPRING_DATASOURCE_URL=<br>jdbc:postgresql://postgres:5432/postgres"]
 
 example1 --> appPropsValue
-appPropsValue --> envVarsValue
+appPropsValue -->|"Overridden by"| envVarsValue
 
 subgraph subGraph0 ["Configuration Precedence (Low to High)"]
     appProps

@@ -60,22 +60,22 @@ ProductApiService["ProductApiService"]
 ProductService["ProductService"]
 ProductRepository["ProductRepository"]
 
-ProductServiceClient --> ProductApi
+ProductServiceClient -->|"calls getProductByCode"| ProductApi
 
 subgraph subGraph1 ["catalog module (exported)"]
     ProductApi
     ProductApiService
     ProductService
     ProductRepository
-    ProductApi --> ProductApiService
-    ProductApiService --> ProductService
-    ProductService --> ProductRepository
+    ProductApi -->|"implemented by"| ProductApiService
+    ProductApiService -->|"delegates to"| ProductService
+    ProductService -->|"queries"| ProductRepository
 end
 
 subgraph subGraph0 ["orders module"]
     ProductServiceClient
     OrderService
-    OrderService --> ProductServiceClient
+    OrderService -->|"injects"| ProductServiceClient
 end
 ```
 
@@ -123,8 +123,8 @@ OrderService_local["OrderService"]
 GrpcServerConfig["GrpcServerConfig<br>:9091"]
 OrdersService_ext["orders-service<br>:9090"]
 
-Browser --> OrdersRestController
-ManagedChannel --> OrdersService_ext
+Browser -->|"POST /api/orders"| OrdersRestController
+ManagedChannel -->|"orders-service:9090 (compose)"| OrdersService_ext
 
 subgraph subGraph6 ["Extracted Service"]
     OrdersService_ext
@@ -132,10 +132,10 @@ end
 
 subgraph subGraph5 ["Spring Monolith :8080"]
     OrdersRestController
-    OrdersRestController --> OrdersRemoteClient
-    OrdersGrpcClient --> ManagedChannel
-    ManagedChannel --> OrdersGrpcService
-    GrpcServerConfig --> OrdersGrpcService
+    OrdersRestController -->|"delegates"| OrdersRemoteClient
+    OrdersGrpcClient -->|"uses"| ManagedChannel
+    ManagedChannel -->|"localhost:9091 (dev)"| OrdersGrpcService
+    GrpcServerConfig -->|"registers"| OrdersGrpcService
 
 subgraph subGraph4 ["config module"]
     GrpcServerConfig
@@ -144,19 +144,19 @@ end
 subgraph subGraph3 ["orders module"]
     OrdersGrpcService
     OrderService_local
-    OrdersGrpcService --> OrderService_local
+    OrdersGrpcService -->|"calls"| OrderService_local
 end
 
 subgraph subGraph2 ["config module"]
     GrpcClientConfig
     ManagedChannel
-    GrpcClientConfig --> ManagedChannel
+    GrpcClientConfig -->|"provides"| ManagedChannel
 end
 
 subgraph subGraph1 ["orders module"]
     OrdersRemoteClient
     OrdersGrpcClient
-    OrdersRemoteClient --> OrdersGrpcClient
+    OrdersRemoteClient -->|"implemented by"| OrdersGrpcClient
 end
 end
 
@@ -232,10 +232,10 @@ InventoryService["InventoryService"]
 NotificationEventListener["NotificationEventListener<br>@ApplicationModuleListener"]
 RabbitMQ["RabbitMQ"]
 
-EventPublisher --> EventStore
-EventStore --> InventoryEventListener
-EventStore --> NotificationEventListener
-EventStore --> RabbitMQ
+EventPublisher -->|"persist"| EventStore
+EventStore -->|"deliver"| InventoryEventListener
+EventStore -->|"deliver"| NotificationEventListener
+EventStore -->|"republish"| RabbitMQ
 
 subgraph subGraph4 ["External Event Bus"]
     RabbitMQ
@@ -248,7 +248,7 @@ end
 subgraph subGraph2 ["inventory module"]
     InventoryEventListener
     InventoryService
-    InventoryEventListener --> InventoryService
+    InventoryEventListener -->|"updateStockLevel"| InventoryService
 end
 
 subgraph subGraph1 ["Spring Modulith Event Bus"]
@@ -258,7 +258,7 @@ end
 subgraph subGraph0 ["orders module"]
     OrderService
     EventPublisher
-    OrderService --> EventPublisher
+    OrderService -->|"publishEvent"| EventPublisher
 end
 ```
 

@@ -30,12 +30,12 @@ Monolith["monolith:8080"]
 OrdersSvc["orders-service:9090"]
 AMQPMod["amqp-modulith:8082"]
 
-EnvVars --> Runtime
-SystemProps --> Runtime
-AppProps --> Runtime
-Runtime --> Monolith
-Runtime --> OrdersSvc
-Runtime --> AMQPMod
+EnvVars -->|"Highest Priority"| Runtime
+SystemProps -->|"Medium Priority"| Runtime
+AppProps -->|"Lowest Priority (Fallback)"| Runtime
+Runtime -->|"Used by"| Monolith
+Runtime -->|"Used by"| OrdersSvc
+Runtime -->|"Used by"| AMQPMod
 ```
 
 **Sources:** [src/main/resources/application.properties L8-L11](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/main/resources/application.properties#L8-L11)
@@ -284,9 +284,9 @@ ServerHealth["bookstore.grpc.server.health-check-enabled<br>true"]
 ServerReflection["bookstore.grpc.server.reflection-enabled<br>true"]
 ServerMaxMsg["bookstore.grpc.server.max-inbound-message-size<br>4194304"]
 
-ClientTarget --> ServerPort
-ClientDeadline --> ServerPort
-ClientRetry --> ServerPort
+ClientTarget -->|"gRPC Call"| ServerPort
+ClientDeadline -->|"Timeout"| ServerPort
+ClientRetry -->|"Retry on Failure"| ServerPort
 
 subgraph subGraph1 ["Orders Service gRPC Server"]
     ServerPort
@@ -427,14 +427,14 @@ Template["nginx.conf.template"]
 FinalConfig["nginx.conf"]
 OtelExporter["otel_exporter<br>hyperdx:4317"]
 
-ApiKey --> Entrypoint
+ApiKey -->|"sed substitution"| Entrypoint
 
 subgraph webproxy:80 ["webproxy:80"]
     Entrypoint
     Template
     FinalConfig
     OtelExporter
-    Entrypoint --> Template
+    Entrypoint -->|"Replace ${HYPERDX_API_KEY}"| Template
     Template --> FinalConfig
     FinalConfig --> OtelExporter
 end
@@ -477,9 +477,9 @@ SYSPROP["Unsupported markdown: list"]
 APPROP["Unsupported markdown: list"]
 Final["Final Value<br>jdbc:postgresql://postgres:5432/postgres"]
 
-ENV --> Final
-SYSPROP --> Final
-APPROP --> Final
+ENV -->|"If Set"| Final
+SYSPROP -->|"Else If Set"| Final
+APPROP -->|"Else Use Default"| Final
 
 subgraph subGraph1 ["Resolution Result"]
     Final

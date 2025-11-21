@@ -37,10 +37,10 @@ OrdersModule["orders module<br>OrderRepository<br>OrderService"]
 InventoryModule["inventory module<br>InventoryRepository<br>InventoryService"]
 ModulithEvents["Spring Modulith<br>Event Publication Log<br>JdbcEventPublicationRepository"]
 
-CatalogModule --> CatalogSchema
-OrdersModule --> OrdersSchema
-InventoryModule --> InventorySchema
-ModulithEvents --> EventsSchema
+CatalogModule -->|"JDBCschema=catalog"| CatalogSchema
+OrdersModule -->|"JDBCschema=orders"| OrdersSchema
+InventoryModule -->|"JDBCschema=inventory"| InventorySchema
+ModulithEvents -->|"JDBCschema=events"| EventsSchema
 
 subgraph subGraph0 ["PostgreSQL Instance :5432"]
     CatalogSchema
@@ -89,12 +89,12 @@ CatalogDB["catalog schema"]
 OrdersDB["orders schema"]
 InventoryDB["inventory schema"]
 
-CatalogMod --> CatalogDB
-OrdersMod --> OrdersDB
-InventoryMod --> InventoryDB
-CatalogChangelog --> CatalogDB
-OrdersChangelog --> OrdersDB
-InventoryChangelog --> InventoryDB
+CatalogMod -->|"@Entity"| CatalogDB
+OrdersMod -->|"Liquibaseapplies"| OrdersDB
+InventoryMod -->|"Liquibaseapplies"| InventoryDB
+CatalogChangelog -->|"@Entity"| CatalogDB
+OrdersChangelog -->|"@Entity"| OrdersDB
+InventoryChangelog -->|"Liquibaseapplies"| InventoryDB
 
 subgraph subGraph2 ["PostgreSQL Schemas"]
     CatalogDB
@@ -148,9 +148,9 @@ Monolith["spring-modular-monolith<br>Port 8080<br>JDBC: postgres:5432"]
 OrdersService["orders-service<br>Port 9090<br>JDBC: orders-postgres:5432"]
 AMQPModulith["amqp-modulith<br>Port 8082<br>JDBC: orders-postgres:5432"]
 
-Monolith --> MonolithPG
-OrdersService --> OrdersPG
-AMQPModulith --> OrdersPG
+Monolith -->|"Multi-schemaconnection"| MonolithPG
+OrdersService -->|"Dedicatedconnection"| OrdersPG
+AMQPModulith -->|"Eventprocessing"| OrdersPG
 
 subgraph subGraph3 ["Orders Service Database"]
     OrdersPG
@@ -236,8 +236,8 @@ ProductService["ProductService"]
 ProductAPI["ProductApi<br>(exported interface)"]
 InventoryService["InventoryService"]
 
-OrderService --> ProductAPI
-InventoryService --> OrderService
+OrderService -->|"API call(cross-module)"| ProductAPI
+InventoryService -->|"Event subscriptionOrderCreatedEvent"| OrderService
 
 subgraph subGraph2 ["inventory module"]
     InventoryService
@@ -253,8 +253,8 @@ subgraph subGraph0 ["orders module"]
     OrderService
     OrderRepo
     OrderEntity
-    OrderService --> OrderRepo
-    OrderRepo --> OrderEntity
+    OrderService -->|"Direct access(same module)"| OrderRepo
+    OrderRepo -->|"JPA query"| OrderEntity
 end
 ```
 
@@ -285,9 +285,9 @@ InventoryListener["InventoryEventListener<br>@ApplicationModuleListener"]
 EventPubTable["event_publication table<br>- id (PK)<br>- event_type<br>- serialized_event<br>- publication_date<br>- completion_date"]
 OrdersExchange["orders-exchange"]
 
-OrderService --> EventPubTable
-EventPubTable --> InventoryListener
-EventPubTable --> OrdersExchange
+OrderService -->|"1.Transactional write"| EventPubTable
+EventPubTable -->|"2.Async read"| InventoryListener
+EventPubTable -->|"3.Republish(AMQP externalization)"| OrdersExchange
 
 subgraph RabbitMQ ["RabbitMQ"]
     OrdersExchange
@@ -351,12 +351,12 @@ MonolithApp["spring-modular-monolith<br>OrdersGrpcClient"]
 OrdersApp["orders-service<br>OrdersGrpcService"]
 Client["Next.js frontend<br>nginx proxy"]
 
-Client --> MonolithApp
-Client --> OrdersApp
-MonolithApp --> OrdersApp
-OrdersApp --> ServiceOrders
-OrdersApp --> ServiceEvents
-MonolithApp --> MonolithOrders
+Client -->|"POST /api/orders(traffic split)"| MonolithApp
+Client -->|"POST /api/orders(traffic split)"| OrdersApp
+MonolithApp -->|"gRPC: CreateOrder"| OrdersApp
+OrdersApp -->|"JDBC write"| ServiceOrders
+OrdersApp -->|"Event publish"| ServiceEvents
+MonolithApp -->|"Fallback read(if gRPC fails)"| MonolithOrders
 
 subgraph orders-postgres:5432 ["orders-postgres:5432"]
     ServiceOrders

@@ -40,21 +40,21 @@ HZSessionMap["Hazelcast IMap<br>spring:session:sessions"]
 HZInstance["HazelcastInstance<br>bookstore-cluster"]
 HZMgmt["hazelcast-mgmt<br>Management Center<br>Port 38080"]
 
-Browser --> Monolith
-Monolith --> SpringSession
-HZSessionMap --> HZInstance
-OrdersService --> HZInstance
+Browser -->|"HTTP + BOOKSTORE_SESSION cookie"| Monolith
+Monolith -->|"SessionRepository API"| SpringSession
+HZSessionMap -->|"Backed by"| HZInstance
+OrdersService -->|"Shared Cluster Access"| HZInstance
 
 subgraph subGraph3 ["Hazelcast Cluster"]
     HZInstance
     HZMgmt
-    HZMgmt --> HZInstance
+    HZMgmt -->|"Monitor"| HZInstance
 end
 
 subgraph subGraph2 ["Session Layer"]
     SpringSession
     HZSessionMap
-    SpringSession --> HZSessionMap
+    SpringSession -->|"Read/Write Sessions"| HZSessionMap
 end
 
 subgraph subGraph1 ["Application Layer"]
@@ -185,9 +185,9 @@ SessionMap["spring:session:sessions<br>Session Data"]
 ProductCache["products-cache<br>Application Cache"]
 OrderCache["orders-cache<br>Application Cache"]
 
-HZInstance --> SessionMap
-HZInstance --> ProductCache
-HZInstance --> OrderCache
+HZInstance -->|"Provides"| SessionMap
+HZInstance -->|"Provides"| ProductCache
+HZInstance -->|"Provides"| OrderCache
 
 subgraph subGraph1 ["Hazelcast Maps"]
     SessionMap
@@ -199,8 +199,8 @@ subgraph subGraph0 ["Spring Context"]
     HZConfig
     HZInstance
     SessionRepo
-    HZConfig --> HZInstance
-    SessionRepo --> HZInstance
+    HZConfig -->|"Creates"| HZInstance
+    SessionRepo -->|"Uses"| HZInstance
 end
 ```
 
@@ -288,21 +288,21 @@ HZ2["HZ Member 2"]
 HZ3["HZ Member 3"]
 SessionData["Distributed Session Data<br>spring:session:sessions"]
 
-Nginx --> App1
-Nginx --> App2
-Nginx --> App3
-App1 --> HZ1
-App2 --> HZ2
-App3 --> HZ3
+Nginx -->|"Request 1"| App1
+Nginx -->|"Request 2"| App2
+Nginx -->|"Request 3"| App3
+App1 -->|"Read/Write"| HZ1
+App2 -->|"Read/Write"| HZ2
+App3 -->|"Read/Write"| HZ3
 
 subgraph subGraph2 ["Hazelcast Cluster"]
     HZ1
     HZ2
     HZ3
     SessionData
-    HZ1 --> HZ2
-    HZ2 --> HZ3
-    HZ3 --> HZ1
+    HZ1 -->|"Replicate"| HZ2
+    HZ2 -->|"Replicate"| HZ3
+    HZ3 -->|"Replicate"| HZ1
     HZ1 --> SessionData
     HZ2 --> SessionData
     HZ3 --> SessionData
@@ -400,9 +400,9 @@ subgraph subGraph0 ["Session Lifecycle"]
     Active
     Idle
     Expired
-    Created --> Active
-    Active --> Idle
-    Idle --> Expired
+    Created -->|"User activity"| Active
+    Active -->|"No activity >30m"| Idle
+    Idle -->|"Cleanup task"| Expired
 end
 ```
 
@@ -442,8 +442,8 @@ Fetch["fetch() with<br>credentials: 'include'"]
 Proxy["nginx webproxy<br>Port 80"]
 API["/api/cart//api/orders/"]
 
-Fetch --> Proxy
-Proxy --> API
+Fetch -->|"Same-origin requestCookie auto-included"| Proxy
+Proxy -->|"Proxy to backendCookie forwarded"| API
 
 subgraph subGraph2 ["Spring Boot Backend"]
     API

@@ -107,20 +107,20 @@ Batch["writeBatchSize"]
 WTMode["Write-Through Mode<br>writeDelaySeconds=0"]
 WBMode["Write-Behind Mode<br>writeDelaySeconds>0"]
 
-WT --> OCC
-WDS --> OCC
-WBS --> OCC
-WT --> PCC
-WDS --> PCC
-WBS --> PCC
-WT --> ICC
-WDS --> ICC
-WBS --> ICC
-OCC --> MSC
-PCC --> MSC
-ICC --> MSC
-Delay --> WTMode
-Delay --> WBMode
+WT -->|"read by"| OCC
+WDS -->|"read by"| OCC
+WBS -->|"read by"| OCC
+WT -->|"read by"| PCC
+WDS -->|"read by"| PCC
+WBS -->|"read by"| PCC
+WT -->|"read by"| ICC
+WDS -->|"read by"| ICC
+WBS -->|"read by"| ICC
+OCC -->|"configures"| MSC
+PCC -->|"configures"| MSC
+ICC -->|"configures"| MSC
+Delay -->|"=0"| WTMode
+Delay -->|"Unsupported markdown: blockquote"| WBMode
 
 subgraph Behavior ["Behavior"]
     WTMode
@@ -131,8 +131,8 @@ subgraph subGraph2 ["MapStoreConfig Settings"]
     MSC
     Delay
     Batch
-    MSC --> Delay
-    MSC --> Batch
+    MSC -->|"sets"| Delay
+    MSC -->|"sets"| Batch
 end
 
 subgraph subGraph1 ["Module Cache Configs"]
@@ -260,18 +260,18 @@ Put["cache.put()"]
 Get["cache.get()"]
 Remove["cache.remove()"]
 
-FT --> OCS
-RT --> OCS
-FT --> PCS
-RT --> PCS
-FT --> ICS
-RT --> ICS
-OCS --> Closed
-PCS --> Closed
-ICS --> Closed
-Put --> Closed
-Get --> Closed
-Remove --> Closed
+FT -->|"configures threshold"| OCS
+RT -->|"configures recovery time"| OCS
+FT -->|"configures threshold"| PCS
+RT -->|"configures recovery time"| PCS
+FT -->|"configures threshold"| ICS
+RT -->|"configures recovery time"| ICS
+OCS -->|"tracks failures"| Closed
+PCS -->|"tracks failures"| Closed
+ICS -->|"tracks failures"| Closed
+Put -->|"protected by"| Closed
+Get -->|"protected by"| Closed
+Remove -->|"protected by"| Closed
 
 subgraph Operations ["Operations"]
     Put
@@ -283,10 +283,10 @@ subgraph subGraph2 ["Circuit Breaker State"]
     Closed
     Open
     HalfOpen
-    Closed --> Open
-    Open --> HalfOpen
-    HalfOpen --> Closed
-    HalfOpen --> Open
+    Closed -->|"failures >= threshold"| Open
+    Open -->|"after recovery timeout"| HalfOpen
+    HalfOpen -->|"success"| Closed
+    HalfOpen -->|"failure"| Open
 end
 
 subgraph subGraph1 ["Cache Service Implementations"]
@@ -365,7 +365,7 @@ CP --> HC
 subgraph subGraph5 ["config Module"]
     HC
     HConf
-    HConf --> HC
+    HConf -->|"aggregates viaObjectProvider"| HC
 end
 
 subgraph subGraph4 ["inventory Module"]

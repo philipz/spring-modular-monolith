@@ -49,15 +49,15 @@ GrpcExceptionMapper["Exception Mapping<br>(mapStatusRuntimeException)"]
 OrdersServiceGrpc["orders-service<br>gRPC Server<br>:9090"]
 LocalGrpcServer["Local gRPC Server<br>OrdersGrpcService<br>:9091"]
 
-Browser --> OrdersRestController
-APIClient --> OrdersRestController
-OrdersRestController --> OrdersRemoteClient
-OrdersGrpcClient --> ManagedChannel
-OrdersGrpcClient --> OrdersServiceStub
-OrdersGrpcClient --> GrpcMessageMapper
-OrdersGrpcClient --> GrpcExceptionMapper
-OrdersServiceStub --> OrdersServiceGrpc
-OrdersServiceStub --> LocalGrpcServer
+Browser -->|"HTTP POST /api/orders"| OrdersRestController
+APIClient -->|"HTTP GET /api/orders/{orderNumber}"| OrdersRestController
+OrdersRestController -->|"createOrder(CreateOrderRequest)"| OrdersRemoteClient
+OrdersGrpcClient -->|"uses"| ManagedChannel
+OrdersGrpcClient -->|"creates"| OrdersServiceStub
+OrdersGrpcClient -->|"delegates to"| GrpcMessageMapper
+OrdersGrpcClient -->|"catches StatusRuntimeException"| GrpcExceptionMapper
+OrdersServiceStub -->|"gRPC :9090(bookstore.grpc.client.target)"| OrdersServiceGrpc
+OrdersServiceStub -->|"fallback: localhost:9091"| LocalGrpcServer
 
 subgraph subGraph5 ["Fallback: In-Process"]
     LocalGrpcServer
@@ -77,7 +77,7 @@ end
 subgraph subGraph2 ["Spring Modulith - Application Layer"]
     OrdersRemoteClient
     OrdersGrpcClient
-    OrdersRemoteClient --> OrdersGrpcClient
+    OrdersRemoteClient -->|"implements"| OrdersGrpcClient
 end
 
 subgraph subGraph1 ["Spring Modulith - Presentation Layer"]
@@ -120,11 +120,11 @@ External["External Mode<br>orders-service:9090<br>orders-service container"]
 MonolithController["OrdersRestController"]
 
 Config --> Decision
-Decision --> InProcess
-Decision --> External
-MonolithController --> Decision
-InProcess --> MonolithController
-External --> MonolithController
+Decision -->|"localhost:9091"| InProcess
+Decision -->|"orders-service:9090"| External
+MonolithController -->|"OrdersGrpcClient"| Decision
+InProcess -->|"same JVMin-memory channel"| MonolithController
+External -->|"network gRPCHTTP/2"| MonolithController
 ```
 
 **Docker Compose Configuration:**
@@ -257,11 +257,11 @@ HttpNotFound["HTTP 404"]
 HttpBadRequest["HTTP 400"]
 HttpInternal["HTTP 500/503"]
 
-GrpcCall --> StatusException
-StatusException --> Mapper
-Mapper --> NotFound
-Mapper --> InvalidArg
-Mapper --> Other
+GrpcCall -->|"throws"| StatusException
+StatusException -->|"throws"| Mapper
+Mapper -->|"NOT_FOUND"| NotFound
+Mapper -->|"INVALID_ARGUMENT"| InvalidArg
+Mapper -->|"default"| Other
 NotFound --> RestHandler
 InvalidArg --> RestHandler
 Other --> RestHandler

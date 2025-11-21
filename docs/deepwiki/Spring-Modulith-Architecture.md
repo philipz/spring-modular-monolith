@@ -54,23 +54,23 @@ orders["orders<br>Order Lifecycle"]
 inventory["inventory<br>Stock Management"]
 notifications["notifications<br>Event Consumers"]
 
-config --> catalog
-config --> orders
-config --> inventory
-config --> notifications
-common --> catalog
-common --> orders
-common --> inventory
-common --> notifications
+config -->|"provides beans"| catalog
+config -->|"provides beans"| orders
+config -->|"provides beans"| inventory
+config -->|"provides beans"| notifications
+common -->|"exported utilities"| catalog
+common -->|"exported utilities"| orders
+common -->|"exported utilities"| inventory
+common -->|"exported utilities"| notifications
 
 subgraph subGraph1 ["Business Modules"]
     catalog
     orders
     inventory
     notifications
-    orders --> catalog
-    orders --> inventory
-    orders --> notifications
+    orders -->|"ProductApi"| catalog
+    orders -->|"OrderCreatedEvent"| inventory
+    orders -->|"OrderCreatedEvent"| notifications
 end
 
 subgraph subGraph0 ["Infrastructure Modules"]
@@ -130,8 +130,8 @@ catalog_internal["domain/*<br>(internal)"]
 catalog_api["api/ProductApi<br>(exported)"]
 orders_service["domain/OrderService"]
 
-orders_service --> catalog_api
-orders_service --> catalog_internal
+orders_service -->|"allowed dependency"| catalog_api
+orders_service -->|"blocked by Modulith"| catalog_internal
 
 subgraph subGraph1 ["orders module"]
     orders_service
@@ -246,7 +246,7 @@ The `LiquibaseConfig` in [src/main/java/com/sivalabs/bookstore/config/LiquibaseC
 * **Data sharing via events**: When inventory needs order data, it receives `OrderCreatedEvent` with necessary information
 
 ```css
-#mermaid-hsogy4q767{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-hsogy4q767 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-hsogy4q767 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-hsogy4q767 .error-icon{fill:#dddddd;}#mermaid-hsogy4q767 .error-text{fill:#222222;stroke:#222222;}#mermaid-hsogy4q767 .edge-thickness-normal{stroke-width:1px;}#mermaid-hsogy4q767 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-hsogy4q767 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-hsogy4q767 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-hsogy4q767 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-hsogy4q767 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-hsogy4q767 .marker{fill:#999;stroke:#999;}#mermaid-hsogy4q767 .marker.cross{stroke:#999;}#mermaid-hsogy4q767 svg{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;}#mermaid-hsogy4q767 p{margin:0;}#mermaid-hsogy4q767 .entityBox{fill:#ffffff;stroke:#dddddd;}#mermaid-hsogy4q767 .relationshipLabelBox{fill:#dddddd;opacity:0.7;background-color:#dddddd;}#mermaid-hsogy4q767 .relationshipLabelBox rect{opacity:0.5;}#mermaid-hsogy4q767 .labelBkg{background-color:rgba(221, 221, 221, 0.5);}#mermaid-hsogy4q767 .edgeLabel .label{fill:#dddddd;font-size:14px;}#mermaid-hsogy4q767 .label{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;color:#333;}#mermaid-hsogy4q767 .edge-pattern-dashed{stroke-dasharray:8,8;}#mermaid-hsogy4q767 .node rect,#mermaid-hsogy4q767 .node circle,#mermaid-hsogy4q767 .node ellipse,#mermaid-hsogy4q767 .node polygon{fill:#ffffff;stroke:#dddddd;stroke-width:1px;}#mermaid-hsogy4q767 .relationshipLine{stroke:#999;stroke-width:1;fill:none;}#mermaid-hsogy4q767 .marker{fill:none!important;stroke:#999!important;stroke-width:1;}#mermaid-hsogy4q767 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}CATALOG_PRODUCTSstringcodePKstringnamenumericpriceORDERS_ORDERSbigintorder_idPKstringorder_numberUKstringcustomer_namenumerictotal_amountINVENTORY_INVENTORYbigintidPKstringproduct_codeUKintquantityEVENTS_PUBLICATIONuuididPKtimestamppublication_datestringevent_type
+#mermaid-pv8r0d2e70e{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-pv8r0d2e70e .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-pv8r0d2e70e .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-pv8r0d2e70e .error-icon{fill:#dddddd;}#mermaid-pv8r0d2e70e .error-text{fill:#222222;stroke:#222222;}#mermaid-pv8r0d2e70e .edge-thickness-normal{stroke-width:1px;}#mermaid-pv8r0d2e70e .edge-thickness-thick{stroke-width:3.5px;}#mermaid-pv8r0d2e70e .edge-pattern-solid{stroke-dasharray:0;}#mermaid-pv8r0d2e70e .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-pv8r0d2e70e .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-pv8r0d2e70e .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-pv8r0d2e70e .marker{fill:#999;stroke:#999;}#mermaid-pv8r0d2e70e .marker.cross{stroke:#999;}#mermaid-pv8r0d2e70e svg{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;}#mermaid-pv8r0d2e70e p{margin:0;}#mermaid-pv8r0d2e70e .entityBox{fill:#ffffff;stroke:#dddddd;}#mermaid-pv8r0d2e70e .relationshipLabelBox{fill:#dddddd;opacity:0.7;background-color:#dddddd;}#mermaid-pv8r0d2e70e .relationshipLabelBox rect{opacity:0.5;}#mermaid-pv8r0d2e70e .labelBkg{background-color:rgba(221, 221, 221, 0.5);}#mermaid-pv8r0d2e70e .edgeLabel .label{fill:#dddddd;font-size:14px;}#mermaid-pv8r0d2e70e .label{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;color:#333;}#mermaid-pv8r0d2e70e .edge-pattern-dashed{stroke-dasharray:8,8;}#mermaid-pv8r0d2e70e .node rect,#mermaid-pv8r0d2e70e .node circle,#mermaid-pv8r0d2e70e .node ellipse,#mermaid-pv8r0d2e70e .node polygon{fill:#ffffff;stroke:#dddddd;stroke-width:1px;}#mermaid-pv8r0d2e70e .relationshipLine{stroke:#999;stroke-width:1;fill:none;}#mermaid-pv8r0d2e70e .marker{fill:none!important;stroke:#999!important;stroke-width:1;}#mermaid-pv8r0d2e70e :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}CATALOG_PRODUCTSstringcodePKstringnamenumericpriceORDERS_ORDERSbigintorder_idPKstringorder_numberUKstringcustomer_namenumerictotal_amountINVENTORY_INVENTORYbigintidPKstringproduct_codeUKintquantityEVENTS_PUBLICATIONuuididPKtimestamppublication_datestringevent_type
 ```
 
 **Sources:** [README.md L135-L139](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/README.md#L135-L139)

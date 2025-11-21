@@ -85,9 +85,9 @@ format["format task"]
 verify["mvn verify"]
 spotless["mvn spotless:apply"]
 
-test --> format
-test --> verify
-format --> spotless
+test -->|"depends on"| format
+test -->|"runs"| verify
+format -->|"runs"| spotless
 ```
 
 **Diagram: Task Dependency Chain in Taskfile**
@@ -192,7 +192,7 @@ install["install phase"]
 clean --> compile
 compile --> test
 test --> verify
-verify --> spotlessCheck
+verify -->|"includes"| spotlessCheck
 verify --> install
 ```
 
@@ -251,13 +251,13 @@ format --> spotlessApply
 spotlessApply --> verify
 verify --> mvnVerify
 mvnVerify --> spotlessCheck
-spotlessCheck --> commit
-spotlessCheck --> format
-commit --> push
+spotlessCheck -->|"Pass"| commit
+spotlessCheck -->|"Fail"| format
+commit -->|"PassFailPassFail"| push
 push --> ci
 ci --> ciVerify
-ciVerify --> success
-ciVerify --> reject
+ciVerify -->|"Pass"| success
+ciVerify -->|"Fail"| reject
 ```
 
 **Diagram: Developer Workflow with Formatting Integration**

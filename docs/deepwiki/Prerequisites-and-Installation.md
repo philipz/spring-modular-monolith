@@ -53,19 +53,19 @@ HazelcastImg["hazelcast/hazelcast:5.5.2<br>container image"]
 HyperDXImg["hyperdx/hyperdx:latest<br>container image"]
 NginxImg["nginx:1.29.2-alpine-otel<br>container image"]
 
-Java21 --> MVNWrapper
-Maven --> MVNWrapper
-Task --> TaskfileYML
-Docker --> PostgresImg
-Docker --> RabbitMQImg
-Docker --> HazelcastImg
-Docker --> HyperDXImg
-Docker --> NginxImg
-ComposeYML --> PostgresImg
-ComposeYML --> RabbitMQImg
-ComposeYML --> HazelcastImg
-ComposeYML --> HyperDXImg
-ComposeYML --> NginxImg
+Java21 -->|"executes"| MVNWrapper
+Maven -->|"executes"| MVNWrapper
+Task -->|"executes"| TaskfileYML
+Docker -->|"pulls"| PostgresImg
+Docker -->|"pulls"| RabbitMQImg
+Docker -->|"pulls"| HazelcastImg
+Docker -->|"pulls"| HyperDXImg
+Docker -->|"pulls"| NginxImg
+ComposeYML -->|"references"| PostgresImg
+ComposeYML -->|"references"| RabbitMQImg
+ComposeYML -->|"references"| HazelcastImg
+ComposeYML -->|"references"| HyperDXImg
+ComposeYML -->|"references"| NginxImg
 
 subgraph subGraph2 ["Runtime Dependencies"]
     PostgresImg
@@ -81,10 +81,10 @@ subgraph subGraph1 ["Repository Clone"]
     MVNWrapper
     ComposeYML
     TaskfileYML
-    GitRepo --> MVNWrapper
-    GitRepo --> ComposeYML
-    GitRepo --> TaskfileYML
-    GitRepo --> EnvFile
+    GitRepo -->|"compiles"| MVNWrapper
+    GitRepo -->|"contains"| ComposeYML
+    GitRepo -->|"contains"| TaskfileYML
+    GitRepo -->|"requires"| EnvFile
 end
 
 subgraph subGraph0 ["Developer Workstation"]
@@ -95,8 +95,8 @@ subgraph subGraph0 ["Developer Workstation"]
     NodeJS
     PNPM
     Task
-    SDKMAN --> Java21
-    NodeJS --> PNPM
+    SDKMAN -->|"manages"| Java21
+    NodeJS -->|"runtime for"| PNPM
 end
 ```
 
@@ -458,7 +458,7 @@ EnvFile --> HYPERDX_KEY
 EnvFile --> SPRING_DATASOURCE_URL
 EnvFile --> SPRING_RABBITMQ_HOST
 EnvFile --> SPRING_PROFILES_ACTIVE
-ComposeFile --> HYPERDX_KEY
+ComposeFile -->|"references"| HYPERDX_KEY
 HYPERDX_KEY --> Webproxy
 HYPERDX_KEY --> Monolith
 HYPERDX_KEY --> HyperDX

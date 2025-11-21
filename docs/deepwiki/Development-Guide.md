@@ -77,7 +77,7 @@ BuildImage --> DockerCompose
 BuildImage --> Kind
 MvnWrapper --> Format
 MvnWrapper --> Verify
-LocalDev --> GHA
+LocalDev -->|"git push"| GHA
 GHA --> MvnWrapper
 MvnWrapper --> DependencySnap
 
@@ -162,8 +162,8 @@ GOOS --> SLEEP
 MVNW --> Test
 MVNW --> Format
 MVNW --> BuildImage
-BuildImage --> Start
-SLEEP --> Restart
+BuildImage -->|"dependency"| Start
+SLEEP -->|"used by"| Restart
 
 subgraph subGraph3 ["Deployment Tasks"]
     Start
@@ -176,7 +176,7 @@ subgraph subGraph2 ["Primary Tasks"]
     Test
     Format
     BuildImage
-    Format --> Test
+    Format -->|"dependency"| Test
 end
 
 subgraph subGraph1 ["Platform-Specific Commands"]
@@ -265,7 +265,7 @@ Package --> IntTest
 subgraph Packaging ["Packaging"]
     Package
     BuildImage
-    Package --> BuildImage
+    Package -->|"separate goal"| BuildImage
 end
 
 subgraph Testing ["Testing"]
@@ -367,7 +367,7 @@ subgraph subGraph2 ["Build Job (ubuntu-latest)"]
     Checkout --> SetupJava
     SetupJava --> MakeExec
     MakeExec --> Build
-    Build --> DepSnap
+    Build -->|"on push only"| DepSnap
 end
 
 subgraph subGraph1 ["Path Filters"]

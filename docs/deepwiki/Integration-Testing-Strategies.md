@@ -63,12 +63,12 @@ InfraDeps["config module<br>common module"]
 Database["PostgreSQL<br>Testcontainer"]
 MessageBroker["RabbitMQ<br>Testcontainer"]
 
-AnnotationLayer --> ModuleUnderTest
-ImportLayer --> Database
-ImportLayer --> MessageBroker
-DataLayer --> Database
-TestMethod --> ModuleUnderTest
-ModuleUnderTest --> Database
+AnnotationLayer -->|"loads"| ModuleUnderTest
+ImportLayer -->|"provides"| Database
+ImportLayer -->|"provides"| MessageBroker
+DataLayer -->|"seeds"| Database
+TestMethod -->|"autowires"| ModuleUnderTest
+ModuleUnderTest -->|"queries"| Database
 
 subgraph subGraph2 ["External Infrastructure"]
     Database
@@ -79,8 +79,8 @@ subgraph subGraph1 ["Application Context"]
     ModuleUnderTest
     DirectDeps
     InfraDeps
-    ModuleUnderTest --> DirectDeps
-    ModuleUnderTest --> InfraDeps
+    ModuleUnderTest -->|"depends on"| DirectDeps
+    ModuleUnderTest -->|"depends on"| InfraDeps
 end
 
 subgraph subGraph0 ["Test Class Structure"]
@@ -306,9 +306,9 @@ Rollback2["Transaction Rollback"]
 
 T1 --> Running
 T1 --> Schema1
-T2 --> Running
+T2 -->|"uses"| Running
 T2 --> Data2
-T3 --> Running
+T3 -->|"uses"| Running
 
 subgraph subGraph2 ["Database State"]
     Schema1
@@ -422,7 +422,7 @@ Liquibase --> BeforeEach
 BeforeEach --> SqlScript
 SqlScript --> TestMethod
 AfterEach --> Rollback
-Rollback --> BeforeEach
+Rollback -->|"next test"| BeforeEach
 
 subgraph subGraph1 ["Database Operations"]
     Liquibase

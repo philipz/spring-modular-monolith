@@ -318,12 +318,12 @@ amqp-modulith["amqp-modulith"]
 webproxy["webproxy"]
 hazelcast-mgmt["hazelcast-mgmt"]
 
-postgres --> monolith
-rabbitmq --> monolith
-orders-postgres --> orders-service
-rabbitmq --> orders-service
-orders-postgres --> amqp-modulith
-rabbitmq --> amqp-modulith
+postgres -->|"condition: service_healthy"| monolith
+rabbitmq -->|"condition: service_healthy"| monolith
+orders-postgres -->|"condition: service_healthy"| orders-service
+rabbitmq -->|"condition: service_healthy"| orders-service
+orders-postgres -->|"condition: service_healthy"| amqp-modulith
+rabbitmq -->|"condition: service_healthy"| amqp-modulith
 monolith --> webproxy
 orders-service --> webproxy
 frontend-next --> webproxy

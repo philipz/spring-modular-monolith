@@ -39,14 +39,14 @@ OrdersGrpcService["OrdersGrpcService<br>implements BindableService"]
 HealthStatusManager["HealthStatusManager<br>@Bean"]
 ProtoReflection["ProtoReflectionService"]
 
-GrpcProperties --> GrpcServerConfig
-GrpcServerConfig --> ServerBuilder
-ServerBuilder --> Server
-OrdersGrpcService --> GrpcServerConfig
-HealthStatusManager --> ServerBuilder
-ProtoReflection --> ServerBuilder
-Server --> GrpcServerLifecycle
-GrpcServerLifecycle --> Server
+GrpcProperties -->|"injected into"| GrpcServerConfig
+GrpcServerConfig -->|"creates"| ServerBuilder
+ServerBuilder -->|"forPort(9091)"| Server
+OrdersGrpcService -->|"auto-discovered viaList<BindableService>"| GrpcServerConfig
+HealthStatusManager -->|"addService(healthService)"| ServerBuilder
+ProtoReflection -->|"addService(reflection)"| ServerBuilder
+Server -->|"managed by"| GrpcServerLifecycle
+GrpcServerLifecycle -->|"start()/stop()"| Server
 ```
 
 **Sources:** [src/main/java/com/sivalabs/bookstore/config/GrpcServerConfig.java L1-L77](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/main/java/com/sivalabs/bookstore/config/GrpcServerConfig.java#L1-L77)
@@ -153,11 +153,11 @@ HealthService["grpc.health.v1.Health<br>Service"]
 Manager["HealthStatusManager<br>@Bean"]
 OrdersService["BookstoreOrders<br>Service"]
 
-Client --> HealthService
-HealthService --> Manager
-Client --> HealthService
-HealthService --> Manager
-Manager --> OrdersService
+Client -->|"Check('')"| HealthService
+HealthService -->|"overall status"| Manager
+Client -->|"Check('BookstoreOrders')"| HealthService
+HealthService -->|"service-specific status"| Manager
+Manager -->|"setStatus(SERVING)"| OrdersService
 ```
 
 **Health Status Management:**
@@ -197,11 +197,11 @@ Tool["grpcurl / Postman"]
 Reflection["ProtoReflectionService"]
 Server["gRPC Server :9091"]
 
-Tool --> Reflection
+Tool -->|"ServerReflectionInfo RPC"| Reflection
+Reflection -->|"list services"| Tool
+Tool -->|"file containing symbol"| Reflection
 Reflection --> Tool
-Tool --> Reflection
-Reflection --> Tool
-Tool --> Server
+Tool -->|"construct request"| Server
 ```
 
 **Example Usage:**
@@ -371,12 +371,12 @@ MonolithHTTP["Monolith :8080<br>REST API"]
 MonolithGRPC["Monolith :9091<br>gRPC Server"]
 OrdersService["orders-service :9090<br>gRPC Server"]
 
-Browser --> Nginx
-Nginx --> MonolithHTTP
-MonolithHTTP --> MonolithGRPC
-MonolithGRPC --> OrdersService
-GrpcClient --> MonolithGRPC
-GrpcClient --> OrdersService
+Browser -->|"HTTP"| Nginx
+Nginx -->|"/api/**"| MonolithHTTP
+MonolithHTTP -->|"delegates viaOrdersGrpcClient"| MonolithGRPC
+MonolithGRPC -->|"gRPC/HTTP2"| OrdersService
+GrpcClient -->|"gRPC direct"| MonolithGRPC
+GrpcClient -->|"gRPC direct"| OrdersService
 ```
 
 **Sources:** [docs/orders-traffic-migration.md L1-L69](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/docs/orders-traffic-migration.md#L1-L69)

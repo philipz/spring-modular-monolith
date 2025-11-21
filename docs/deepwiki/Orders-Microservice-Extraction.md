@@ -69,20 +69,20 @@ HyperDX["HyperDX<br>Observability<br>OTLP: 4317"]
 PostgresMain["PostgreSQL<br>postgres:5432<br>Schemas: catalog,<br>inventory, events"]
 PostgresOrders["orders-postgres:5432<br>Dedicated DB<br>Schema: orders"]
 
-NextJS --> Nginx
-Nginx --> NextJS
-Nginx --> Monolith
-Nginx --> OrdersSvc
-Monolith --> PostgresMain
-Monolith --> RabbitMQ
-Monolith --> Hazelcast
-Monolith --> HyperDX
-OrdersSvc --> PostgresOrders
-OrdersSvc --> RabbitMQ
-OrdersSvc --> Hazelcast
-OrdersSvc --> HyperDX
-AMQPMod --> RabbitMQ
-AMQPMod --> PostgresOrders
+NextJS -->|"HTTP"| Nginx
+Nginx -->|"/ → NextJS"| NextJS
+Nginx -->|"/api/** → traffic split"| Monolith
+Nginx -->|"Progressive routing"| OrdersSvc
+Monolith -->|"JDBC"| PostgresMain
+Monolith -->|"Publishes events"| RabbitMQ
+Monolith -->|"Cache operations"| Hazelcast
+Monolith -->|"OTLP traces"| HyperDX
+OrdersSvc -->|"JDBC"| PostgresOrders
+OrdersSvc -->|"Publishes events"| RabbitMQ
+OrdersSvc -->|"Cache operations"| Hazelcast
+OrdersSvc -->|"OTLP traces"| HyperDX
+AMQPMod -->|"Consumes events"| RabbitMQ
+AMQPMod -->|"JDBC"| PostgresOrders
 
 subgraph subGraph4 ["Data Layer"]
     PostgresMain
@@ -99,8 +99,8 @@ subgraph subGraph2 ["Application Layer"]
     Monolith
     OrdersSvc
     AMQPMod
-    Monolith --> OrdersSvc
-    OrdersSvc --> Monolith
+    Monolith -->|"gRPC :9090OrdersGrpcClient"| OrdersSvc
+    OrdersSvc -->|"HTTPProductApi"| Monolith
 end
 
 subgraph subGraph1 ["Gateway Layer"]
@@ -144,14 +144,14 @@ GrpcServer["io.grpc.Server<br>Port 9090"]
 GrpcService["OrdersGrpcService<br>OrdersServiceImplBase"]
 OrdersApiImpl["OrdersApi<br>(implementation)"]
 
-ManagedChan --> GrpcServer
+ManagedChan -->|"gRPC ProtocolBinary/HTTP2"| GrpcServer
 
 subgraph orders-service ["orders-service"]
     GrpcServer
     GrpcService
     OrdersApiImpl
-    GrpcServer --> GrpcService
-    GrpcService --> OrdersApiImpl
+    GrpcServer -->|"Routes to"| GrpcService
+    GrpcService -->|"Delegates"| OrdersApiImpl
 end
 
 subgraph subGraph0 ["Monolith (spring-modular-monolith)"]
@@ -160,10 +160,10 @@ subgraph subGraph0 ["Monolith (spring-modular-monolith)"]
     GrpcClient
     ManagedChan
     RetryInterceptor
-    RestCtrl --> RemoteClient
-    RemoteClient --> GrpcClient
-    GrpcClient --> ManagedChan
-    GrpcClient --> RetryInterceptor
+    RestCtrl -->|"Delegates"| RemoteClient
+    RemoteClient -->|"Implemented by"| GrpcClient
+    GrpcClient -->|"Uses"| ManagedChan
+    GrpcClient -->|"Applies"| RetryInterceptor
 end
 ```
 
@@ -201,9 +201,9 @@ Monolith["spring-modular-monolith"]
 OrdersSvc["orders-service"]
 AMQPMod["amqp-modulith"]
 
-Monolith --> MainDB
-OrdersSvc --> OrdersDB
-AMQPMod --> OrdersDB
+Monolith -->|"Liquibase migrationscatalog, inventory"| MainDB
+OrdersSvc -->|"Liquibase migrationsorders schema"| OrdersDB
+AMQPMod -->|"Event processing"| OrdersDB
 
 subgraph subGraph1 ["orders-service Database"]
     OrdersDB
@@ -303,11 +303,11 @@ Inventory["Monolith<br>inventory module<br>Stock deduction"]
 Notifications["Monolith<br>notifications module<br>Notification intents"]
 AMQPMod["amqp-modulith<br>Custom event processor"]
 
-MonolithOrders --> Exchange
-OrdersSvc --> Exchange
-NewOrdersQueue --> Inventory
-NewOrdersQueue --> Notifications
-NewOrdersQueue --> AMQPMod
+MonolithOrders -->|"PublishesOrderCreatedEvent"| Exchange
+OrdersSvc -->|"PublishesOrderCreatedEvent"| Exchange
+NewOrdersQueue -->|"Consumes"| Inventory
+NewOrdersQueue -->|"Consumes"| Notifications
+NewOrdersQueue -->|"Consumes"| AMQPMod
 
 subgraph subGraph2 ["Event Consumers"]
     Inventory
@@ -319,8 +319,8 @@ subgraph subGraph1 ["RabbitMQ Topology"]
     Exchange
     NewOrdersQueue
     DLQ
-    Exchange --> NewOrdersQueue
-    NewOrdersQueue --> DLQ
+    Exchange -->|"Routes"| NewOrdersQueue
+    NewOrdersQueue -->|"Failed msgs"| DLQ
 end
 
 subgraph subGraph0 ["Event Publishers"]
@@ -367,11 +367,11 @@ Nginx["nginx<br>Routing Logic"]
 Monolith["Monolith<br>HTTP :8080"]
 OrdersSvc["orders-service<br>gRPC :9090<br>(via HTTP gateway)"]
 
-EnvVar --> Nginx
-Header --> Nginx
-Cookie --> Nginx
-Nginx --> Monolith
-Nginx --> OrdersSvc
+EnvVar -->|"Percentage-based split"| Nginx
+Header -->|"Forces backend"| Nginx
+Cookie -->|"Maintains consistency"| Nginx
+Nginx -->|"0-99% legacy"| Monolith
+Nginx -->|"1-100% new"| OrdersSvc
 
 subgraph subGraph2 ["Backend Services"]
     Monolith
@@ -442,8 +442,8 @@ RemoteTarget["orders-service:9090"]
 RemoteClient["OrdersGrpcClient<br>Remote client"]
 RemoteService["orders-service<br>External gRPC server"]
 
-GrpcTarget --> LocalTarget
-GrpcTarget --> RemoteTarget
+GrpcTarget -->|"Default:localhost:9091"| LocalTarget
+GrpcTarget -->|"Docker:orders-service:9090"| RemoteTarget
 
 subgraph subGraph2 ["Mode 2: Delegating"]
     RemoteTarget

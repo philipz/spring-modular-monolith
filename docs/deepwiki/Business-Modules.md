@@ -47,17 +47,17 @@ RestAPI["REST Controllers<br>/api/products<br>/api/cart<br>/api/orders"]
 GrpcAPI["gRPC Server<br>:9091<br>OrdersGrpcService"]
 OrderCreatedEvent["OrderCreatedEvent<br>Internal + RabbitMQ"]
 
-Config --> Catalog
-Config --> Orders
-Config --> Inventory
-Config --> Notifications
-Common --> Catalog
-Common --> Orders
-Common --> Inventory
-Common --> Notifications
-Orders --> OrderCreatedEvent
-Inventory --> OrderCreatedEvent
-Notifications --> OrderCreatedEvent
+Config -->|"Provides beans"| Catalog
+Config -->|"Provides beans"| Orders
+Config -->|"Provides beans"| Inventory
+Config -->|"Provides beans"| Notifications
+Common -->|"Utilities"| Catalog
+Common -->|"Utilities"| Orders
+Common -->|"Utilities"| Inventory
+Common -->|"Utilities"| Notifications
+Orders -->|"Publishes"| OrderCreatedEvent
+Inventory -->|"Consumes"| OrderCreatedEvent
+Notifications -->|"Consumes"| OrderCreatedEvent
 RestAPI --> Catalog
 RestAPI --> Orders
 GrpcAPI --> Orders
@@ -72,7 +72,7 @@ subgraph subGraph1 ["Business Modules"]
     Orders
     Inventory
     Notifications
-    Orders --> Catalog
+    Orders -->|"API call"| Catalog
 end
 
 subgraph subGraph0 ["Infrastructure Modules"]
@@ -169,12 +169,12 @@ subgraph subGraph0 ["Event Publication Flow"]
     NS
     RMQ
     EXT
-    OS --> OC
-    OC --> JDBC
-    OC --> IS
-    OC --> NS
-    OC --> RMQ
-    RMQ --> EXT
+    OS -->|"publishes"| OC
+    OC -->|"persisted"| JDBC
+    OC -->|"consumed"| IS
+    OC -->|"consumed"| NS
+    OC -->|"republished"| RMQ
+    RMQ -->|"external consumers"| EXT
 end
 ```
 
@@ -213,10 +213,10 @@ subgraph subGraph0 ["gRPC Communication"]
     OGC
     IPS
     EXT
-    RC --> ORC
-    ORC --> OGC
-    OGC --> IPS
-    OGC --> EXT
+    RC -->|"delegates"| ORC
+    ORC -->|"gRPC call"| OGC
+    OGC -->|"target=localhost:9091"| IPS
+    OGC -->|"target=orders-service:9090"| EXT
 end
 ```
 
@@ -251,10 +251,10 @@ Catalog["Catalog"]
 Orders["Orders"]
 Inventory["Inventory"]
 
-Catalog --> CatalogDB
-Orders --> OrdersDB
-Orders --> EventsDB
-Inventory --> InventoryDB
+Catalog -->|"Liquibase"| CatalogDB
+Orders -->|"Liquibase"| OrdersDB
+Orders -->|"Modulith events"| EventsDB
+Inventory -->|"Liquibase"| InventoryDB
 
 subgraph subGraph1 ["Module Ownership"]
     Catalog
@@ -298,12 +298,12 @@ PMS["ProductMapStore"]
 OMS["OrderMapStore"]
 IMS["InventoryMapStore"]
 
-HC --> CCC
-HC --> OCC
-HC --> ICC
-CCC --> PMS
-OCC --> OMS
-ICC --> IMS
+HC -->|"ObjectProvider"| CCC
+HC -->|"ObjectProvider"| OCC
+HC -->|"ObjectProvider"| ICC
+CCC -->|"configures"| PMS
+OCC -->|"configures"| OMS
+ICC -->|"configures"| IMS
 
 subgraph subGraph2 ["MapStore Layer"]
     PMS
@@ -314,7 +314,7 @@ end
 subgraph subGraph1 ["Config Module"]
     HC
     HI
-    HC --> HI
+    HC -->|"builds"| HI
 end
 
 subgraph subGraph0 ["Module Cache Configs"]

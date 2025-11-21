@@ -71,12 +71,12 @@ Validate --> Compile
 Compile --> TestCompile
 TestCompile --> Test
 Test --> Package
-Package --> IntegrationTest
+Package -->|"JUnit 5Surefire PluginTestcontainersFailsafe Plugin"| IntegrationTest
 IntegrationTest --> Verify
 Verify --> Install
 Install --> Deploy
-Test --> TestResults
-IntegrationTest --> IntegrationResults
+Test -->|"JUnit 5Surefire Plugin"| TestResults
+IntegrationTest -->|"TestcontainersFailsafe Plugin"| IntegrationResults
 ```
 
 ### Key Build Commands
@@ -116,15 +116,15 @@ Testcontainers["Testcontainers<br>Docker-based dependencies"]
 subgraph subGraph3 ["Test Execution Flow"]
     MavenSurefire
     MavenFailsafe
-    MavenSurefire --> UnitTests
-    MavenFailsafe --> ModuleTests
-    MavenFailsafe --> IntegrationTests
-    ModuleTests --> TestcontainersConfig
-    ModuleTests --> CacheTestConfig
-    ModuleTests --> TestData
-    IntegrationTests --> TestcontainersConfig
-    ModuleTests --> SpringModulithScenario
-    IntegrationTests --> Testcontainers
+    MavenSurefire -->|"Runs"| UnitTests
+    MavenFailsafe -->|"Runs"| ModuleTests
+    MavenFailsafe -->|"Runs"| IntegrationTests
+    ModuleTests -->|"Uses"| TestcontainersConfig
+    ModuleTests -->|"Uses"| CacheTestConfig
+    ModuleTests -->|"Uses"| TestData
+    IntegrationTests -->|"Uses"| TestcontainersConfig
+    ModuleTests -->|"Leverages"| SpringModulithScenario
+    IntegrationTests -->|"Leverages"| Testcontainers
 
 subgraph subGraph2 ["Test Utilities"]
     SpringModulithScenario
@@ -196,25 +196,25 @@ Containers["Testcontainers<br>PostgreSQL + RabbitMQ"]
 TestData["Test SQL Data<br>Pre-loaded products"]
 CacheConfig["Test Cache Configuration<br>Hazelcast or no-op"]
 
-AppModuleTest --> SpringContext
-Import --> Containers
-Import --> CacheConfig
-Sql --> TestData
-PublishEvent --> SpringContext
+AppModuleTest -->|"Publishes to"| SpringContext
+Import -->|"Imports"| Containers
+Import -->|"Imports"| CacheConfig
+Sql -->|"Loads"| TestData
+PublishEvent -->|"Loads"| SpringContext
 
 subgraph subGraph4 ["Test Infrastructure"]
     SpringContext
     Containers
     TestData
     CacheConfig
-    SpringContext --> Containers
+    SpringContext -->|"Connects to"| Containers
 end
 
 subgraph subGraph3 ["Integration Test Class"]
     TestClass
-    TestClass --> AutowiredService
-    TestClass --> ScenarioParam
-    WaitForState --> AutowiredService
+    TestClass -->|"Uses"| AutowiredService
+    TestClass -->|"Polls"| ScenarioParam
+    WaitForState -->|"Polls"| AutowiredService
 
 subgraph subGraph2 ["Test Method"]
     PublishEvent
@@ -350,9 +350,9 @@ Cache["Maven Cache<br>~/.m2/repository"]
 PushMain --> Checkout
 PushFeature --> Checkout
 PullRequest --> Checkout
-SetupJava --> JavaVersion
-SetupJava --> Distribution
-SetupJava --> Cache
+SetupJava -->|"Uses"| JavaVersion
+SetupJava -->|"Uses"| Distribution
+SetupJava -->|"Restores/Saves"| Cache
 
 subgraph subGraph2 ["Build Requirements"]
     JavaVersion
@@ -367,9 +367,9 @@ subgraph subGraph1 ["CI Pipeline Steps"]
     Build
     DepSubmit
     Checkout --> SetupJava
-    SetupJava --> MakeExecutable
+    SetupJava -->|"Restores/Saves"| MakeExecutable
     MakeExecutable --> Build
-    Build --> DepSubmit
+    Build -->|"On push only"| DepSubmit
 end
 
 subgraph subGraph0 ["Trigger Events"]

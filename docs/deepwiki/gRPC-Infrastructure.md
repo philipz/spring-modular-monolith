@@ -46,14 +46,14 @@ GrpcMessageMapper["GrpcMessageMapper<br>DTO ↔ Proto"]
 GrpcExceptionHandler["GrpcExceptionHandler<br>Exception Mapping"]
 GrpcHealthIndicator["GrpcHealthIndicator<br>Actuator Integration"]
 
-GrpcServerConfig --> OrdersGrpcService
-GrpcServerConfig --> GrpcProperties
-OrdersGrpcService --> GrpcMessageMapper
-OrdersGrpcService --> GrpcExceptionHandler
-OrdersGrpcClient --> GrpcMessageMapper
-OrdersGrpcClient --> GrpcExceptionHandler
-GrpcRetryInterceptor --> GrpcProperties
-GrpcHealthIndicator --> GrpcServerConfig
+GrpcServerConfig -->|"registers"| OrdersGrpcService
+GrpcServerConfig -->|"uses properties"| GrpcProperties
+OrdersGrpcService -->|"uses properties"| GrpcMessageMapper
+OrdersGrpcService -->|"uses properties"| GrpcExceptionHandler
+OrdersGrpcClient -->|"uses"| GrpcMessageMapper
+OrdersGrpcClient -->|"maps exceptions"| GrpcExceptionHandler
+GrpcRetryInterceptor -->|"uses properties"| GrpcProperties
+GrpcHealthIndicator -->|"monitors"| GrpcServerConfig
 
 subgraph subGraph3 ["Supporting Components"]
     GrpcProperties
@@ -66,8 +66,8 @@ subgraph subGraph2 ["gRPC Client Infrastructure"]
     OrdersGrpcClient
     ManagedChannel
     GrpcRetryInterceptor
-    OrdersGrpcClient --> ManagedChannel
-    ManagedChannel --> GrpcRetryInterceptor
+    OrdersGrpcClient -->|"uses"| ManagedChannel
+    ManagedChannel -->|"intercepted by"| GrpcRetryInterceptor
 end
 
 subgraph subGraph1 ["gRPC Services"]
@@ -79,9 +79,9 @@ subgraph subGraph0 ["gRPC Server Infrastructure"]
     ServerLifecycle
     HealthStatusManager
     ProtoReflection
-    GrpcServerConfig --> ServerLifecycle
-    GrpcServerConfig --> HealthStatusManager
-    GrpcServerConfig --> ProtoReflection
+    GrpcServerConfig -->|"creates"| ServerLifecycle
+    GrpcServerConfig -->|"configures"| HealthStatusManager
+    GrpcServerConfig -->|"adds service"| ProtoReflection
 end
 ```
 
@@ -123,11 +123,11 @@ ServerBuilder["ServerBuilder"]
 GrpcServer["gRPC Server<br>Port 9091"]
 OrdersGrpcService["OrdersGrpcService<br>@Component"]
 
-SpringContext --> GrpcServerConfig
-GrpcServerConfig --> ServerBuilder
-ServerBuilder --> GrpcServer
-SpringContext --> OrdersGrpcService
-OrdersGrpcService --> GrpcServer
+SpringContext -->|"provides List<BindableService>"| GrpcServerConfig
+GrpcServerConfig -->|"for each service"| ServerBuilder
+ServerBuilder -->|"addService()"| GrpcServer
+SpringContext -->|"includes"| OrdersGrpcService
+OrdersGrpcService -->|"registered as"| GrpcServer
 ```
 
 ### Health Check Integration
@@ -185,12 +185,12 @@ CreateOrder["createOrder(CreateOrderRequest)<br>→ CreateOrderResponse"]
 GetOrder["getOrder(String orderNumber)<br>→ OrderDto"]
 ListOrders["listOrders(int page, int size)<br>→ PagedResult<OrderView>"]
 
-OrdersRemoteClient --> OrdersGrpcClient
-OrdersGrpcClient --> BlockingStub
-OrdersGrpcClient --> ManagedChannel
-OrdersGrpcClient --> CreateOrder
-OrdersGrpcClient --> GetOrder
-OrdersGrpcClient --> ListOrders
+OrdersRemoteClient -->|"implemented by"| OrdersGrpcClient
+OrdersGrpcClient -->|"uses"| BlockingStub
+OrdersGrpcClient -->|"created from"| ManagedChannel
+OrdersGrpcClient -->|"provides"| CreateOrder
+OrdersGrpcClient -->|"provides"| GetOrder
+OrdersGrpcClient -->|"provides"| ListOrders
 ```
 
 Each method follows a consistent pattern:
@@ -317,36 +317,36 @@ Wire2["Network"]
 ProtoResponseClient["Protobuf Message<br>CreateOrderResponse"]
 ClientResponseDTO["Domain DTO<br>CreateOrderResponse"]
 
-ProtoRequest --> Wire
-ProtoRequestServer --> ServerDTO
-ProtoResponse --> Wire2
+ProtoRequest -->|"gRPC HTTP/2binary serialization"| Wire
+ProtoRequestServer -->|"GrpcMessageMappertoCreateOrderRequest()"| ServerDTO
+ProtoResponse -->|"gRPC HTTP/2"| Wire2
 
 subgraph subGraph3 ["Client Side Response"]
     Wire2
     ProtoResponseClient
     ClientResponseDTO
-    Wire2 --> ProtoResponseClient
-    ProtoResponseClient --> ClientResponseDTO
+    Wire2 -->|"deserialization"| ProtoResponseClient
+    ProtoResponseClient -->|"GrpcMessageMappertoCreateOrderResponseDto()"| ClientResponseDTO
 end
 
 subgraph subGraph2 ["Server Side"]
     ServerDTO
     ResponseDTO
     ProtoResponse
-    ServerDTO --> ResponseDTO
-    ResponseDTO --> ProtoResponse
+    ServerDTO -->|"GrpcMessageMappertoCreateOrderRequestProto()"| ResponseDTO
+    ResponseDTO -->|"GrpcMessageMappertoCreateOrderResponse()"| ProtoResponse
 end
 
 subgraph subGraph1 ["Wire Protocol"]
     Wire
     ProtoRequestServer
-    Wire --> ProtoRequestServer
+    Wire -->|"deserialization"| ProtoRequestServer
 end
 
 subgraph subGraph0 ["Client Side"]
     ClientDTO
     ProtoRequest
-    ClientDTO --> ProtoRequest
+    ClientDTO -->|"GrpcMessageMappertoCreateOrderRequestProto()"| ProtoRequest
 end
 ```
 
@@ -405,14 +405,14 @@ Return["StatusRuntimeException"]
 ResponseObserver["responseObserver<br>.onError()"]
 
 ServiceMethod --> TryBlock
-TryBlock --> CatchBlock
+TryBlock -->|"exception thrown"| CatchBlock
 CatchBlock --> Handler
-Handler --> CheckType
-CheckType --> Propagate
-CheckType --> NotFound
-CheckType --> InvalidArg
-CheckType --> Validation
-CheckType --> Internal
+Handler -->|"exception thrownStatusRuntimeExceptionOrderNotFoundExceptionInvalidOrderExceptionConstraintViolationExceptionOther"| CheckType
+CheckType -->|"StatusRuntimeException"| Propagate
+CheckType -->|"OrderNotFoundException"| NotFound
+CheckType -->|"InvalidOrderException"| InvalidArg
+CheckType -->|"ConstraintViolationException"| Validation
+CheckType -->|"Other"| Internal
 Propagate --> Return
 NotFound --> Return
 InvalidArg --> Return
@@ -560,11 +560,11 @@ UpHealth["Health.up()<br>.withDetail('port', port)<br>.withDetail('services', co
 DownHealth["Health.down()<br>.withDetail('reason', ...)<br>.withDetail('port', port)"]
 Response["Health Response"]
 
-Actuator --> GrpcHealthIndicator
-GrpcHealthIndicator --> GrpcServer
-GrpcServer --> Check
-Check --> UpHealth
-Check --> DownHealth
+Actuator -->|"calls health()"| GrpcHealthIndicator
+GrpcHealthIndicator -->|"checks"| GrpcServer
+GrpcServer -->|"calls health()"| Check
+Check -->|"Yes"| UpHealth
+Check -->|"No"| DownHealth
 UpHealth --> Response
 DownHealth --> Response
 ```
@@ -632,26 +632,26 @@ Server["Running Server"]
 Channel["ManagedChannel"]
 Cleanup["shutdownNow()<br>channel & server"]
 
-TestClass --> InProcessServer
-InProcessServer --> Server
-TestClass --> InProcessChannel
-InProcessChannel --> Channel
-Channel --> BlockingStub
-TestClass --> Cleanup
+TestClass -->|"@BeforeEach"| InProcessServer
+InProcessServer -->|"build().start()"| Server
+TestClass -->|"@BeforeEach"| InProcessChannel
+InProcessChannel -->|"build()"| Channel
+Channel -->|"newBlockingStub()"| BlockingStub
+TestClass -->|"@AfterEach"| Cleanup
 
 subgraph subGraph1 ["Test Execution"]
     BlockingStub
     RPC
     Assertion
-    BlockingStub --> RPC
-    RPC --> Assertion
+    BlockingStub -->|"createOrder()getOrder()listOrders()"| RPC
+    RPC -->|"response"| Assertion
 end
 
 subgraph subGraph0 ["Test Setup"]
     InProcessServer
     InProcessChannel
     ServiceImpl
-    InProcessServer --> ServiceImpl
+    InProcessServer -->|"addService()"| ServiceImpl
 end
 ```
 
@@ -703,10 +703,10 @@ OrdersRemoteClient["OrdersRemoteClient<br>interface"]
 OrdersGrpcClient["OrdersGrpcClient<br>@Component"]
 ExtOrdersService["orders-service<br>Extracted Microservice"]
 
-OrdersGrpcService --> OrdersApi
-OrdersGrpcClient --> GrpcMessageMapper
-OrdersGrpcClient --> ExtOrdersService
-OrdersGrpcClient --> OrdersGrpcService
+OrdersGrpcService -->|"delegates to"| OrdersApi
+OrdersGrpcClient -->|"uses"| GrpcMessageMapper
+OrdersGrpcClient -->|"calls via gRPC"| ExtOrdersService
+OrdersGrpcClient -->|"can also call"| OrdersGrpcService
 
 subgraph subGraph3 ["External Service"]
     ExtOrdersService
@@ -715,21 +715,21 @@ end
 subgraph subGraph2 ["gRPC Client Layer"]
     OrdersRemoteClient
     OrdersGrpcClient
-    OrdersRemoteClient --> OrdersGrpcClient
+    OrdersRemoteClient -->|"implemented by"| OrdersGrpcClient
 end
 
 subgraph subGraph1 ["gRPC Server Layer"]
     OrdersGrpcService
     GrpcMessageMapper
-    OrdersGrpcService --> GrpcMessageMapper
+    OrdersGrpcService -->|"uses"| GrpcMessageMapper
 end
 
 subgraph subGraph0 ["Orders Module Business Layer"]
     OrdersApi
     OrdersService
     OrderRepository
-    OrdersApi --> OrdersService
-    OrdersService --> OrderRepository
+    OrdersApi -->|"implemented by"| OrdersService
+    OrdersService -->|"uses"| OrderRepository
 end
 ```
 

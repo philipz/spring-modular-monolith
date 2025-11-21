@@ -47,9 +47,9 @@ Queue["new-orders queue"]
 DLQ["new-orders.dlq<br>(dead-letter queue)"]
 AMQPMod["amqp-modulith<br>Event Processor"]
 
-Monolith --> Exchange
-OrdersSvc --> Exchange
-Queue --> AMQPMod
+Monolith -->|"PublishesOrderCreatedEvent"| Exchange
+OrdersSvc -->|"PublishesOrderCreatedEvent"| Exchange
+Queue -->|"Consumes events"| AMQPMod
 
 subgraph subGraph2 ["Event Consumers"]
     AMQPMod
@@ -59,8 +59,8 @@ subgraph subGraph1 ["RabbitMQ Broker"]
     Exchange
     Queue
     DLQ
-    Exchange --> Queue
-    Queue --> DLQ
+    Exchange -->|"PublishesOrderCreatedEvent"| Queue
+    Queue -->|"Failed messages"| DLQ
 end
 
 subgraph subGraph0 ["Event Publishers"]
@@ -154,10 +154,10 @@ MainQueue["new-orders queue<br>(durable)"]
 DLQ["new-orders.dlq<br>(dead-letter queue)"]
 Consumer["amqp-modulith<br>Consumer"]
 
-Publisher --> Exchange
-Exchange --> MainQueue
-MainQueue --> DLQ
-MainQueue --> Consumer
+Publisher -->|"Publishes to"| Exchange
+Exchange -->|"Publishes to"| MainQueue
+MainQueue -->|"Processing failure"| DLQ
+MainQueue -->|"Successful processing"| Consumer
 ```
 
 ### Topology Details
@@ -255,8 +255,8 @@ RabbitMQ["RabbitMQ<br>new-orders queue"]
 AMQPMod["amqp-modulith<br>Port 8082"]
 OrdersDB["orders-postgres<br>Dedicated PostgreSQL"]
 
-RabbitMQ --> AMQPMod
-AMQPMod --> OrdersDB
+RabbitMQ -->|"ConsumeOrderCreatedEvent"| AMQPMod
+AMQPMod -->|"JDBC operations"| OrdersDB
 ```
 
 **Configuration:**

@@ -49,13 +49,13 @@ InventoryMapConfig["MapConfig inventoryCacheMapConfig()"]
 InventoryIndexMapConfig["MapConfig inventoryByProductCodeCacheMapConfig()"]
 InventoryMapStore["InventoryMapStore"]
 
-Props --> OrdersConfig
-Props --> CatalogConfig
-Props --> InventoryConfig
-OrdersMapConfig --> MainConfig
-ProductsMapConfig --> MainConfig
-InventoryMapConfig --> MainConfig
-InventoryIndexMapConfig --> MainConfig
+Props -->|"injected into"| OrdersConfig
+Props -->|"injected into"| CatalogConfig
+Props -->|"injected into"| InventoryConfig
+OrdersMapConfig -->|"contributed viaObjectProvider"| MainConfig
+ProductsMapConfig -->|"contributed viaObjectProvider"| MainConfig
+InventoryMapConfig -->|"contributed viaObjectProvider"| MainConfig
+InventoryIndexMapConfig -->|"references"| MainConfig
 
 subgraph subGraph3 ["inventory Module"]
     InventoryConfig
@@ -64,15 +64,15 @@ subgraph subGraph3 ["inventory Module"]
     InventoryMapStore
     InventoryConfig --> InventoryMapConfig
     InventoryConfig --> InventoryIndexMapConfig
-    InventoryMapConfig --> InventoryMapStore
+    InventoryMapConfig -->|"references"| InventoryMapStore
 end
 
 subgraph subGraph2 ["catalog Module"]
     CatalogConfig
     ProductsMapConfig
     ProductMapStore
-    CatalogConfig --> ProductsMapConfig
-    ProductsMapConfig --> ProductMapStore
+    CatalogConfig -->|"injected into"| ProductsMapConfig
+    ProductsMapConfig -->|"references"| ProductMapStore
 end
 
 subgraph subGraph1 ["orders Module"]
@@ -80,7 +80,7 @@ subgraph subGraph1 ["orders Module"]
     OrdersMapConfig
     OrderMapStore
     OrdersConfig --> OrdersMapConfig
-    OrdersMapConfig --> OrderMapStore
+    OrdersMapConfig -->|"references"| OrderMapStore
 end
 
 subgraph subGraph0 ["config Module"]
@@ -88,7 +88,7 @@ subgraph subGraph0 ["config Module"]
     Props
     MainConfig
     HZInstance
-    Props --> HZConfig
+    Props -->|"injected into"| HZConfig
     MainConfig --> HZInstance
     HZConfig --> MainConfig
 end
@@ -231,12 +231,12 @@ ConfigInstance["Config object<br>- instanceName<br>- clusterName<br>- serializat
 MapConfigs["Module MapConfigs<br>via ObjectProvider"]
 HZInstance["HazelcastInstance<br>Hazelcast.newHazelcastInstance()"]
 
-ConfigMethod --> ConfigInstance
-ConfigInstance --> MapConfigs
-ConfigInstance --> InstanceMethod
-InstanceMethod --> HZInstance
-HZInstance --> CacheBeans
-HZInstance --> NameBeans
+ConfigMethod -->|"creates"| ConfigInstance
+ConfigInstance -->|"receives"| MapConfigs
+ConfigInstance -->|"creates"| InstanceMethod
+InstanceMethod -->|"creates"| HZInstance
+HZInstance -->|"used by"| CacheBeans
+HZInstance -->|"used by"| NameBeans
 
 subgraph subGraph0 ["HazelcastConfig Class"]
     ConfigMethod
@@ -244,7 +244,7 @@ subgraph subGraph0 ["HazelcastConfig Class"]
     SpringContextBean
     CacheBeans
     NameBeans
-    SpringContextBean --> ConfigMethod
+    SpringContextBean -->|"injected into"| ConfigMethod
 end
 ```
 

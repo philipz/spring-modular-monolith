@@ -41,15 +41,15 @@ subgraph subGraph0 ["Base Package: com.sivalabs.bookstore"]
     inventory
     notifications
     config
-    common --> catalog
-    common --> orders
-    common --> inventory
-    common --> notifications
-    config --> catalog
-    config --> orders
-    config --> inventory
-    config --> notifications
-    orders --> catalog
+    common -->|"Shared Utilities"| catalog
+    common -->|"Shared Utilities"| orders
+    common -->|"Shared Utilities"| inventory
+    common -->|"Shared Utilities"| notifications
+    config -->|"Provides Beans"| catalog
+    config -->|"Provides Beans"| orders
+    config -->|"Provides Beans"| inventory
+    config -->|"Provides Beans"| notifications
+    orders -->|"ProductApi"| catalog
 end
 ```
 
@@ -106,8 +106,8 @@ AllowedDeps["allowedDependencies:<br>catalog::product-api<br>common::common-cach
 UnauthorizedImport["Unauthorized cross-module<br>repository access"]
 DirectEntityAccess["Direct JPA entity access<br>across modules"]
 
-ModularityTests --> UnauthorizedImport
-ModularityTests --> DirectEntityAccess
+ModularityTests -->|"Fails on"| UnauthorizedImport
+ModularityTests -->|"Fails on"| DirectEntityAccess
 
 subgraph subGraph2 ["Violations Detected"]
     UnauthorizedImport
@@ -116,7 +116,7 @@ end
 
 subgraph subGraph1 ["Module Verification"]
     ModularityTests
-    ModularityTests --> OrdersPkgInfo
+    ModularityTests -->|"Verifies"| OrdersPkgInfo
 
 subgraph subGraph0 ["Allowed Dependencies"]
     OrdersPkgInfo
@@ -165,11 +165,11 @@ InventoryMapStore["inventory/cache/<br>InventoryMapStore"]
 RabbitMQ["RabbitMQ<br>External Event Bus"]
 HZSession["Hazelcast<br>Session Store"]
 
-CachePackage --> ProductMapStore
-CachePackage --> OrderMapStore
-CachePackage --> InventoryMapStore
-EventsPackage --> RabbitMQ
-SessionPackage --> HZSession
+CachePackage -->|"Used by"| ProductMapStore
+CachePackage -->|"Used by"| OrderMapStore
+CachePackage -->|"Used by"| InventoryMapStore
+EventsPackage -->|"Republishes to"| RabbitMQ
+SessionPackage -->|"Configures"| HZSession
 
 subgraph subGraph0 ["common Module"]
     CachePackage
@@ -213,10 +213,10 @@ DB["PostgreSQL<br>Multiple Schemas"]
 GrpcPort["gRPC Server<br>Port 9091"]
 HyperDX["HyperDX<br>Port 4317"]
 
-HZConfig --> MapConfigs
-LiquibaseConfig --> DB
-GrpcServerConfig --> GrpcPort
-OtlpConfig --> HyperDX
+HZConfig -->|"Uses ObjectProvider"| MapConfigs
+LiquibaseConfig -->|"Applies migrations"| DB
+GrpcServerConfig -->|"Exposes"| GrpcPort
+OtlpConfig -->|"Exports to"| HyperDX
 
 subgraph subGraph0 ["config Module"]
     HZConfig
@@ -287,10 +287,10 @@ subgraph Database ["Database"]
 end
 
 subgraph subGraph5 ["catalog Module"]
-    ProductRestController --> ProductService
-    ProductService --> ProductDto
+    ProductRestController -->|"ReturnsDefines contractConfigures"| ProductService
+    ProductService -->|"Returns"| ProductDto
     ProductMapStore --> ProductRepo
-    HZProductCacheConfig --> ProductMapStore
+    HZProductCacheConfig -->|"Configures"| ProductMapStore
 
 subgraph config/ ["config/"]
     HZProductCacheConfig
@@ -308,14 +308,14 @@ subgraph subGraph1 ["domain/ (Internal)"]
     ProductService
     ProductRepo
     ProductEntity
-    ProductService --> ProductRepo
+    ProductService -->|"ReturnsDefines contractConfigures"| ProductRepo
     ProductRepo --> ProductEntity
 end
 
 subgraph subGraph0 ["api/ (Exported)"]
     ProductApi
     ProductDto
-    ProductApi --> ProductDto
+    ProductApi -->|"Defines contract"| ProductDto
 end
 end
 ```
@@ -391,7 +391,7 @@ ExternalGrpcService["orders-service:9090<br>(External gRPC)"]
 OrdersSchema["orders schema<br>orders, order_items tables"]
 
 ProductServiceClient --> ProductApi
-OrdersGrpcClient --> ExternalGrpcService
+OrdersGrpcClient -->|"Optionally calls"| ExternalGrpcService
 OrderRepo --> OrdersSchema
 
 subgraph Database ["Database"]
@@ -406,10 +406,10 @@ end
 subgraph subGraph6 ["orders Module"]
     OrdersRestController --> OrdersRemoteClient
     CartRestController --> OrderService
-    OrderService --> OrderCreatedEvent
-    OrdersGrpcService --> OrderService
+    OrderService -->|"Publishes"| OrderCreatedEvent
+    OrdersGrpcService -->|"PublishesConfiguresOptionally calls"| OrderService
     OrderMapStore --> OrderRepo
-    HZOrderCacheConfig --> OrderMapStore
+    HZOrderCacheConfig -->|"Configures"| OrderMapStore
 
 subgraph config/ ["config/"]
     HZOrderCacheConfig
@@ -542,7 +542,7 @@ HZInventoryCacheConfig["HazelcastInventoryCacheConfig<br>@Bean MapConfig"]
 OrderCreatedEvent["OrderCreatedEvent<br>(from orders module)"]
 InventorySchema["inventory schema<br>inventory table"]
 
-OrderCreatedListener --> OrderCreatedEvent
+OrderCreatedListener -->|"Consumes"| OrderCreatedEvent
 InventoryRepo --> InventorySchema
 
 subgraph Database ["Database"]
@@ -550,9 +550,9 @@ subgraph Database ["Database"]
 end
 
 subgraph subGraph4 ["inventory Module"]
-    OrderCreatedListener --> InventoryService
+    OrderCreatedListener -->|"Consumes"| InventoryService
     InventoryMapStore --> InventoryRepo
-    HZInventoryCacheConfig --> InventoryMapStore
+    HZInventoryCacheConfig -->|"Configures"| InventoryMapStore
 
 subgraph config/ ["config/"]
     HZInventoryCacheConfig
@@ -633,10 +633,10 @@ EmailService["Email Service<br>(Not implemented)"]
 SMSService["SMS Service<br>(Not implemented)"]
 Logs["Application Logs<br>(Structured logging)"]
 
-OrderCreatedListener --> OrderCreatedEvent
-NotificationLogger --> EmailService
-NotificationLogger --> SMSService
-NotificationLogger --> Logs
+OrderCreatedListener -->|"Consumes"| OrderCreatedEvent
+NotificationLogger -->|"Future"| EmailService
+NotificationLogger -->|"Future"| SMSService
+NotificationLogger -->|"Current"| Logs
 
 subgraph subGraph1 ["notifications Module"]
 
@@ -696,24 +696,24 @@ inventory["inventory<br>Stock Levels"]
 notifications["notifications<br>Notifications"]
 EventBus["Spring Modulith<br>Event Bus"]
 
-config --> catalog
-config --> orders
-config --> inventory
-config --> notifications
-common --> catalog
-common --> orders
-common --> inventory
-common --> notifications
-orders --> EventBus
-EventBus --> inventory
-EventBus --> notifications
+config -->|"Provides beans"| catalog
+config -->|"Provides beans"| orders
+config -->|"Provides beans"| inventory
+config -->|"Provides beans"| notifications
+common -->|"Utilities available"| catalog
+common -->|"Utilities available"| orders
+common -->|"Utilities available"| inventory
+common -->|"Utilities available"| notifications
+orders -->|"PublishesOrderCreatedEvent"| EventBus
+EventBus -->|"Delivers event"| inventory
+EventBus -->|"Delivers event"| notifications
 
 subgraph subGraph0 ["Business Modules"]
     catalog
     orders
     inventory
     notifications
-    orders --> catalog
+    orders -->|"API callProductApi"| catalog
 end
 ```
 
@@ -754,13 +754,13 @@ InventorySchema["inventory schema<br>inventory table"]
 HazelcastInstance["HazelcastInstance<br>bookstore-cluster"]
 PostgreSQL["PostgreSQL<br>localhost:5432"]
 
-CatalogCache --> HazelcastInstance
-OrderCache --> HazelcastInstance
-InventoryCache --> HazelcastInstance
-InventoryIndexCache --> HazelcastInstance
-CatalogSchema --> PostgreSQL
-OrdersSchema --> PostgreSQL
-InventorySchema --> PostgreSQL
+CatalogCache -->|"Backed by"| HazelcastInstance
+OrderCache -->|"Backed by"| HazelcastInstance
+InventoryCache -->|"Backed by"| HazelcastInstance
+InventoryIndexCache -->|"Backed by"| HazelcastInstance
+CatalogSchema -->|"Schema isolation"| PostgreSQL
+OrdersSchema -->|"Schema isolation"| PostgreSQL
+InventorySchema -->|"Schema isolation"| PostgreSQL
 
 subgraph subGraph3 ["Shared Infrastructure"]
     HazelcastInstance
@@ -906,10 +906,10 @@ UnauthorizedDep["Unauthorized dependency"]
 DirectRepoAccess["Direct repository access"]
 EntityLeakage["Entity leakage"]
 
-ModularityTests --> BuildFail
-ModularityTests --> UnauthorizedDep
-ModularityTests --> DirectRepoAccess
-ModularityTests --> EntityLeakage
+ModularityTests -->|"Fail"| BuildFail
+ModularityTests -->|"Detects"| UnauthorizedDep
+ModularityTests -->|"Detects"| DirectRepoAccess
+ModularityTests -->|"Detects"| EntityLeakage
 
 subgraph subGraph1 ["Violations Detected"]
     UnauthorizedDep
@@ -924,7 +924,7 @@ subgraph subGraph0 ["Build Pipeline"]
     Verify
     Compile --> Test
     Test --> ModularityTests
-    ModularityTests --> Verify
+    ModularityTests -->|"Pass"| Verify
 end
 ```
 

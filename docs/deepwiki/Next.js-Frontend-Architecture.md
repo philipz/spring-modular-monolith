@@ -42,31 +42,31 @@ StaticAssets["Static Assets<br>_next/static/"]
 Nginx["nginx webproxy<br>Port 80"]
 Monolith["Spring Boot Monolith<br>Port 8080"]
 
-ReactQuery --> NextServer
-APIProxy --> Monolith
-UI --> Nginx
-Nginx --> NextServer
-Monolith --> UI
-UI --> Monolith
+ReactQuery -->|"credentials: include"| NextServer
+APIProxy -->|"NEXT_API_PROXY_TARGET"| Monolith
+UI -->|"In Docker"| Nginx
+Nginx -->|"/"| NextServer
+Monolith -->|"Set-Cookie"| UI
+UI -->|"BOOKSTORE_SESSION"| Monolith
 
 subgraph subGraph2 ["Backend Services"]
     Nginx
     Monolith
-    Nginx --> Monolith
+    Nginx -->|"/api/**"| Monolith
 end
 
 subgraph subGraph1 ["Frontend Container (Port 3000)"]
     NextServer
     APIProxy
     StaticAssets
-    NextServer --> APIProxy
-    NextServer --> StaticAssets
+    NextServer -->|"Production Mode"| APIProxy
+    NextServer -->|"Serve"| StaticAssets
 end
 
 subgraph subGraph0 ["Client Browser"]
     UI
     ReactQuery
-    UI --> ReactQuery
+    UI -->|"Fetch API"| ReactQuery
 end
 ```
 
@@ -202,25 +202,25 @@ SDK["frontend-sdk/<br>Generated Types"]
 ReactApp["Next.js App"]
 APIClient["API Client<br>Typed Functions"]
 
-OpenAPISpec --> Generator
-SDK --> APIClient
+OpenAPISpec -->|"pnpm gen:types"| Generator
+SDK -->|"Import"| APIClient
 
 subgraph Frontend ["Frontend"]
     ReactApp
     APIClient
-    APIClient --> ReactApp
+    APIClient -->|"Used by"| ReactApp
 end
 
 subgraph subGraph1 ["Build Process"]
     Generator
     SDK
-    Generator --> SDK
+    Generator -->|"Generate"| SDK
 end
 
 subgraph Backend ["Backend"]
     SpringBoot
     OpenAPISpec
-    SpringBoot --> OpenAPISpec
+    SpringBoot -->|"Expose"| OpenAPISpec
 end
 ```
 
@@ -272,9 +272,9 @@ QueryCache["Query Cache<br>Stale Time Config"]
 MutationCache["Mutation Cache<br>Retry Logic"]
 RestAPI["REST API<br>/api/**"]
 
-QueryCache --> RestAPI
-MutationCache --> RestAPI
-RestAPI --> QueryCache
+QueryCache -->|"Fetch"| RestAPI
+MutationCache -->|"Mutate"| RestAPI
+RestAPI -->|"credentials: include"| QueryCache
 
 subgraph subGraph3 ["Backend API"]
     RestAPI
@@ -282,11 +282,11 @@ end
 
 subgraph subGraph2 ["React Query Architecture"]
     QueryClient
-    QueryClient --> QueryCache
-    QueryClient --> MutationCache
-    Products --> QueryCache
-    Cart --> MutationCache
-    Orders --> QueryCache
+    QueryClient -->|"Configure"| QueryCache
+    QueryClient -->|"Configure"| MutationCache
+    Products -->|"useQuery"| QueryCache
+    Cart -->|"useMutation"| MutationCache
+    Orders -->|"useQuery + useMutation"| QueryCache
 
 subgraph subGraph1 ["Cache Layer"]
     QueryCache

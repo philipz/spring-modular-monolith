@@ -232,8 +232,8 @@ GrpcClient["OrdersGrpcClient<br>bookstore.grpc.client.target"]
 LocalServer["GrpcServer :9091<br>OrdersGrpcService"]
 ExternalService["orders-service<br>:9090"]
 
-GrpcClient --> LocalServer
-GrpcClient --> ExternalService
+GrpcClient -->|"target=localhost:9091"| LocalServer
+GrpcClient -->|"target=orders-service:9090"| ExternalService
 
 subgraph subGraph2 ["External Mode"]
     ExternalService

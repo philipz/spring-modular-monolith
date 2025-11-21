@@ -102,14 +102,14 @@ InventoryCacheName["@Bean inventoryCacheName<br>String = 'inventory-cache'"]
 InventoryIndexName["@Bean inventoryByProductCodeCacheName<br>String = 'inventory-by-product-code-cache'"]
 HZInstance["HazelcastInstance<br>hazelcastInstance.getMap(name)"]
 
-HZInstance --> OrdersIMap
-HZInstance --> ProductsIMap
-HZInstance --> InventoryIMap
-HZInstance --> InventoryIndexIMap
-OrdersIMap --> OrdersCacheName
-ProductsIMap --> ProductsCacheName
-InventoryIMap --> InventoryCacheName
-InventoryIndexIMap --> InventoryIndexName
+HZInstance -->|"getMap('orders-cache')"| OrdersIMap
+HZInstance -->|"getMap('products-cache')"| ProductsIMap
+HZInstance -->|"getMap('inventory-cache')"| InventoryIMap
+HZInstance -->|"getMap('inventory-by-product-code-cache')"| InventoryIndexIMap
+OrdersIMap -->|"constant"| OrdersCacheName
+ProductsIMap -->|"constant"| ProductsCacheName
+InventoryIMap -->|"constant"| InventoryCacheName
+InventoryIndexIMap -->|"constant"| InventoryIndexName
 
 subgraph subGraph1 ["Cache Name Constants"]
     OrdersCacheName
@@ -239,10 +239,10 @@ InventoryMapConfigBean["@Bean inventoryCacheMapConfig()<br>MapConfig('inventory-
 InventoryIndexMapConfigBean["@Bean inventoryByProductCodeCacheMapConfig()<br>MapConfig('inventory-by-product-code-cache')"]
 InventoryMapStoreBean["@Bean InventoryMapStore"]
 
-OrderMapConfigBean --> MapConfigProvider
-ProductMapConfigBean --> MapConfigProvider
-InventoryMapConfigBean --> MapConfigProvider
-InventoryIndexMapConfigBean --> MapConfigProvider
+OrderMapConfigBean -->|"discovered"| MapConfigProvider
+ProductMapConfigBean -->|"discovered"| MapConfigProvider
+InventoryMapConfigBean -->|"discovered"| MapConfigProvider
+InventoryIndexMapConfigBean -->|"discovered"| MapConfigProvider
 
 subgraph subGraph3 ["inventory module"]
     InventoryCacheConfig
@@ -252,7 +252,7 @@ subgraph subGraph3 ["inventory module"]
     InventoryCacheConfig --> InventoryMapConfigBean
     InventoryCacheConfig --> InventoryIndexMapConfigBean
     InventoryCacheConfig --> InventoryMapStoreBean
-    InventoryMapConfigBean --> InventoryMapStoreBean
+    InventoryMapConfigBean -->|"injected"| InventoryMapStoreBean
 end
 
 subgraph subGraph2 ["catalog module"]
@@ -261,7 +261,7 @@ subgraph subGraph2 ["catalog module"]
     ProductMapStoreBean
     ProductCacheConfig --> ProductMapConfigBean
     ProductCacheConfig --> ProductMapStoreBean
-    ProductMapConfigBean --> ProductMapStoreBean
+    ProductMapConfigBean -->|"injected"| ProductMapStoreBean
 end
 
 subgraph subGraph1 ["orders module"]
@@ -270,13 +270,13 @@ subgraph subGraph1 ["orders module"]
     OrderMapStoreBean
     OrderCacheConfig --> OrderMapConfigBean
     OrderCacheConfig --> OrderMapStoreBean
-    OrderMapConfigBean --> OrderMapStoreBean
+    OrderMapConfigBean -->|"injected"| OrderMapStoreBean
 end
 
 subgraph subGraph0 ["Global Configuration - config module"]
     HZConfig
     MapConfigProvider
-    MapConfigProvider --> HZConfig
+    MapConfigProvider -->|"aggregated"| HZConfig
 end
 ```
 
@@ -326,11 +326,11 @@ SessionConfig["application.properties<br>spring.session.store-type=hazelcast<br>
 SessionRepo["HazelcastSessionRepository<br>Spring Session auto-configured"]
 SessionMap["spring:session:sessions<br>IMap<String, Object><br>TTL: 1800s"]
 
-Browser --> Instance1
-Browser --> Instance2
+Browser -->|"HTTP with cookie"| Instance1
+Browser -->|"HTTP with cookie"| Instance2
 Instance1 --> SessionRepo
-Instance2 --> SessionRepo
-SessionRepo --> SessionMap
+Instance2 -->|"HTTP with cookie"| SessionRepo
+SessionRepo -->|"read/write"| SessionMap
 
 subgraph subGraph3 ["Hazelcast Cluster"]
     SessionMap
@@ -339,7 +339,7 @@ end
 subgraph subGraph2 ["Spring Session Integration"]
     SessionConfig
     SessionRepo
-    SessionConfig --> SessionRepo
+    SessionConfig -->|"configures"| SessionRepo
 end
 
 subgraph subGraph1 ["Application Instances"]
@@ -396,9 +396,9 @@ OrderEntity["OrderEntity<br>Java record<br>Customer, OrderItem records"]
 ProductEntity["ProductEntity<br>JPA entity<br>BigDecimal price"]
 InventoryEntity["InventoryEntity<br>JPA entity<br>Long quantity"]
 
-CheckClass --> OrderEntity
-AllowOverride --> ProductEntity
-SharedObject --> InventoryEntity
+CheckClass -->|"supports"| OrderEntity
+AllowOverride -->|"handles"| ProductEntity
+SharedObject -->|"simplifies"| InventoryEntity
 
 subgraph subGraph1 ["Cached Entity Types"]
     OrderEntity

@@ -35,20 +35,20 @@ rabbitmq["rabbitmq<br>rabbitmq:4.1.3-management-alpine<br>AMQP:5672 Mgmt:15672"]
 hyperdx["hyperdx<br>docker.hyperdx.io/hyperdx/hyperdx-all-in-one<br>UI:8081 gRPC:4317 HTTP:4318"]
 hazelcast_mgmt["hazelcast-mgmt<br>hazelcast/management-center:latest<br>Port:38080"]
 
-Client --> webproxy
-webproxy --> frontend_next
-webproxy --> monolith
-webproxy --> orders_service
-monolith --> postgres
-monolith --> rabbitmq
+Client -->|"HTTP Port 80"| webproxy
+webproxy -->|"Route /"| frontend_next
+webproxy -->|"Route /api/**"| monolith
+webproxy -->|"Traffic Split"| orders_service
+monolith -->|"JDBC"| postgres
+monolith -->|"AMQP"| rabbitmq
 monolith -->|"OTLP gRPC :4317"| hyperdx
-orders_service --> orders_postgres
-orders_service --> rabbitmq
-orders_service --> hyperdx
+orders_service -->|"JDBC"| orders_postgres
+orders_service -->|"AMQP Consume"| rabbitmq
+orders_service -->|"AMQP"| hyperdx
 amqp_modulith --> rabbitmq
-amqp_modulith --> orders_postgres
-hazelcast_mgmt --> monolith
-webproxy --> hyperdx
+amqp_modulith -->|"JDBC"| orders_postgres
+hazelcast_mgmt -->|"Monitors"| monolith
+webproxy -->|"OTLP gRPC :4317"| hyperdx
 
 subgraph Infrastructure ["Infrastructure"]
     rabbitmq
@@ -67,7 +67,7 @@ subgraph subGraph2 ["Application Services"]
     amqp_modulith
     frontend_next
     monolith --> orders_service
-    frontend_next --> monolith
+    frontend_next -->|"API Proxy"| monolith
 end
 
 subgraph subGraph1 ["Entry Point"]
@@ -164,8 +164,8 @@ monolith["monolith Service"]
 postgres_dep["postgres<br>service_healthy"]
 rabbitmq_dep["rabbitmq<br>service_healthy"]
 
-postgres_dep --> monolith
-rabbitmq_dep --> monolith
+postgres_dep -->|"depends_on"| monolith
+rabbitmq_dep -->|"depends_on"| monolith
 ```
 
 | Property | Value |
@@ -367,13 +367,13 @@ amqp_modulith["amqp-modulith<br>Depends: orders-postgres healthy, rabbitmq healt
 webproxy["webproxy<br>Depends: monolith, orders-service, frontend-next"]
 hazelcast_mgmt["hazelcast-mgmt<br>Depends: monolith"]
 
-postgres --> monolith
-rabbitmq --> monolith
-orders_postgres --> orders_service
-rabbitmq --> orders_service
-orders_postgres --> amqp_modulith
-rabbitmq --> amqp_modulith
-frontend_next --> webproxy
+postgres -->|"service_healthy"| monolith
+rabbitmq -->|"service_healthy"| monolith
+orders_postgres -->|"service_healthy"| orders_service
+rabbitmq -->|"service_healthy"| orders_service
+orders_postgres -->|"service_healthy"| amqp_modulith
+rabbitmq -->|"service_healthy"| amqp_modulith
+frontend_next -->|"service_started"| webproxy
 
 subgraph subGraph1 ["Dependent Services"]
     monolith
@@ -381,9 +381,9 @@ subgraph subGraph1 ["Dependent Services"]
     amqp_modulith
     webproxy
     hazelcast_mgmt
-    monolith --> webproxy
-    orders_service --> webproxy
-    monolith --> hazelcast_mgmt
+    monolith -->|"service_started"| webproxy
+    orders_service -->|"service_started"| webproxy
+    monolith -->|"service_started"| hazelcast_mgmt
 end
 
 subgraph subGraph0 ["Health Check Enabled Services"]
@@ -592,8 +592,8 @@ postgres_tc["PostgreSQLContainer<br>postgres:17-alpine<br>@ServiceConnection"]
 rabbitmq_tc["RabbitMQContainer<br>rabbitmq:4.1.3-alpine<br>@ServiceConnection"]
 test["BookStoreApplicationTests<br>@SpringBootTest<br>RANDOM_PORT"]
 
-postgres_tc --> test
-rabbitmq_tc --> test
+postgres_tc -->|"Auto-configured"| test
+rabbitmq_tc -->|"Auto-configured"| test
 
 subgraph subGraph1 ["Spring Boot Test"]
     test

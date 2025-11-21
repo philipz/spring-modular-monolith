@@ -38,9 +38,9 @@ Nginx["nginx webproxy<br>:80"]
 Monolith["Spring Monolith<br>bookstore:8080"]
 OrdersSvc["orders-service<br>:9090<br>(standby)"]
 
-Client --> Nginx
-Nginx --> Monolith
-Monolith --> OrdersSvc
+Client -->|"/api/cart//api/orders/"| Nginx
+Nginx -->|"100% trafficproxy_pass"| Monolith
+Monolith -->|"gRPC optionalOrdersGrpcClient"| OrdersSvc
 ```
 
 In the current configuration, `webproxy/nginx.conf` routes all `/api/**` requests to `monolith:8080`. The `orders-service` exists but receives no direct HTTP/REST traffic; the monolith's `OrdersGrpcClient` may delegate gRPC calls when configured via `bookstore.grpc.client.target=orders-service:9090`.
@@ -60,10 +60,10 @@ Decision["Split Logic<br>IP hash + path"]
 Monolith["Spring Monolith<br>bookstore:8080"]
 OrdersSvc["orders-service<br>:9090"]
 
-Client --> Nginx
-Nginx --> Decision
-Decision --> Monolith
-Decision --> OrdersSvc
+Client -->|"/api/cart//api/orders/"| Nginx
+Nginx -->|"/api/cart//api/orders/"| Decision
+Decision -->|"(100-N)% legacy"| Monolith
+Decision -->|"N% new"| OrdersSvc
 ```
 
 The target configuration introduces percentage-based routing at the nginx layer, distributing `/api/cart/**` and `/api/orders/**` traffic between monolith and orders-service based on the `ORDERS_SERVICE_PERCENT` environment variable (0-100).
@@ -87,14 +87,14 @@ Monolith["Route to<br>monolith:8080"]
 OrdersSvc["Route to<br>orders-service:9090"]
 
 Request --> CheckHeader
-CheckHeader --> Monolith
-CheckHeader --> OrdersSvc
-CheckHeader --> CheckCookie
-CheckCookie --> Monolith
-CheckCookie --> OrdersSvc
-CheckCookie --> HashCheck
-HashCheck --> OrdersSvc
-HashCheck --> Monolith
+CheckHeader -->|"Yes: monolith"| Monolith
+CheckHeader -->|"Yes: orders"| OrdersSvc
+CheckHeader -->|"No"| CheckCookie
+CheckCookie -->|"Yes: monolith"| Monolith
+CheckCookie -->|"Yes: orders"| OrdersSvc
+CheckCookie -->|"No"| HashCheck
+HashCheck -->|"Yes"| OrdersSvc
+HashCheck -->|"No"| Monolith
 ```
 
 **Priority Order:**
@@ -188,7 +188,7 @@ These overrides bypass percentage logic and enable smoke testing specific backen
 ### Step-by-Step Migration Plan
 
 ```css
-#mermaid-5af80xmuykh{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-5af80xmuykh .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-5af80xmuykh .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-5af80xmuykh .error-icon{fill:#dddddd;}#mermaid-5af80xmuykh .error-text{fill:#222222;stroke:#222222;}#mermaid-5af80xmuykh .edge-thickness-normal{stroke-width:1px;}#mermaid-5af80xmuykh .edge-thickness-thick{stroke-width:3.5px;}#mermaid-5af80xmuykh .edge-pattern-solid{stroke-dasharray:0;}#mermaid-5af80xmuykh .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-5af80xmuykh .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-5af80xmuykh .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-5af80xmuykh .marker{fill:#999;stroke:#999;}#mermaid-5af80xmuykh .marker.cross{stroke:#999;}#mermaid-5af80xmuykh svg{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;}#mermaid-5af80xmuykh p{margin:0;}#mermaid-5af80xmuykh .mermaid-main-font{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-5af80xmuykh .exclude-range{fill:#eeeeee;}#mermaid-5af80xmuykh .section{stroke:none;opacity:0.2;}#mermaid-5af80xmuykh .section0{fill:#dddddd;}#mermaid-5af80xmuykh .section2{fill:#eaeaea;}#mermaid-5af80xmuykh .section1,#mermaid-5af80xmuykh .section3{fill:white;opacity:0.2;}#mermaid-5af80xmuykh .sectionTitle0{fill:#444;}#mermaid-5af80xmuykh .sectionTitle1{fill:#444;}#mermaid-5af80xmuykh .sectionTitle2{fill:#444;}#mermaid-5af80xmuykh .sectionTitle3{fill:#444;}#mermaid-5af80xmuykh .sectionTitle{text-anchor:start;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-5af80xmuykh .grid .tick{stroke:lightgrey;opacity:0.8;shape-rendering:crispEdges;}#mermaid-5af80xmuykh .grid .tick text{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;fill:#333;}#mermaid-5af80xmuykh .grid path{stroke-width:0;}#mermaid-5af80xmuykh .today{fill:none;stroke:red;stroke-width:2px;}#mermaid-5af80xmuykh .task{stroke-width:2;}#mermaid-5af80xmuykh .taskText{text-anchor:middle;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-5af80xmuykh .taskTextOutsideRight{fill:#333;text-anchor:start;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-5af80xmuykh .taskTextOutsideLeft{fill:#333;text-anchor:end;}#mermaid-5af80xmuykh .task.clickable{cursor:pointer;}#mermaid-5af80xmuykh .taskText.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-5af80xmuykh .taskTextOutsideLeft.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-5af80xmuykh .taskTextOutsideRight.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-5af80xmuykh .taskText0,#mermaid-5af80xmuykh .taskText1,#mermaid-5af80xmuykh .taskText2,#mermaid-5af80xmuykh .taskText3{fill:#333;}#mermaid-5af80xmuykh .task0,#mermaid-5af80xmuykh .task1,#mermaid-5af80xmuykh .task2,#mermaid-5af80xmuykh .task3{fill:#eaeaea;stroke:#ccc;}#mermaid-5af80xmuykh .taskTextOutside0,#mermaid-5af80xmuykh .taskTextOutside2{fill:#333;}#mermaid-5af80xmuykh .taskTextOutside1,#mermaid-5af80xmuykh .taskTextOutside3{fill:#333;}#mermaid-5af80xmuykh .active0,#mermaid-5af80xmuykh .active1,#mermaid-5af80xmuykh .active2,#mermaid-5af80xmuykh .active3{fill:hsl(0, 0%, 100%);stroke:#eaeaea;}#mermaid-5af80xmuykh .activeText0,#mermaid-5af80xmuykh .activeText1,#mermaid-5af80xmuykh .activeText2,#mermaid-5af80xmuykh .activeText3{fill:#333!important;}#mermaid-5af80xmuykh .done0,#mermaid-5af80xmuykh .done1,#mermaid-5af80xmuykh .done2,#mermaid-5af80xmuykh .done3{stroke:grey;fill:lightgrey;stroke-width:2;}#mermaid-5af80xmuykh .doneText0,#mermaid-5af80xmuykh .doneText1,#mermaid-5af80xmuykh .doneText2,#mermaid-5af80xmuykh .doneText3{fill:#333!important;}#mermaid-5af80xmuykh .crit0,#mermaid-5af80xmuykh .crit1,#mermaid-5af80xmuykh .crit2,#mermaid-5af80xmuykh .crit3{stroke:#ff8888;fill:red;stroke-width:2;}#mermaid-5af80xmuykh .activeCrit0,#mermaid-5af80xmuykh .activeCrit1,#mermaid-5af80xmuykh .activeCrit2,#mermaid-5af80xmuykh .activeCrit3{stroke:#ff8888;fill:hsl(0, 0%, 100%);stroke-width:2;}#mermaid-5af80xmuykh .doneCrit0,#mermaid-5af80xmuykh .doneCrit1,#mermaid-5af80xmuykh .doneCrit2,#mermaid-5af80xmuykh .doneCrit3{stroke:#ff8888;fill:lightgrey;stroke-width:2;cursor:pointer;shape-rendering:crispEdges;}#mermaid-5af80xmuykh .milestone{transform:rotate(45deg) scale(0.8,0.8);}#mermaid-5af80xmuykh .milestoneText{font-style:italic;}#mermaid-5af80xmuykh .doneCritText0,#mermaid-5af80xmuykh .doneCritText1,#mermaid-5af80xmuykh .doneCritText2,#mermaid-5af80xmuykh .doneCritText3{fill:#333!important;}#mermaid-5af80xmuykh .activeCritText0,#mermaid-5af80xmuykh .activeCritText1,#mermaid-5af80xmuykh .activeCritText2,#mermaid-5af80xmuykh .activeCritText3{fill:#333!important;}#mermaid-5af80xmuykh .titleText{text-anchor:middle;font-size:18px;fill:#444;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-5af80xmuykh :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}0%0%1%1%2%2%3%3%4%4%5%5%6%Validation (0%) Canary (5-10%) Progressive (25%) Progressive (50%) Progressive (75%) Complete (100%) Phase 1Phase 2Phase 3Phase 4Traffic Migration Timeline
+#mermaid-ijz7gbv58w{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-ijz7gbv58w .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-ijz7gbv58w .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-ijz7gbv58w .error-icon{fill:#dddddd;}#mermaid-ijz7gbv58w .error-text{fill:#222222;stroke:#222222;}#mermaid-ijz7gbv58w .edge-thickness-normal{stroke-width:1px;}#mermaid-ijz7gbv58w .edge-thickness-thick{stroke-width:3.5px;}#mermaid-ijz7gbv58w .edge-pattern-solid{stroke-dasharray:0;}#mermaid-ijz7gbv58w .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-ijz7gbv58w .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-ijz7gbv58w .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-ijz7gbv58w .marker{fill:#999;stroke:#999;}#mermaid-ijz7gbv58w .marker.cross{stroke:#999;}#mermaid-ijz7gbv58w svg{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;}#mermaid-ijz7gbv58w p{margin:0;}#mermaid-ijz7gbv58w .mermaid-main-font{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-ijz7gbv58w .exclude-range{fill:#eeeeee;}#mermaid-ijz7gbv58w .section{stroke:none;opacity:0.2;}#mermaid-ijz7gbv58w .section0{fill:#dddddd;}#mermaid-ijz7gbv58w .section2{fill:#eaeaea;}#mermaid-ijz7gbv58w .section1,#mermaid-ijz7gbv58w .section3{fill:white;opacity:0.2;}#mermaid-ijz7gbv58w .sectionTitle0{fill:#444;}#mermaid-ijz7gbv58w .sectionTitle1{fill:#444;}#mermaid-ijz7gbv58w .sectionTitle2{fill:#444;}#mermaid-ijz7gbv58w .sectionTitle3{fill:#444;}#mermaid-ijz7gbv58w .sectionTitle{text-anchor:start;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-ijz7gbv58w .grid .tick{stroke:lightgrey;opacity:0.8;shape-rendering:crispEdges;}#mermaid-ijz7gbv58w .grid .tick text{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;fill:#333;}#mermaid-ijz7gbv58w .grid path{stroke-width:0;}#mermaid-ijz7gbv58w .today{fill:none;stroke:red;stroke-width:2px;}#mermaid-ijz7gbv58w .task{stroke-width:2;}#mermaid-ijz7gbv58w .taskText{text-anchor:middle;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-ijz7gbv58w .taskTextOutsideRight{fill:#333;text-anchor:start;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-ijz7gbv58w .taskTextOutsideLeft{fill:#333;text-anchor:end;}#mermaid-ijz7gbv58w .task.clickable{cursor:pointer;}#mermaid-ijz7gbv58w .taskText.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-ijz7gbv58w .taskTextOutsideLeft.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-ijz7gbv58w .taskTextOutsideRight.clickable{cursor:pointer;fill:#003163!important;font-weight:bold;}#mermaid-ijz7gbv58w .taskText0,#mermaid-ijz7gbv58w .taskText1,#mermaid-ijz7gbv58w .taskText2,#mermaid-ijz7gbv58w .taskText3{fill:#333;}#mermaid-ijz7gbv58w .task0,#mermaid-ijz7gbv58w .task1,#mermaid-ijz7gbv58w .task2,#mermaid-ijz7gbv58w .task3{fill:#eaeaea;stroke:#ccc;}#mermaid-ijz7gbv58w .taskTextOutside0,#mermaid-ijz7gbv58w .taskTextOutside2{fill:#333;}#mermaid-ijz7gbv58w .taskTextOutside1,#mermaid-ijz7gbv58w .taskTextOutside3{fill:#333;}#mermaid-ijz7gbv58w .active0,#mermaid-ijz7gbv58w .active1,#mermaid-ijz7gbv58w .active2,#mermaid-ijz7gbv58w .active3{fill:hsl(0, 0%, 100%);stroke:#eaeaea;}#mermaid-ijz7gbv58w .activeText0,#mermaid-ijz7gbv58w .activeText1,#mermaid-ijz7gbv58w .activeText2,#mermaid-ijz7gbv58w .activeText3{fill:#333!important;}#mermaid-ijz7gbv58w .done0,#mermaid-ijz7gbv58w .done1,#mermaid-ijz7gbv58w .done2,#mermaid-ijz7gbv58w .done3{stroke:grey;fill:lightgrey;stroke-width:2;}#mermaid-ijz7gbv58w .doneText0,#mermaid-ijz7gbv58w .doneText1,#mermaid-ijz7gbv58w .doneText2,#mermaid-ijz7gbv58w .doneText3{fill:#333!important;}#mermaid-ijz7gbv58w .crit0,#mermaid-ijz7gbv58w .crit1,#mermaid-ijz7gbv58w .crit2,#mermaid-ijz7gbv58w .crit3{stroke:#ff8888;fill:red;stroke-width:2;}#mermaid-ijz7gbv58w .activeCrit0,#mermaid-ijz7gbv58w .activeCrit1,#mermaid-ijz7gbv58w .activeCrit2,#mermaid-ijz7gbv58w .activeCrit3{stroke:#ff8888;fill:hsl(0, 0%, 100%);stroke-width:2;}#mermaid-ijz7gbv58w .doneCrit0,#mermaid-ijz7gbv58w .doneCrit1,#mermaid-ijz7gbv58w .doneCrit2,#mermaid-ijz7gbv58w .doneCrit3{stroke:#ff8888;fill:lightgrey;stroke-width:2;cursor:pointer;shape-rendering:crispEdges;}#mermaid-ijz7gbv58w .milestone{transform:rotate(45deg) scale(0.8,0.8);}#mermaid-ijz7gbv58w .milestoneText{font-style:italic;}#mermaid-ijz7gbv58w .doneCritText0,#mermaid-ijz7gbv58w .doneCritText1,#mermaid-ijz7gbv58w .doneCritText2,#mermaid-ijz7gbv58w .doneCritText3{fill:#333!important;}#mermaid-ijz7gbv58w .activeCritText0,#mermaid-ijz7gbv58w .activeCritText1,#mermaid-ijz7gbv58w .activeCritText2,#mermaid-ijz7gbv58w .activeCritText3{fill:#333!important;}#mermaid-ijz7gbv58w .titleText{text-anchor:middle;font-size:18px;fill:#444;font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;}#mermaid-ijz7gbv58w :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}0%0%1%1%2%2%3%3%4%4%5%5%6%Validation (0%) Canary (5-10%) Progressive (25%) Progressive (50%) Progressive (75%) Complete (100%) Phase 1Phase 2Phase 3Phase 4Traffic Migration Timeline
 ```
 
 **Phase 1: Validation (0%)**
@@ -261,8 +261,8 @@ Backend["monolith OR<br>orders-service"]
 HyperDX["HyperDX<br>:4317 OTLP gRPC"]
 Traces["Trace Storage"]
 
-Nginx --> HyperDX
-Backend --> HyperDX
+Nginx -->|"OTLP export"| HyperDX
+Backend -->|"OTLP export"| HyperDX
 
 subgraph subGraph1 ["Observability Pipeline"]
     HyperDX
@@ -274,8 +274,8 @@ subgraph subGraph0 ["Request Flow"]
     Client
     Nginx
     Backend
-    Client --> Nginx
-    Nginx --> Backend
+    Client -->|"trace_id, span_id"| Nginx
+    Nginx -->|"W3C Trace Contextpropagate"| Backend
 end
 ```
 

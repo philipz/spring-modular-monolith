@@ -56,7 +56,7 @@ RabbitMQ["bookstore-rabbitmq<br>Port 5672<br>Management: 15672"]
 Hazelcast["bookstore-hazelcast<br>Cache & Sessions"]
 HyperDX["hyperdx<br>Observability<br>UI: 8081"]
 
-Browser --> Nginx
+Browser -->|"Unsupported markdown: link"| Nginx
 
 subgraph subGraph1 ["Docker Compose Services"]
     Nginx
@@ -68,10 +68,10 @@ subgraph subGraph1 ["Docker Compose Services"]
     RabbitMQ
     Hazelcast
     HyperDX
-    Nginx --> Frontend
-    Nginx --> Monolith
-    Frontend --> Monolith
-    Monolith --> OrdersSvc
+    Nginx -->|"/"| Frontend
+    Nginx -->|"/api/**"| Monolith
+    Frontend -->|"API Proxy"| Monolith
+    Monolith -->|"gRPC"| OrdersSvc
     Monolith --> Postgres
     Monolith --> Hazelcast
     Monolith --> RabbitMQ

@@ -61,9 +61,9 @@ subgraph subGraph0 ["Host Machine"]
     Docker
     KindScript
     TaskFile
-    TaskFile --> KindScript
-    TaskFile --> KindScript
-    KindScript --> Docker
+    TaskFile -->|"task kind_create"| KindScript
+    TaskFile -->|"task kind_destroy"| KindScript
+    KindScript -->|"kind create cluster"| Docker
 end
 ```
 
@@ -232,7 +232,7 @@ Container["Container: rabbitmq<br>Image: rabbitmq:4.1.3-management-alpine"]
 User["RABBITMQ_DEFAULT_USER: guest"]
 Pass["RABBITMQ_DEFAULT_PASS: guest"]
 
-Selector --> PodTemplate
+Selector -->|"Routes to"| PodTemplate
 
 subgraph subGraph3 ["RabbitMQ Deployment"]
     Deployment
@@ -252,7 +252,7 @@ end
 subgraph subGraph1 ["RabbitMQ Service Configuration"]
     Service
     Selector
-    Service --> Selector
+    Service -->|"Matches"| Selector
 
 subgraph subGraph0 ["Port Mappings"]
     AMQPPort
@@ -366,12 +366,12 @@ DeleteManifests["kubectl delete -f k8s/manifests/"]
 KindDestroy["task kind_destroy"]
 DestroyScript["./k8s/kind/kind-cluster.sh destroy"]
 
-Developer --> BuildImage
-Developer --> KindCreate
-DockerImage --> K8sDeploy
-KindCluster --> K8sDeploy
-K8sResources --> K8sUndeploy
-KindCluster --> KindDestroy
+Developer -->|"1"| BuildImage
+Developer -->|"2"| KindCreate
+DockerImage -->|"3"| K8sDeploy
+KindCluster -->|"Required"| K8sDeploy
+K8sResources -->|"Cleanup"| K8sUndeploy
+KindCluster -->|"Complete Teardown"| KindDestroy
 
 subgraph subGraph3 ["Teardown Phase"]
     K8sUndeploy

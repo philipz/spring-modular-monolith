@@ -59,11 +59,11 @@ RabbitMQ["RabbitMQ<br>External Event Bus"]
 NotificationListeners["Notification Event Listeners<br>(notifications module)"]
 IntentLog["Notification Intent Log"]
 
-OrderService --> ModulithBus
-ModulithBus --> NotificationListeners
-ModulithBus --> RabbitMQ
-RabbitMQ --> NotificationListeners
-NotificationListeners --> IntentLog
+OrderService -->|"publishesOrderCreatedEvent"| ModulithBus
+ModulithBus -->|"delivers event"| NotificationListeners
+ModulithBus -->|"republishes to"| RabbitMQ
+RabbitMQ -->|"async delivery"| NotificationListeners
+NotificationListeners -->|"records intent"| IntentLog
 ```
 
 **Event Consumption Pattern:**
@@ -267,9 +267,9 @@ OrdersAPI["orders.api.events<br>OrderCreatedEvent"]
 Common["common module<br>(OPEN)"]
 Config["config module<br>(infrastructure)"]
 
-Notifications --> OrdersAPI
-Notifications --> Common
-Notifications --> Config
+Notifications -->|"consumes events from"| OrdersAPI
+Notifications -->|"uses utilities from"| Common
+Notifications -->|"receives beans from"| Config
 ```
 
 **Inbound Dependencies (What Notifications Consumes):**

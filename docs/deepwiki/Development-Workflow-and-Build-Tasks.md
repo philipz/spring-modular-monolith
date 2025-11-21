@@ -40,13 +40,13 @@ kind_destroy["kind_destroy"]
 k8s_deploy["k8s_deploy"]
 k8s_undeploy["k8s_undeploy"]
 
-start --> build_image
-k8s_deploy --> build_image
-format --> MVNW
-test --> MVNW
-build_image --> MVNW
-start --> DC_FILE
-restart --> SLEEP_CMD
+start -->|"deps: [format]"| build_image
+k8s_deploy -->|"deps: [format]"| build_image
+format -->|"{{.MVNW}}"| MVNW
+test -->|"{{.MVNW}}"| MVNW
+build_image -->|"{{.MVNW}}"| MVNW
+start -->|"{{.DC_FILE}}"| DC_FILE
+restart -->|"{{.SLEEP_CMD}}"| SLEEP_CMD
 
 subgraph subGraph3 ["Kubernetes Tasks"]
     kind_create
@@ -68,8 +68,8 @@ subgraph subGraph1 ["Core Development Tasks"]
     test
     format
     build_image
-    default --> test
-    test --> format
+    default -->|"deps: [format]"| test
+    test -->|"deps: [format]"| format
 end
 
 subgraph subGraph0 ["Platform Variables"]
@@ -129,13 +129,13 @@ ComposeRm["docker compose rm -f"]
 SleepWait["sleep 5 seconds"]
 
 DevStart --> TaskChoice
-TaskChoice --> FormatCheck
-TaskChoice --> BuildImage
-TaskChoice --> StopServices
-FormatCheck --> SpotlessRun
+TaskChoice -->|"task test"| FormatCheck
+TaskChoice -->|"task start"| BuildImage
+TaskChoice -->|"task restart"| StopServices
+FormatCheck -->|"mvnw spotless:apply"| SpotlessRun
 SpotlessRun --> MavenTest
 MavenTest --> TestResults
-BuildImage --> ProtobufCompile
+BuildImage -->|"mvnw protobuf:compile"| ProtobufCompile
 ProtobufCompile --> MavenPackage
 MavenPackage --> SpringBootImage
 SpringBootImage --> DockerImage
@@ -333,12 +333,12 @@ ClusterReady["Kind cluster running"]
 AppRunning["App running in K8s"]
 ClusterGone["Cluster removed"]
 
-KC --> ClusterReady
+KC -->|"k8s/kind/kind-cluster.sh create"| ClusterReady
 ClusterReady --> BI
 AD --> AppRunning
 AppRunning --> UD
 UD --> ClusterReady
-KD --> ClusterGone
+KD -->|"k8s/kind/kind-cluster.sh destroy"| ClusterGone
 
 subgraph Cleanup ["Cleanup"]
     UD
@@ -450,8 +450,8 @@ MavenBuild --> TestResults
 MavenBuild --> CoverageReport
 MavenBuild --> JARFile
 MavenBuild --> CheckPush
-CheckPush --> DepSnapshot
-CheckPush --> End
+CheckPush -->|"Yes"| DepSnapshot
+CheckPush -->|"No"| End
 DepSnapshot --> DependencyGraph
 DependencyGraph --> End
 

@@ -77,9 +77,9 @@ OtlpExporterOrders --> WebMVC
 OtlpExporterOrders --> JDBC
 OtlpExporterOrders --> RabbitMQ
 OtlpExporterOrders --> gRPC
-OtlpExporterMono --> OTLPReceiver
-OtlpExporterOrders --> OTLPReceiver
-NginxOtelModule --> OTLPReceiver
+OtlpExporterMono -->|"gRPCCompression: gzipTimeout: 10s"| OTLPReceiver
+OtlpExporterOrders -->|"gRPCCompression: gzipTimeout: 10s"| OTLPReceiver
+NginxOtelModule -->|"gRPCAuth: HYPERDX_API_KEY"| OTLPReceiver
 
 subgraph subGraph6 ["HyperDX Platform"]
     OTLPReceiver
@@ -337,10 +337,10 @@ HyperDXTrace["Complete Trace:<br>4 linked spans"]
 Headers1 --> NginxRecv
 NginxForward --> MonoRecv
 MonoGrpcCall --> OrdersRecv
-NginxSpan --> HyperDXTrace
-MonoSpan --> HyperDXTrace
-OrdersSpan --> HyperDXTrace
-OrdersDB --> HyperDXTrace
+NginxSpan -->|"Export"| HyperDXTrace
+MonoSpan -->|"Export"| HyperDXTrace
+OrdersSpan -->|"Export"| HyperDXTrace
+OrdersDB -->|"Export"| HyperDXTrace
 
 subgraph subGraph4 ["Trace Storage"]
     HyperDXTrace

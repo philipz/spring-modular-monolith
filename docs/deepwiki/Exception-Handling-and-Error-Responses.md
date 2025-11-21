@@ -71,20 +71,20 @@ HTTP400["400 BAD_REQUEST<br>ErrorResponse"]
 HTTP500["500 INTERNAL_SERVER_ERROR<br>ErrorResponse"]
 HTTP503["503 SERVICE_UNAVAILABLE<br>ErrorResponse"]
 
-OrdersRC --> OrderNotFound
-OrdersRC --> InvalidOrder
-OrdersRC --> GrpcStatus
-ProductRC --> ProductNotFound
-OrderNotFound --> OrdersEH
-InvalidOrder --> OrdersEH
-GrpcStatus --> OrdersEH
-GenericEx --> OrdersEH
-ProductNotFound --> CatalogEH
-OrdersEH --> HTTP404
-OrdersEH --> HTTP400
-OrdersEH --> HTTP500
-OrdersEH --> HTTP503
-CatalogEH --> HTTP404
+OrdersRC -->|"throws"| OrderNotFound
+OrdersRC -->|"throws"| InvalidOrder
+OrdersRC -->|"throws"| GrpcStatus
+ProductRC -->|"throws"| ProductNotFound
+OrderNotFound -->|"handled by"| OrdersEH
+InvalidOrder -->|"handled by"| OrdersEH
+GrpcStatus -->|"handled by"| OrdersEH
+GenericEx -->|"handled by"| OrdersEH
+ProductNotFound -->|"handled by"| CatalogEH
+OrdersEH -->|"returns"| HTTP404
+OrdersEH -->|"returns"| HTTP400
+OrdersEH -->|"returns"| HTTP500
+OrdersEH -->|"returns"| HTTP503
+CatalogEH -->|"returns"| HTTP404
 
 subgraph subGraph3 ["HTTP Responses"]
     HTTP404
@@ -153,11 +153,11 @@ HTTP503["503<br>SERVICE_UNAVAILABLE"]
 HTTP504["504<br>GATEWAY_TIMEOUT"]
 HTTP500["500<br>INTERNAL_SERVER_ERROR"]
 
-GRPC_NOT_FOUND --> HTTP404
-GRPC_INVALID --> HTTP400
-GRPC_UNAVAIL --> HTTP503
-GRPC_DEADLINE --> HTTP504
-GRPC_OTHER --> HTTP500
+GRPC_NOT_FOUND -->|"'Order not found with number: XYZ'"| HTTP404
+GRPC_INVALID -->|"'Validation failed: [details]'"| HTTP400
+GRPC_UNAVAIL -->|"'Orders service unavailable'"| HTTP503
+GRPC_DEADLINE -->|"'Request timeout'"| HTTP504
+GRPC_OTHER -->|"'Unable to process request'"| HTTP500
 
 subgraph subGraph1 ["HTTP Status Codes"]
     HTTP404
@@ -242,20 +242,20 @@ StatusNotFound["Status.NOT_FOUND<br>description: error message"]
 StatusInvalid["Status.INVALID_ARGUMENT<br>description: validation details"]
 StatusInternal["Status.INTERNAL<br>description: error message"]
 
-GrpcService --> OrderService
-OrderService --> OrderNotFound
-OrderService --> InvalidOrder
-OrderService --> ConstraintViolation
-OrderService --> GenericEx
-OrderNotFound --> GrpcService
-InvalidOrder --> GrpcService
-ConstraintViolation --> GrpcService
-GenericEx --> GrpcService
-GrpcService --> GrpcEH
-GrpcEH --> StatusNotFound
-GrpcEH --> StatusInvalid
-GrpcEH --> StatusInvalid
-GrpcEH --> StatusInternal
+GrpcService -->|"calls"| OrderService
+OrderService -->|"throws"| OrderNotFound
+OrderService -->|"throws"| InvalidOrder
+OrderService -->|"throws"| ConstraintViolation
+OrderService -->|"throws"| GenericEx
+OrderNotFound -->|"caught by"| GrpcService
+InvalidOrder -->|"throws"| GrpcService
+ConstraintViolation -->|"caught by"| GrpcService
+GenericEx -->|"caught by"| GrpcService
+GrpcService -->|"calls"| GrpcEH
+GrpcEH -->|"maps OrderNotFoundException"| StatusNotFound
+GrpcEH -->|"maps InvalidOrderException"| StatusInvalid
+GrpcEH -->|"maps ConstraintViolationException"| StatusInvalid
+GrpcEH -->|"maps Exception"| StatusInternal
 
 subgraph subGraph4 ["gRPC Status"]
     StatusNotFound

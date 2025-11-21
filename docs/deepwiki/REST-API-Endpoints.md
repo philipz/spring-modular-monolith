@@ -64,20 +64,20 @@ HZSession["Hazelcast Session<br>BOOKSTORE_SESSION"]
 GrpcServer["gRPC Server<br>Port 9091"]
 DB["PostgreSQL<br>catalog/orders schemas"]
 
-Client --> Nginx
-Nginx --> RestCtrl
-RestCtrl --> GrpcClient
-RestCtrl --> ProdAPI
-RestCtrl --> CartUtil
-GrpcClient --> GrpcServer
-ProdAPI --> DB
-CartUtil --> HZSession
+Client -->|"HTTP JSON"| Nginx
+Nginx -->|"Proxy /api/**"| RestCtrl
+RestCtrl -->|"Delegates"| GrpcClient
+RestCtrl -->|"Calls"| ProdAPI
+RestCtrl -->|"Session Ops"| CartUtil
+GrpcClient -->|"gRPC Protocol"| GrpcServer
+ProdAPI -->|"JDBC"| DB
+CartUtil -->|"Read/Write"| HZSession
 
 subgraph subGraph1 ["Data Layer"]
     HZSession
     GrpcServer
     DB
-    GrpcServer --> DB
+    GrpcServer -->|"JDBC"| DB
 end
 
 subgraph subGraph0 ["Business Layer"]
@@ -211,12 +211,12 @@ Session["HttpSession<br>Hazelcast-backed"]
 CartUtil["CartUtil<br>web.util.CartUtil"]
 ProdAPI["ProductApi<br>catalog.api.ProductApi"]
 
-Client --> CartCtrl
-CartCtrl --> Session
-CartCtrl --> CartUtil
-CartCtrl --> ProdAPI
-CartUtil --> Session
-CartUtil --> Session
+Client -->|"Include BOOKSTORE_SESSION"| CartCtrl
+CartCtrl -->|"Inject"| Session
+CartCtrl -->|"Static Methods"| CartUtil
+CartCtrl -->|"Product Lookup"| ProdAPI
+CartUtil -->|"getCart(session)"| Session
+CartUtil -->|"updateCart(session, cart)"| Session
 ```
 
 **Sources:**
@@ -383,16 +383,16 @@ GrpcClient["OrdersGrpcClient<br>orders.grpc.client.OrdersGrpcClient"]
 MonolithGrpc["In-Process gRPC Server<br>localhost:9091"]
 ExtService["orders-service<br>orders-service:9090"]
 
-Client --> OrdersREST
-OrdersREST --> RemoteClient
-RemoteClient --> GrpcClient
+Client -->|"HTTP JSON"| OrdersREST
+OrdersREST -->|"Calls"| RemoteClient
+RemoteClient -->|"Delegates"| GrpcClient
 
 subgraph subGraph0 ["gRPC Layer"]
     GrpcClient
     MonolithGrpc
     ExtService
-    GrpcClient --> MonolithGrpc
-    GrpcClient --> ExtService
+    GrpcClient -->|"Target: localhost:9091"| MonolithGrpc
+    GrpcClient -->|"Target: orders-service:9090"| ExtService
 end
 ```
 

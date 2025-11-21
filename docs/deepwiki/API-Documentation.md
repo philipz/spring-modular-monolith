@@ -53,19 +53,19 @@ OrdersService["orders-service<br>:9090"]
 Session["Hazelcast Session<br>BOOKSTORE_SESSION"]
 OpenAPI["OpenAPI Spec<br>/api-docs<br>Swagger UI<br>/swagger-ui.html"]
 
-Browser --> Nginx
-SPA --> Nginx
-ExternalGrpc --> GrpcServer
-Nginx --> RestAPI
-Nginx --> Browser
-RestAPI --> OrdersRemoteClient
-RestAPI --> ProductApi
-RestAPI --> CartUtil
-OrdersGrpcClient --> GrpcServer
-OrdersGrpcClient --> OrdersService
-RestAPI --> Session
-WebUI --> Session
-RestAPI --> OpenAPI
+Browser -->|"HTTP"| Nginx
+SPA -->|"HTTP/JSON"| Nginx
+ExternalGrpc -->|"gRPC"| GrpcServer
+Nginx -->|"/api/**"| RestAPI
+Nginx -->|"/"| Browser
+RestAPI -->|"delegates"| OrdersRemoteClient
+RestAPI -->|"uses"| ProductApi
+RestAPI -->|"uses"| CartUtil
+OrdersGrpcClient -->|"localhost:9091"| GrpcServer
+OrdersGrpcClient -->|"orders-service:9090"| OrdersService
+RestAPI -->|"session"| Session
+WebUI -->|"session"| Session
+RestAPI -->|"documented by"| OpenAPI
 
 subgraph subGraph5 ["Shared Infrastructure"]
     Session
@@ -81,7 +81,7 @@ subgraph subGraph3 ["Backend Services"]
     ProductApi
     CartUtil
     OrdersRemoteClient
-    OrdersRemoteClient --> OrdersGrpcClient
+    OrdersRemoteClient -->|"gRPC"| OrdersGrpcClient
 end
 
 subgraph subGraph2 ["API Surfaces"]
@@ -146,13 +146,13 @@ CatalogDB["catalog schema"]
 HazelcastSession["Hazelcast Session"]
 GrpcOrders["gRPC Orders Service"]
 
-ProductRest --> ProductService
-ProductService --> CatalogDB
-CartRest --> ProductApi
-CartRest --> CartUtil
-CartUtil --> HazelcastSession
-OrdersRest --> OrdersRemoteClient
-OrdersRemoteClient --> GrpcOrders
+ProductRest -->|"uses"| ProductService
+ProductService -->|"reads"| CatalogDB
+CartRest -->|"validates via"| ProductApi
+CartRest -->|"session mgmt"| CartUtil
+CartUtil -->|"stores"| HazelcastSession
+OrdersRest -->|"delegates"| OrdersRemoteClient
+OrdersRemoteClient -->|"calls"| GrpcOrders
 
 subgraph subGraph2 ["Data Sources"]
     CatalogDB
@@ -213,8 +213,8 @@ GrpcServer["OrdersGrpcService<br>:9091"]
 OrdersService["orders-service<br>:9090<br>(extracted microservice)"]
 Target["bookstore.grpc.client.target<br>localhost:9091 | orders-service:9090"]
 
-GrpcClient --> OrdersService
-Target --> GrpcClient
+GrpcClient -->|"Mode B: external"| OrdersService
+Target -->|"controls"| GrpcClient
 
 subgraph Configuration ["Configuration"]
     Target
@@ -229,9 +229,9 @@ subgraph Monolith ["Monolith"]
     RemoteClient
     GrpcClient
     GrpcServer
-    RestController --> RemoteClient
-    RemoteClient --> GrpcClient
-    GrpcClient --> GrpcServer
+    RestController -->|"delegates"| RemoteClient
+    RemoteClient -->|"impl"| GrpcClient
+    GrpcClient -->|"Mode A: in-process"| GrpcServer
 end
 ```
 

@@ -46,15 +46,15 @@ NextJS["frontend-next<br>Next.js 14 App Router<br>Port 3000"]
 Monolith["Spring Boot Monolith<br>REST API<br>Port 8080"]
 Hazelcast["Hazelcast<br>Session Storage"]
 
-Browser --> Nginx
-Nginx --> NextJS
-Nginx --> Monolith
-NextJS --> Monolith
+Browser -->|"HTTP"| Nginx
+Nginx -->|"/ (root path)"| NextJS
+Nginx -->|"/api/**"| Monolith
+NextJS -->|"Dev mode proxy:Unsupported markdown: link"| Monolith
 
 subgraph subGraph1 ["Backend Layer"]
     Monolith
     Hazelcast
-    Monolith --> Hazelcast
+    Monolith -->|"Session CRUD"| Hazelcast
 end
 
 subgraph subGraph0 ["Frontend Layer"]
@@ -168,12 +168,12 @@ FrontendNext --> SDK
 Features --> ProductFeature
 Features --> CartFeature
 Features --> OrdersFeature
-ProductFeature --> SDK
-CartFeature --> SDK
-OrdersFeature --> SDK
-ProductFeature --> LibApi
-CartFeature --> LibApi
-OrdersFeature --> LibApi
+ProductFeature -->|"Uses types from"| SDK
+CartFeature -->|"Uses types from"| SDK
+OrdersFeature -->|"Uses types from"| SDK
+ProductFeature -->|"Fetches via"| LibApi
+CartFeature -->|"Fetches via"| LibApi
+OrdersFeature -->|"Fetches via"| LibApi
 ```
 
 **Sources**: [README.md L18-L23](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/README.md#L18-L23)
@@ -230,15 +230,15 @@ OrderHistory["View Order History<br>GET /api/orders?page=1"]
 
 Browse --> ViewDetails
 ViewDetails --> AddToCart
-AddToCart --> ReviewCart
+AddToCart -->|"Creates session"| ReviewCart
 ReviewCart --> UpdateQty
 UpdateQty --> ReviewCart
-ReviewCart --> PlaceOrder
+ReviewCart -->|"Creates sessionSetsBOOKSTORE_SESSIONSession requiredSession required"| PlaceOrder
 PlaceOrder --> Confirmation
 Confirmation --> OrderHistory
-AddToCart --> ReviewCart
-ReviewCart --> PlaceOrder
-PlaceOrder --> Confirmation
+AddToCart -->|"SetsBOOKSTORE_SESSION"| ReviewCart
+ReviewCart -->|"Session required"| PlaceOrder
+PlaceOrder -->|"Session required"| Confirmation
 ```
 
 **Sources**: [k6.js L19-L89](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/k6.js#L19-L89)

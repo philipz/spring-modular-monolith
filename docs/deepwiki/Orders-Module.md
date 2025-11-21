@@ -68,8 +68,8 @@ Config["config/<br>HazelcastOrderCacheConfig"]
 CatalogAPI["catalog/api/ProductApi"]
 CommonCache["common/cache/<br>SpringAwareMapStoreConfig"]
 
-Domain --> CatalogAPI
-Cache --> CommonCache
+Domain -->|"validates via"| CatalogAPI
+Cache -->|"uses"| CommonCache
 
 subgraph subGraph1 ["External Dependencies"]
     CatalogAPI
@@ -83,11 +83,11 @@ subgraph subGraph0 ["orders module"]
     GRPC
     Cache
     Config
-    Web --> Domain
-    GRPC --> API
-    API --> Domain
-    Cache --> Domain
-    Config --> Cache
+    Web -->|"uses"| Domain
+    GRPC -->|"uses"| API
+    API -->|"defines"| Domain
+    Cache -->|"persists"| Domain
+    Config -->|"configures"| Cache
 end
 ```
 
@@ -109,11 +109,11 @@ Config["config module<br>(infrastructure beans)"]
 Inventory["inventory module"]
 Notifications["notifications module"]
 
-Orders --> Catalog
-Orders --> Common
-Orders --> Config
-Orders --> Inventory
-Orders --> Notifications
+Orders -->|"calls API"| Catalog
+Orders -->|"uses utilities"| Common
+Orders -->|"receives beans"| Config
+Orders -->|"publishes OrderCreatedEvent"| Inventory
+Orders -->|"publishes OrderCreatedEvent"| Notifications
 ```
 
 **Description:** The orders module depends on the catalog module's `ProductApi` for product validation during order creation ([src/main/java/com/sivalabs/bookstore/orders/domain/ProductServiceClient.java L1-L24](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/main/java/com/sivalabs/bookstore/orders/domain/ProductServiceClient.java#L1-L24)
@@ -276,10 +276,10 @@ GrpcClient["OrdersGrpcClient"]
 LocalServer["In-process<br>gRPC Server<br>:9091"]
 ExternalService["orders-service<br>gRPC Server<br>:9090"]
 
-RestController --> RemoteClient
-RemoteClient --> GrpcClient
-GrpcClient --> LocalServer
-GrpcClient --> ExternalService
+RestController -->|"delegates"| RemoteClient
+RemoteClient -->|"implemented by"| GrpcClient
+GrpcClient -->|"target=localhost:9091"| LocalServer
+GrpcClient -->|"target=orders-service:9090"| ExternalService
 ```
 
 **Description:** The REST controller delegates all order operations to `OrdersRemoteClient`, which is implemented by `OrdersGrpcClient`. This allows seamless switching between in-process gRPC calls (monolithic mode) and remote calls to the extracted `orders-service` microservice by changing the `bookstore.grpc.client.target` configuration.
@@ -379,10 +379,10 @@ InventoryListener["InventoryService<br>@ApplicationModuleListener"]
 NotificationListener["NotificationService<br>@ApplicationModuleListener"]
 RabbitMQ["RabbitMQ<br>External Event Bus"]
 
-OrderService --> EventBus
-EventBus --> InventoryListener
-EventBus --> NotificationListener
-EventBus --> RabbitMQ
+OrderService -->|"publishEvent()"| EventBus
+EventBus -->|"async"| InventoryListener
+EventBus -->|"async"| NotificationListener
+EventBus -->|"republish"| RabbitMQ
 ```
 
 **Description:** The event is first published to the internal event bus with guaranteed delivery (stored in `events` schema). Inventory and notification modules consume it asynchronously. The event is also republished to RabbitMQ for external consumers or the extracted `orders-service` to process.
@@ -449,15 +449,15 @@ HZCache["Hazelcast<br>orders-cache<br>IMap<String, Object>"]
 MapStore["OrderMapStore"]
 PostgreSQL["PostgreSQL<br>orders.orders table"]
 
-OrderService --> HZCache
-HZCache --> MapStore
-MapStore --> PostgreSQL
-PostgreSQL --> MapStore
-MapStore --> HZCache
-HZCache --> OrderService
-OrderService --> HZCache
-HZCache --> MapStore
-MapStore --> PostgreSQL
+OrderService -->|"1.Query by orderNumber"| HZCache
+HZCache -->|"2.Cache miss"| MapStore
+MapStore -->|"3.SELECT"| PostgreSQL
+PostgreSQL -->|"4.Order entity"| MapStore
+MapStore -->|"5.Populate cache"| HZCache
+HZCache -->|"6.Return order"| OrderService
+OrderService -->|"1.Save new order"| HZCache
+HZCache -->|"2.Write-through"| MapStore
+MapStore -->|"3.INSERT"| PostgreSQL
 ```
 
 **Description:** On read, Hazelcast checks the cache; if the order is not present, `OrderMapStore.load()` fetches it from the database and populates the cache. On write, orders are synchronously persisted to PostgreSQL before returning to the caller (writeDelaySeconds=0), ensuring cache-database consistency.

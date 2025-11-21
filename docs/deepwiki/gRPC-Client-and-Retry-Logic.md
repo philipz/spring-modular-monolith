@@ -39,15 +39,15 @@ ManagedChannel["ManagedChannel<br>(gRPC transport)"]
 OrdersServiceStub["OrdersServiceBlockingStub<br>(generated)"]
 OrdersService["orders-service<br>gRPC Server :9090"]
 
-OrdersApi --> OrdersRemoteClient
-OrdersRemoteClient --> OrdersGrpcClient
-OrdersGrpcClient --> ManagedChannel
-OrdersGrpcClient --> OrdersServiceStub
-OrdersGrpcClient --> OrdersServiceStub
-ManagedChannel --> GrpcRetryInterceptor
-OrdersServiceStub --> OrdersService
-GrpcRetryInterceptor --> OrdersService
-OrdersGrpcClient --> OrdersApi
+OrdersApi -->|"delegates to"| OrdersRemoteClient
+OrdersRemoteClient -->|"implemented by"| OrdersGrpcClient
+OrdersGrpcClient -->|"creates stub from"| ManagedChannel
+OrdersGrpcClient -->|"uses"| OrdersServiceStub
+OrdersGrpcClient -->|"applies deadlinewithDeadlineAfter()"| OrdersServiceStub
+ManagedChannel -->|"intercepted by"| GrpcRetryInterceptor
+OrdersServiceStub -->|"gRPC unary call"| OrdersService
+GrpcRetryInterceptor -->|"on UNAVAILABLEretry with backoff"| OrdersService
+OrdersGrpcClient -->|"maps StatusRuntimeExceptionto domain exceptions"| OrdersApi
 ```
 
 **Sources:**
@@ -208,15 +208,15 @@ Delegate["delegate<br>ClientCall"]
 Server["orders-service"]
 ResponseListener["responseListener.onClose()<br>propagate error"]
 
-Channel --> Interceptor
-RetryingClientCall --> Delegate
-Delegate --> RetryListener
-Delegate --> Server
-Server --> RetryListener
-RetryListener --> OnClose
-ShouldRetry --> ResponseListener
-CheckAttempts --> ResponseListener
-ComputeBackoff --> Scheduler
+Channel -->|"newCall()"| Interceptor
+RetryingClientCall -->|"startNewAttempt()"| Delegate
+Delegate -->|"start() with"| RetryListener
+Delegate -->|"gRPC request"| Server
+Server -->|"status + trailers"| RetryListener
+RetryListener -->|"newCall()"| OnClose
+ShouldRetry -->|"no"| ResponseListener
+CheckAttempts -->|"no"| ResponseListener
+ComputeBackoff -->|"schedule after delay"| Scheduler
 
 subgraph subGraph1 ["Retry Decision Logic"]
     OnClose
@@ -224,8 +224,8 @@ subgraph subGraph1 ["Retry Decision Logic"]
     CheckAttempts
     ComputeBackoff
     OnClose --> ShouldRetry
-    ShouldRetry --> CheckAttempts
-    CheckAttempts --> ComputeBackoff
+    ShouldRetry -->|"yes"| CheckAttempts
+    CheckAttempts -->|"yes"| ComputeBackoff
 end
 
 subgraph GrpcRetryInterceptor ["GrpcRetryInterceptor"]
@@ -233,8 +233,8 @@ subgraph GrpcRetryInterceptor ["GrpcRetryInterceptor"]
     RetryingClientCall
     RetryListener
     Scheduler
-    Interceptor --> RetryingClientCall
-    Scheduler --> RetryingClientCall
+    Interceptor -->|"type == UNARY"| RetryingClientCall
+    Scheduler -->|"retry"| RetryingClientCall
 end
 ```
 
@@ -318,8 +318,8 @@ Propagate["Propagate original<br>StatusRuntimeException"]
 StatusRuntimeException --> NOT_FOUND
 StatusRuntimeException --> INVALID_ARGUMENT
 StatusRuntimeException --> Other
-NOT_FOUND --> OrderNotFoundException
-INVALID_ARGUMENT --> InvalidOrderException
+NOT_FOUND -->|"with description"| OrderNotFoundException
+INVALID_ARGUMENT -->|"with description"| InvalidOrderException
 Other --> Propagate
 
 subgraph mapStatusRuntimeException() ["mapStatusRuntimeException()"]
@@ -437,30 +437,30 @@ MockProductApi["ProductApi<br>@MockBean"]
 TestMethod["@Test methods"]
 Assertions["AssertJ assertions"]
 
-InProcessServer --> OrdersGrpcService
-OrdersGrpcClient --> InProcessChannel
-TestMethod --> OrdersGrpcClient
+InProcessServer -->|"registers"| OrdersGrpcService
+OrdersGrpcClient -->|"uses"| InProcessChannel
+TestMethod -->|"invokes"| OrdersGrpcClient
 
 subgraph subGraph2 ["Test Execution"]
     TestMethod
     Assertions
-    TestMethod --> Assertions
+    TestMethod -->|"verifies"| Assertions
 end
 
 subgraph subGraph1 ["Test Components"]
     OrdersGrpcClient
     OrdersGrpcService
     MockProductApi
-    OrdersGrpcService --> MockProductApi
+    OrdersGrpcService -->|"calls"| MockProductApi
 end
 
 subgraph subGraph0 ["Test Configuration"]
     TestConfig
     InProcessChannel
     InProcessServer
-    TestConfig --> InProcessChannel
-    TestConfig --> InProcessServer
-    InProcessChannel --> InProcessServer
+    TestConfig -->|"provides"| InProcessChannel
+    TestConfig -->|"creates"| InProcessServer
+    InProcessChannel -->|"connects to"| InProcessServer
 end
 ```
 

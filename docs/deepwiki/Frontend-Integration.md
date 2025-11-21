@@ -43,12 +43,12 @@ RestAPI["REST Controllers<br>/api/products<br>/api/cart<br>/api/orders"]
 Hazelcast["Hazelcast Cluster<br>bookstore-cluster"]
 SessionStore["spring:session:sessions<br>30 min TTL"]
 
-Browser --> Nginx
-Nginx --> NextApp
-Nginx --> Monolith
-NextProxy --> Monolith
-RestAPI --> Hazelcast
-Browser --> RestAPI
+Browser -->|"HTTP Request"| Nginx
+Nginx -->|"/ → proxy_pass"| NextApp
+Nginx -->|"/api/** → proxy_pass"| Monolith
+NextProxy -->|"Unsupported markdown: link"| Monolith
+RestAPI -->|"Read/Write Session"| Hazelcast
+Browser -->|"BOOKSTORE_SESSIONCookie"| RestAPI
 
 subgraph subGraph3 ["Session Layer"]
     Hazelcast
@@ -65,7 +65,7 @@ end
 subgraph subGraph1 ["Frontend Layer"]
     NextApp
     NextProxy
-    NextApp --> NextProxy
+    NextApp -->|"Dev ModeAPI Proxy"| NextProxy
 end
 
 subgraph subGraph0 ["Entry Point"]
@@ -288,16 +288,16 @@ Nginx["nginx<br>Port 80"]
 Frontend["frontend-next<br>Port 3000<br>NODE_ENV=production"]
 Backend["monolith<br>Port 8080"]
 
-Browser --> Nginx
-Browser --> Nginx
+Browser -->|"/"| Nginx
+Browser -->|"/api/**"| Nginx
 
 subgraph subGraph0 ["Production Stack"]
     Nginx
     Frontend
     Backend
-    Nginx --> Frontend
-    Nginx --> Backend
-    Frontend --> Backend
+    Nginx -->|"UI Routes"| Frontend
+    Nginx -->|"API Routes"| Backend
+    Frontend -->|"No Direct API Calls"| Backend
 end
 ```
 
@@ -317,13 +317,13 @@ Frontend["frontend-next<br>Port 3000<br>pnpm dev"]
 Backend["monolith<br>Port 8080<br>SPRING_PROFILES_ACTIVE=dev"]
 CorsConfig["CorsConfig<br>@Profile('dev')<br>allows localhost:3000"]
 
-Browser --> Frontend
+Browser -->|"UI + API"| Frontend
 
 subgraph subGraph0 ["Development Stack"]
     Frontend
     Backend
     CorsConfig
-    Frontend --> Backend
+    Frontend -->|"Unsupported markdown: link"| Backend
     Backend --> CorsConfig
 end
 ```

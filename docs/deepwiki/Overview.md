@@ -65,19 +65,19 @@ eventsSchema["events schema<br>spring_modulith_event_publication"]
 rest["REST Controllers<br>*RestController.java"]
 grpc["gRPC Services<br>OrdersGrpcService.java"]
 
-config --> catalog
-config --> orders
-config --> inventory
-common --> catalog
-common --> orders
-common --> inventory
-common --> notifications
+config -->|"Provides Beans"| catalog
+config -->|"Provides Beans"| orders
+config -->|"Provides Beans"| inventory
+common -->|"Shared Utilities"| catalog
+common -->|"Shared Utilities"| orders
+common -->|"Shared Utilities"| inventory
+common -->|"Shared Utilities"| notifications
 catalog --> catalogSchema
-orders --> ordersSchema
+orders -->|"ProductApi.getProductByCode()"| ordersSchema
 inventory --> inventorySchema
 catalog --> rest
-orders --> rest
-orders --> grpc
+orders -->|"OrderCreatedEvent"| rest
+orders -->|"OrderCreatedEvent"| grpc
 
 subgraph subGraph3 ["API Surface"]
     rest
@@ -97,9 +97,9 @@ subgraph subGraph1 ["Business Domain Modules"]
     orders
     inventory
     notifications
-    orders --> catalog
-    orders --> inventory
-    orders --> notifications
+    orders -->|"ProductApi.getProductByCode()"| catalog
+    orders -->|"OrderCreatedEvent"| inventory
+    orders -->|"OrderCreatedEvent"| notifications
 end
 
 subgraph subGraph0 ["Infrastructure Layer"]
@@ -144,18 +144,18 @@ hazelcast["HazelcastInstance<br>bookstore-cluster<br>Embedded in monolith/orders
 hazelcastMgmt["hazelcast-mgmt<br>Port 38080"]
 hyperdx["hyperdx<br>docker.hyperdx.io/hyperdx/hyperdx-all-in-one<br>UI: 8081<br>OTLP gRPC: 4317"]
 
-webproxy --> frontend
-webproxy --> monolith
-monolith --> postgres
-monolith --> rabbitmq
-monolith --> hyperdx
-monolith --> hazelcast
-ordersService --> ordersPostgres
-ordersService --> rabbitmq
-ordersService --> hyperdx
-ordersService --> hazelcast
-amqp --> rabbitmq
-amqp --> ordersPostgres
+webproxy -->|"/ → proxy_pass"| frontend
+webproxy -->|"/api/** → proxy_pass"| monolith
+monolith -->|"JDBCspring.datasource.url"| postgres
+monolith -->|"AMQP"| rabbitmq
+monolith -->|"OTLP_ENDPOINT"| hyperdx
+monolith -->|"Embedded"| hazelcast
+ordersService -->|"JDBC"| ordersPostgres
+ordersService -->|"AMQP"| rabbitmq
+ordersService -->|"OTLP_ENDPOINT"| hyperdx
+ordersService -->|"Embedded"| hazelcast
+amqp -->|"JDBC"| rabbitmq
+amqp -->|"JDBC"| ordersPostgres
 
 subgraph Observability ["Observability"]
     hyperdx
@@ -164,7 +164,7 @@ end
 subgraph subGraph4 ["Caching & Session"]
     hazelcast
     hazelcastMgmt
-    hazelcast --> hazelcastMgmt
+    hazelcast -->|"Monitored by"| hazelcastMgmt
 end
 
 subgraph Messaging ["Messaging"]
@@ -181,8 +181,8 @@ subgraph subGraph1 ["Application Services"]
     ordersService
     frontend
     amqp
-    frontend --> monolith
-    monolith --> ordersService
+    frontend -->|"NEXT_API_PROXY_TARGET"| monolith
+    monolith -->|"gRPCbookstore.grpc.client.target"| ordersService
 end
 
 subgraph subGraph0 ["Entry Point"]
@@ -224,9 +224,9 @@ productClient["ProductServiceClient<br>orders/domain/ProductServiceClient.java"]
 productApi["ProductApi<br>catalog/api/ProductApi.java"]
 productService["ProductService<br>catalog/domain/ProductService.java"]
 
-ordersService --> productClient
-productClient --> productApi
-productApi --> productService
+ordersService -->|"Validates price"| productClient
+productClient -->|"getProductByCode(code)"| productApi
+productApi -->|"Implemented by"| productService
 ```
 
 **Sources:** [src/main/java/com/sivalabs/bookstore/orders/domain/ProductServiceClient.java](https://github.com/philipz/spring-modular-monolith/blob/30c9bf30/src/main/java/com/sivalabs/bookstore/orders/domain/ProductServiceClient.java)
@@ -247,11 +247,11 @@ inventoryHandler["InventoryProjection<br>@ApplicationModuleListener"]
 notificationHandler["NotificationIntentEventHandler<br>@ApplicationModuleListener"]
 rabbitmq["RabbitMQ<br>orders-events exchange"]
 
-orderService --> eventBus
-eventBus --> eventTable
-eventBus --> inventoryHandler
-eventBus --> notificationHandler
-eventBus --> rabbitmq
+orderService -->|"publishEvent(OrderCreatedEvent)"| eventBus
+eventBus -->|"Persist"| eventTable
+eventBus -->|"Async delivery"| inventoryHandler
+eventBus -->|"Async delivery"| notificationHandler
+eventBus -->|"Republish@Externalized"| rabbitmq
 ```
 
 **Configuration:**
@@ -279,12 +279,12 @@ channel["ManagedChannel<br>config/GrpcClientConfig.java"]
 grpcService["OrdersGrpcService<br>orders/grpc/OrdersGrpcService.java"]
 protoContract["orders.proto<br>src/main/proto/orders.proto"]
 
-restController --> remoteClient
-remoteClient --> grpcClient
-grpcClient --> channel
-channel --> grpcService
-grpcClient --> protoContract
-grpcService --> protoContract
+restController -->|"Delegates to"| remoteClient
+remoteClient -->|"Uses"| grpcClient
+grpcClient -->|"Connects via"| channel
+channel -->|"Target: orders-service:9090"| grpcService
+grpcClient -->|"Message format"| protoContract
+grpcService -->|"Message format"| protoContract
 ```
 
 The gRPC client target is configurable via `bookstore.grpc.client.target`, allowing the monolith to call either:
