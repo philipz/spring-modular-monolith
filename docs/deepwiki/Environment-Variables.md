@@ -136,14 +136,7 @@ OTLPExporter["OtlpGrpcSpanExporter"]
 OrdersClient["OrdersGrpcClient"]
 HazelcastInst["HazelcastInstance"]
 
-DB_URL --> DataSource
-DB_USER --> DataSource
-DB_PASS --> DataSource
-DB_POOL --> DataSource
-MQ_HOST --> RabbitTemplate
 OTLP --> OTLPExporter
-GRPC_TARGET --> OrdersClient
-JDK_OPTS --> HazelcastInst
 
 subgraph monolith:8080 ["monolith:8080"]
     DataSource
@@ -206,10 +199,6 @@ ProductClient["ProductApiClient"]
 ChannelCache["CachingConnectionFactory"]
 
 PROFILE --> ProfileConfig
-DB_URL --> DataSource
-EVENTS_SCHEMA --> EventStore
-PRODUCT_API --> ProductClient
-MQ_CACHE --> ChannelCache
 
 subgraph orders-service:9090 ["orders-service:9090"]
     ProfileConfig
@@ -330,11 +319,8 @@ ServerRuntime["Server Runtime"]
 APIProxy["API Middleware Proxy"]
 ClientFetch["Client-side fetch()"]
 
-NODE_ENV --> NextConfig
 PORT --> ServerRuntime
 HOSTNAME --> ServerRuntime
-PUBLIC_API --> ClientFetch
-PROXY_TARGET --> APIProxy
 
 subgraph frontend-next:3000 ["frontend-next:3000"]
     NextConfig

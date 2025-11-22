@@ -287,7 +287,7 @@ subgraph Database ["Database"]
 end
 
 subgraph subGraph5 ["catalog Module"]
-    ProductRestController -->|"ReturnsDefines contractConfigures"| ProductService
+    ProductRestController --> ProductService
     ProductService -->|"Returns"| ProductDto
     ProductMapStore --> ProductRepo
     HZProductCacheConfig -->|"Configures"| ProductMapStore
@@ -308,7 +308,7 @@ subgraph subGraph1 ["domain/ (Internal)"]
     ProductService
     ProductRepo
     ProductEntity
-    ProductService -->|"ReturnsDefines contractConfigures"| ProductRepo
+    ProductService --> ProductRepo
     ProductRepo --> ProductEntity
 end
 
@@ -407,7 +407,7 @@ subgraph subGraph6 ["orders Module"]
     OrdersRestController --> OrdersRemoteClient
     CartRestController --> OrderService
     OrderService -->|"Publishes"| OrderCreatedEvent
-    OrdersGrpcService -->|"PublishesConfiguresOptionally calls"| OrderService
+    OrdersGrpcService --> OrderService
     OrderMapStore --> OrderRepo
     HZOrderCacheConfig -->|"Configures"| OrderMapStore
 
@@ -550,7 +550,7 @@ subgraph Database ["Database"]
 end
 
 subgraph subGraph4 ["inventory Module"]
-    OrderCreatedListener -->|"Consumes"| InventoryService
+    OrderCreatedListener --> InventoryService
     InventoryMapStore --> InventoryRepo
     HZInventoryCacheConfig -->|"Configures"| InventoryMapStore
 

@@ -127,7 +127,7 @@ OrderMapConfig -->|"configures"| SpringAwareConfig
 InventoryMapConfig -->|"configures"| SpringAwareConfig
 SpringAwareConfig -->|"setImplementation"| ProductMapStore
 SpringAwareConfig -->|"setImplementation"| OrderMapStore
-SpringAwareConfig -->|"triggers MapStore callbacks"| InventoryMapStore
+SpringAwareConfig -->|"setImplementation"| InventoryMapStore
 HZInstance -->|"getMap"| ProductCache
 HZInstance -->|"getMap"| OrderCache
 HZInstance -->|"getMap"| InventoryCache

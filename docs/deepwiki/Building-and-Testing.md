@@ -71,7 +71,7 @@ Validate --> Compile
 Compile --> TestCompile
 TestCompile --> Test
 Test --> Package
-Package -->|"JUnit 5Surefire PluginTestcontainersFailsafe Plugin"| IntegrationTest
+Package --> IntegrationTest
 IntegrationTest --> Verify
 Verify --> Install
 Install --> Deploy
@@ -196,11 +196,11 @@ Containers["Testcontainers<br>PostgreSQL + RabbitMQ"]
 TestData["Test SQL Data<br>Pre-loaded products"]
 CacheConfig["Test Cache Configuration<br>Hazelcast or no-op"]
 
-AppModuleTest -->|"Publishes to"| SpringContext
+AppModuleTest -->|"Loads"| SpringContext
 Import -->|"Imports"| Containers
 Import -->|"Imports"| CacheConfig
 Sql -->|"Loads"| TestData
-PublishEvent -->|"Loads"| SpringContext
+PublishEvent -->|"Publishes to"| SpringContext
 
 subgraph subGraph4 ["Test Infrastructure"]
     SpringContext
@@ -213,7 +213,7 @@ end
 subgraph subGraph3 ["Integration Test Class"]
     TestClass
     TestClass -->|"Uses"| AutowiredService
-    TestClass -->|"Polls"| ScenarioParam
+    TestClass -->|"Uses"| ScenarioParam
     WaitForState -->|"Polls"| AutowiredService
 
 subgraph subGraph2 ["Test Method"]
@@ -367,7 +367,7 @@ subgraph subGraph1 ["CI Pipeline Steps"]
     Build
     DepSubmit
     Checkout --> SetupJava
-    SetupJava -->|"Restores/Saves"| MakeExecutable
+    SetupJava --> MakeExecutable
     MakeExecutable --> Build
     Build -->|"On push only"| DepSubmit
 end

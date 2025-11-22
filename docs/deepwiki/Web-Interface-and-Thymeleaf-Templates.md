@@ -233,7 +233,7 @@ ViewDetails --> AddToCart
 AddToCart -->|"Creates session"| ReviewCart
 ReviewCart --> UpdateQty
 UpdateQty --> ReviewCart
-ReviewCart -->|"Creates sessionSetsBOOKSTORE_SESSIONSession requiredSession required"| PlaceOrder
+ReviewCart --> PlaceOrder
 PlaceOrder --> Confirmation
 Confirmation --> OrderHistory
 AddToCart -->|"SetsBOOKSTORE_SESSION"| ReviewCart

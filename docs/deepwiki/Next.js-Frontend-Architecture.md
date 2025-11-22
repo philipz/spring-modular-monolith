@@ -94,11 +94,8 @@ PROXY_TARGET["NEXT_API_PROXY_TARGET<br>Unsupported markdown: link"]
 NextApp["Next.js Application"]
 ProxyLayer["API Proxy Layer"]
 
-NODE_ENV --> NextApp
 PORT --> NextApp
 HOSTNAME --> NextApp
-PUBLIC_API --> NextApp
-PROXY_TARGET --> ProxyLayer
 
 subgraph subGraph1 ["Container Runtime"]
     NextApp

@@ -450,7 +450,7 @@ HZMgmt["hazelcast-mgmt<br>Management Center<br>Port 38080"]
 
 MonolithCache --> OrdersMap
 OrdersCache --> OrdersMap
-MonolithCache -->|"Cluster MembershipAutomatic Discovery"| SessionMap
+MonolithCache --> SessionMap
 OrdersCache --> SessionMap
 HZMgmt -->|"Monitors"| MonolithCache
 HZMgmt -->|"Monitors"| OrdersCache

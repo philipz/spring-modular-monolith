@@ -258,7 +258,7 @@ HttpBadRequest["HTTP 400"]
 HttpInternal["HTTP 500/503"]
 
 GrpcCall -->|"throws"| StatusException
-StatusException -->|"throws"| Mapper
+StatusException --> Mapper
 Mapper -->|"NOT_FOUND"| NotFound
 Mapper -->|"INVALID_ARGUMENT"| InvalidArg
 Mapper -->|"default"| Other

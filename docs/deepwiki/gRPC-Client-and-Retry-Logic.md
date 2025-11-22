@@ -213,7 +213,7 @@ RetryingClientCall -->|"startNewAttempt()"| Delegate
 Delegate -->|"start() with"| RetryListener
 Delegate -->|"gRPC request"| Server
 Server -->|"status + trailers"| RetryListener
-RetryListener -->|"newCall()"| OnClose
+RetryListener --> OnClose
 ShouldRetry -->|"no"| ResponseListener
 CheckAttempts -->|"no"| ResponseListener
 ComputeBackoff -->|"schedule after delay"| Scheduler
@@ -318,8 +318,6 @@ Propagate["Propagate original<br>StatusRuntimeException"]
 StatusRuntimeException --> NOT_FOUND
 StatusRuntimeException --> INVALID_ARGUMENT
 StatusRuntimeException --> Other
-NOT_FOUND -->|"with description"| OrderNotFoundException
-INVALID_ARGUMENT -->|"with description"| InvalidOrderException
 Other --> Propagate
 
 subgraph mapStatusRuntimeException() ["mapStatusRuntimeException()"]

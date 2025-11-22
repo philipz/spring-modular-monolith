@@ -310,8 +310,6 @@ ExporterHeaders["Authorization Header"]
 ExporterTimeout["Request Timeout"]
 ExporterCompression["gzip Compression"]
 
-OTLP_ENDPOINT --> OtlpEndpointProp
-HYPERDX_API_KEY --> OtlpAuthProp
 OtlpEndpointProp --> EndpointField
 OtlpAuthProp --> HeadersField
 OtlpTimeoutProp --> TimeoutField

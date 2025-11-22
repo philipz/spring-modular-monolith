@@ -329,7 +329,7 @@ SessionMap["spring:session:sessions<br>IMap<String, Object><br>TTL: 1800s"]
 Browser -->|"HTTP with cookie"| Instance1
 Browser -->|"HTTP with cookie"| Instance2
 Instance1 --> SessionRepo
-Instance2 -->|"HTTP with cookie"| SessionRepo
+Instance2 --> SessionRepo
 SessionRepo -->|"read/write"| SessionMap
 
 subgraph subGraph3 ["Hazelcast Cluster"]

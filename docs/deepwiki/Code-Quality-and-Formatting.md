@@ -253,7 +253,7 @@ verify --> mvnVerify
 mvnVerify --> spotlessCheck
 spotlessCheck -->|"Pass"| commit
 spotlessCheck -->|"Fail"| format
-commit -->|"PassFailPassFail"| push
+commit --> push
 push --> ci
 ci --> ciVerify
 ciVerify -->|"Pass"| success

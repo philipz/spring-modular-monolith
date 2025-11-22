@@ -153,12 +153,6 @@ HTTP503["503<br>SERVICE_UNAVAILABLE"]
 HTTP504["504<br>GATEWAY_TIMEOUT"]
 HTTP500["500<br>INTERNAL_SERVER_ERROR"]
 
-GRPC_NOT_FOUND -->|"'Order not found with number: XYZ'"| HTTP404
-GRPC_INVALID -->|"'Validation failed: [details]'"| HTTP400
-GRPC_UNAVAIL -->|"'Orders service unavailable'"| HTTP503
-GRPC_DEADLINE -->|"'Request timeout'"| HTTP504
-GRPC_OTHER -->|"'Unable to process request'"| HTTP500
-
 subgraph subGraph1 ["HTTP Status Codes"]
     HTTP404
     HTTP400
@@ -248,7 +242,7 @@ OrderService -->|"throws"| InvalidOrder
 OrderService -->|"throws"| ConstraintViolation
 OrderService -->|"throws"| GenericEx
 OrderNotFound -->|"caught by"| GrpcService
-InvalidOrder -->|"throws"| GrpcService
+InvalidOrder -->|"caught by"| GrpcService
 ConstraintViolation -->|"caught by"| GrpcService
 GenericEx -->|"caught by"| GrpcService
 GrpcService -->|"calls"| GrpcEH

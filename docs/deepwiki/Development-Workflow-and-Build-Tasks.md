@@ -40,11 +40,9 @@ kind_destroy["kind_destroy"]
 k8s_deploy["k8s_deploy"]
 k8s_undeploy["k8s_undeploy"]
 
-start -->|"deps: [format]"| build_image
-k8s_deploy -->|"deps: [format]"| build_image
+start -->|"deps: [build_image]"| build_image
 format -->|"{{.MVNW}}"| MVNW
 test -->|"{{.MVNW}}"| MVNW
-build_image -->|"{{.MVNW}}"| MVNW
 start -->|"{{.DC_FILE}}"| DC_FILE
 restart -->|"{{.SLEEP_CMD}}"| SLEEP_CMD
 

@@ -148,7 +148,7 @@ CatalogModule -->|"Defines"| CatalogCfg
 OrdersModule -->|"Defines"| OrdersCfg
 InventoryModule -->|"Defines"| InventoryCfg
 CatalogCfg -->|"Provides"| HZConfig
-OrdersCfg -->|"Defines"| HZConfig
+OrdersCfg -->|"Provides"| HZConfig
 InventoryCfg -->|"Provides"| HZConfig
 HZConfig -->|"Aggregates & Creates"| HZInstance
 ```
@@ -217,7 +217,7 @@ GrpcProps -->|"Injects"| GrpcServerCfg
 BindableServices -->|"Auto-discovered"| GrpcServerCfg
 HealthMgr -->|"Optional"| GrpcServerCfg
 GrpcServerCfg -->|"Builds"| ServerBuilder
-ServerBuilder -->|"Injects"| BindableServices
+ServerBuilder -->|"addService"| BindableServices
 ServerBuilder -->|"addService"| HealthMgr
 ServerBuilder -->|"addService"| ReflectionSvc
 ServerBuilder -->|"build()"| GrpcServer
@@ -567,7 +567,7 @@ GrpcServerCfg -->|"Creates"| GrpcServer
 GrpcClientCfg -->|"Creates"| GrpcChannel
 OtlpCfg -->|"Creates"| OtlpExporter
 SessionCfg -->|"Configures"| HZInstance
-CorsCfg -->|"Creates"| CorsProps
+CorsCfg -->|"Uses"| CorsProps
 
 subgraph subGraph3 ["Business Module Contributions"]
     ProductMapCfg

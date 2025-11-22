@@ -90,10 +90,10 @@ OrdersDB["orders schema"]
 InventoryDB["inventory schema"]
 
 CatalogMod -->|"@Entity"| CatalogDB
-OrdersMod -->|"Liquibaseapplies"| OrdersDB
-InventoryMod -->|"Liquibaseapplies"| InventoryDB
-CatalogChangelog -->|"@Entity"| CatalogDB
-OrdersChangelog -->|"@Entity"| OrdersDB
+OrdersMod -->|"@Entity"| OrdersDB
+InventoryMod -->|"@Entity"| InventoryDB
+CatalogChangelog -->|"Liquibaseapplies"| CatalogDB
+OrdersChangelog -->|"Liquibaseapplies"| OrdersDB
 InventoryChangelog -->|"Liquibaseapplies"| InventoryDB
 
 subgraph subGraph2 ["PostgreSQL Schemas"]

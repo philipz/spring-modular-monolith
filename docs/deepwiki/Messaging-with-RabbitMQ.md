@@ -59,7 +59,7 @@ subgraph subGraph1 ["RabbitMQ Broker"]
     Exchange
     Queue
     DLQ
-    Exchange -->|"PublishesOrderCreatedEvent"| Queue
+    Exchange -->|"Routing Key:order.created"| Queue
     Queue -->|"Failed messages"| DLQ
 end
 
@@ -155,7 +155,7 @@ DLQ["new-orders.dlq<br>(dead-letter queue)"]
 Consumer["amqp-modulith<br>Consumer"]
 
 Publisher -->|"Publishes to"| Exchange
-Exchange -->|"Publishes to"| MainQueue
+Exchange -->|"Routing Key:order.created"| MainQueue
 MainQueue -->|"Processing failure"| DLQ
 MainQueue -->|"Successful processing"| Consumer
 ```

@@ -45,7 +45,7 @@ Nginx -->|"/ → proxy_pass"| Frontend
 Nginx -->|"/api/** → traffic split"| Monolith
 Monolith -->|"Read/Writespring.session.hazelcast"| Hazelcast
 Monolith -->|"spring.rabbitmq.host"| RabbitMQ
-Monolith -->|"HTTP/HTTPS"| PostgresMain
+Monolith -->|"spring.datasource.urljdbc:postgresql://postgres:5432/postgres"| PostgresMain
 Monolith -->|"OTLP_ENDPOINTUnsupported markdown: link"| HyperDX
 OrdersSvc -->|"Read/Write"| Hazelcast
 OrdersSvc -->|"SPRING_RABBITMQ_HOST"| RabbitMQ
@@ -164,10 +164,10 @@ end
 
 subgraph subGraph7 ["Spring Modulith Modules"]
     HazelcastConfig -->|"Provides beans"| ProductMapStore
-    HazelcastConfig -->|"Used by"| OrderMapStore
+    HazelcastConfig -->|"Provides beans"| OrderMapStore
     HazelcastConfig -->|"Provides beans"| InventoryMapStore
     CacheService -->|"Used by"| ProductMapStore
-    CacheService -->|"Provides beans"| OrderMapStore
+    CacheService -->|"Used by"| OrderMapStore
     OrderService -->|"API callproductApi.getProductByCode()"| ProductApi
 
 subgraph subGraph6 ["notifications module"]
@@ -267,9 +267,9 @@ InventorySchema["inventory schema<br>inventory table"]
 EventsSchema["events schema<br>event_publication table<br>spring.modulith.events.jdbc.schema"]
 
 CatalogSvc -->|"Read/Write"| ProductCache
-OrdersSvc -->|"Provides"| OrderCache
-InventorySvc -->|"Provides"| InventoryCache
-InventorySvc -->|"Provides"| InventoryIndex
+OrdersSvc -->|"Read/Write"| OrderCache
+InventorySvc -->|"Read/Write"| InventoryCache
+InventorySvc -->|"Index Lookup"| InventoryIndex
 ProductMS -->|"JDBCJpaRepository"| CatalogSchema
 OrderMS -->|"JDBC"| OrdersSchema
 InventoryMS -->|"JDBC"| InventorySchema
@@ -453,9 +453,9 @@ SpringBootAuto1 --> RabbitClient
 SpringBootAuto1 --> gRPCComm
 OrdersSvc --> SpringBootAuto2
 SpringBootAuto2 --> WebMVC
-SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10sgRPCOTLP_ENDPOINTgRPCHYPERDX_API_KEY"| JDBC
-SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10sgRPCOTLP_ENDPOINTgRPCHYPERDX_API_KEY"| RabbitClient
-SpringBootAuto2 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10s"| gRPCComm
+SpringBootAuto2 --> JDBC
+SpringBootAuto2 --> RabbitClient
+SpringBootAuto2 --> gRPCComm
 Nginx --> OTelModule
 SpringBootAuto1 -->|"gRPCotlp.grpc.compression=gzipotlp.grpc.timeout=10s"| OTLPGrpc
 SpringBootAuto2 -->|"gRPCOTLP_ENDPOINT"| OTLPGrpc

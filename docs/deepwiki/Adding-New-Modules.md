@@ -362,8 +362,8 @@ HazelcastConfig -->|"Registers MapStore"| IMap
 IMap -->|"Cache Miss"| Cache
 Domain -->|"JDBC"| Schema
 LiquibaseConfig -->|"Migrations"| Schema
-Domain -->|"Consumed by other modules"| EventBus
-Events -->|"Migrations"| EventBus
+Domain -->|"Publish Event"| EventBus
+Events -->|"Consumed by other modules"| EventBus
 
 subgraph subGraph3 ["Hazelcast Cluster"]
     IMap
@@ -645,9 +645,9 @@ DB["payments schema<br>PostgreSQL"]
 HZ["Hazelcast<br>payments-cache IMap"]
 Events["Spring Modulith<br>Event Bus"]
 
-PaymentRepo -->|"To"| DB
+PaymentRepo -->|"JDBC"| DB
 HZ -->|"Cache Miss"| PaymentMapStore
-PaymentEvent --> Events
+PaymentEvent -->|"To"| Events
 PaymentCacheConfig -->|"Contributes"| HZ
 
 subgraph Infrastructure ["Infrastructure"]
@@ -659,7 +659,7 @@ end
 subgraph subGraph5 ["payments (New Module Example)"]
     PackageInfo
     PaymentController -->|"Calls"| PaymentsApi
-    PaymentMapStore -->|"Uses"| PaymentRepo
+    PaymentMapStore -->|"Read/Write"| PaymentRepo
     PaymentSvc -->|"Publishes"| PaymentEvent
 
 subgraph subGraph4 ["web/ (Optional)"]

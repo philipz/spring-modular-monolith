@@ -42,12 +42,6 @@ webproxy -->|"Traffic Split"| orders_service
 monolith -->|"JDBC"| postgres
 monolith -->|"AMQP"| rabbitmq
 monolith -->|"OTLP gRPC :4317"| hyperdx
-orders_service -->|"JDBC"| orders_postgres
-orders_service -->|"AMQP Consume"| rabbitmq
-orders_service -->|"AMQP"| hyperdx
-amqp_modulith --> rabbitmq
-amqp_modulith -->|"JDBC"| orders_postgres
-hazelcast_mgmt -->|"Monitors"| monolith
 webproxy -->|"OTLP gRPC :4317"| hyperdx
 
 subgraph Infrastructure ["Infrastructure"]
@@ -66,8 +60,7 @@ subgraph subGraph2 ["Application Services"]
     orders_service
     amqp_modulith
     frontend_next
-    monolith --> orders_service
-    frontend_next -->|"API Proxy"| monolith
+    monolith -->|"gRPC :9090"| orders_service
 end
 
 subgraph subGraph1 ["Entry Point"]
@@ -163,9 +156,6 @@ flowchart TD
 monolith["monolith Service"]
 postgres_dep["postgres<br>service_healthy"]
 rabbitmq_dep["rabbitmq<br>service_healthy"]
-
-postgres_dep -->|"depends_on"| monolith
-rabbitmq_dep -->|"depends_on"| monolith
 ```
 
 | Property | Value |
@@ -369,11 +359,8 @@ hazelcast_mgmt["hazelcast-mgmt<br>Depends: monolith"]
 
 postgres -->|"service_healthy"| monolith
 rabbitmq -->|"service_healthy"| monolith
-orders_postgres -->|"service_healthy"| orders_service
 rabbitmq -->|"service_healthy"| orders_service
-orders_postgres -->|"service_healthy"| amqp_modulith
 rabbitmq -->|"service_healthy"| amqp_modulith
-frontend_next -->|"service_started"| webproxy
 
 subgraph subGraph1 ["Dependent Services"]
     monolith
@@ -382,7 +369,6 @@ subgraph subGraph1 ["Dependent Services"]
     webproxy
     hazelcast_mgmt
     monolith -->|"service_started"| webproxy
-    orders_service -->|"service_started"| webproxy
     monolith -->|"service_started"| hazelcast_mgmt
 end
 
@@ -591,9 +577,6 @@ flowchart TD
 postgres_tc["PostgreSQLContainer<br>postgres:17-alpine<br>@ServiceConnection"]
 rabbitmq_tc["RabbitMQContainer<br>rabbitmq:4.1.3-alpine<br>@ServiceConnection"]
 test["BookStoreApplicationTests<br>@SpringBootTest<br>RANDOM_PORT"]
-
-postgres_tc -->|"Auto-configured"| test
-rabbitmq_tc -->|"Auto-configured"| test
 
 subgraph subGraph1 ["Spring Boot Test"]
     test

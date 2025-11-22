@@ -330,8 +330,6 @@ DomainException --> GrpcExceptionHandler
 GrpcExceptionHandler -->|"instanceof check"| NOT_FOUND
 GrpcExceptionHandler -->|"instanceof check"| INVALID_ARGUMENT
 GrpcExceptionHandler -->|"fallback"| INTERNAL
-NOT_FOUND --> StatusRuntimeException
-INVALID_ARGUMENT --> StatusRuntimeException
 INTERNAL --> StatusRuntimeException
 ```
 
@@ -402,8 +400,6 @@ subgraph subGraph1 ["Extracted Service Configuration"]
     OrdersGrpcClient_Remote
     ManagedChannel_Remote
     ExternalOrdersService
-    OrdersGrpcClient_Remote --> ManagedChannel_Remote
-    ManagedChannel_Remote -->|"network call"| ExternalOrdersService
 end
 
 subgraph subGraph0 ["Monolith Configuration"]
@@ -411,8 +407,6 @@ subgraph subGraph0 ["Monolith Configuration"]
     ManagedChannel_Local
     OrdersGrpcServer
     OrdersApi
-    OrdersGrpcClient_Local --> ManagedChannel_Local
-    ManagedChannel_Local --> OrdersGrpcServer
     OrdersGrpcServer --> OrdersApi
 end
 ```

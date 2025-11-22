@@ -200,7 +200,7 @@ Server["gRPC Server :9091"]
 Tool -->|"ServerReflectionInfo RPC"| Reflection
 Reflection -->|"list services"| Tool
 Tool -->|"file containing symbol"| Reflection
-Reflection --> Tool
+Reflection -->|"FileDescriptorProto"| Tool
 Tool -->|"construct request"| Server
 ```
 

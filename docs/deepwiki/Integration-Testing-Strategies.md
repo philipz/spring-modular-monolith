@@ -304,7 +304,7 @@ Rollback1["Transaction Rollback<br>After each @Test"]
 Data2["@Sql test-orders-data.sql"]
 Rollback2["Transaction Rollback"]
 
-T1 --> Running
+T1 -->|"uses"| Running
 T1 --> Schema1
 T2 -->|"uses"| Running
 T2 --> Data2

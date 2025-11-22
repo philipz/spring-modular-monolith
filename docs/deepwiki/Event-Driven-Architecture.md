@@ -48,8 +48,48 @@ The system implements a **dual event bus architecture** where events are publish
 
 ### Architecture Overview
 
-```
+```mermaid
+flowchart TD
 
+OrderService["OrderService"]
+OrderRepo["OrderRepository"]
+EventPublicationRegistry["EventPublicationRegistry"]
+EventSerializer["EventSerializer"]
+EventsSchema["events schema<br>event_publication table"]
+InventoryListener["OrderCreatedEventHandler<br>@ApplicationModuleListener"]
+InventoryService["InventoryService"]
+NotifListener["OrderCreatedEventListener<br>@ApplicationModuleListener"]
+NotificationService["NotificationIntentService"]
+
+OrderService -->|"publishEvent(OrderCreatedEvent)"| EventPublicationRegistry
+EventPublicationRegistry -->|"Dispatch aftercommit"| InventoryListener
+EventPublicationRegistry -->|"Dispatch aftercommit"| NotifListener
+
+subgraph subGraph3 ["Notifications Module"]
+    NotifListener
+    NotificationService
+    NotifListener -->|"logIntent"| NotificationService
+end
+
+subgraph subGraph2 ["Inventory Module"]
+    InventoryListener
+    InventoryService
+    InventoryListener -->|"updateInventory"| InventoryService
+end
+
+subgraph subGraph1 ["Spring Modulith Event Infrastructure"]
+    EventPublicationRegistry
+    EventSerializer
+    EventsSchema
+    EventPublicationRegistry -->|"Persist withinsame transaction"| EventsSchema
+    EventsSchema -->|"Replay incompletepublications"| EventPublicationRegistry
+end
+
+subgraph subGraph0 ["Orders Module"]
+    OrderService
+    OrderRepo
+    OrderService -->|"saveOrder"| OrderRepo
+end
 ```
 
 **Sources:**
@@ -64,8 +104,8 @@ Spring Modulith persists events to the `events` schema in PostgreSQL **within th
 
 **Event Publication Table Structure:**
 
-```
-
+```css
+#mermaid-mcah77812cr{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-mcah77812cr .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-mcah77812cr .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-mcah77812cr .error-icon{fill:#dddddd;}#mermaid-mcah77812cr .error-text{fill:#222222;stroke:#222222;}#mermaid-mcah77812cr .edge-thickness-normal{stroke-width:1px;}#mermaid-mcah77812cr .edge-thickness-thick{stroke-width:3.5px;}#mermaid-mcah77812cr .edge-pattern-solid{stroke-dasharray:0;}#mermaid-mcah77812cr .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-mcah77812cr .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-mcah77812cr .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-mcah77812cr .marker{fill:#999;stroke:#999;}#mermaid-mcah77812cr .marker.cross{stroke:#999;}#mermaid-mcah77812cr svg{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;font-size:16px;}#mermaid-mcah77812cr p{margin:0;}#mermaid-mcah77812cr .entityBox{fill:#ffffff;stroke:#dddddd;}#mermaid-mcah77812cr .relationshipLabelBox{fill:#dddddd;opacity:0.7;background-color:#dddddd;}#mermaid-mcah77812cr .relationshipLabelBox rect{opacity:0.5;}#mermaid-mcah77812cr .labelBkg{background-color:rgba(221, 221, 221, 0.5);}#mermaid-mcah77812cr .edgeLabel .label{fill:#dddddd;font-size:14px;}#mermaid-mcah77812cr .label{font-family:ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica;color:#333;}#mermaid-mcah77812cr .edge-pattern-dashed{stroke-dasharray:8,8;}#mermaid-mcah77812cr .node rect,#mermaid-mcah77812cr .node circle,#mermaid-mcah77812cr .node ellipse,#mermaid-mcah77812cr .node polygon{fill:#ffffff;stroke:#dddddd;stroke-width:1px;}#mermaid-mcah77812cr .relationshipLine{stroke:#999;stroke-width:1;fill:none;}#mermaid-mcah77812cr .marker{fill:none!important;stroke:#999!important;stroke-width:1;}#mermaid-mcah77812cr :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}EVENT_PUBLICATIONuuididPKtimestampcompletion_dateuuidlistener_idtimestamppublication_datevarcharserialized_event
 ```
 
 The `event_publication` table tracks:
@@ -86,8 +126,23 @@ Incomplete publications (where `completion_date` is NULL) are automatically retr
 
 Events are published using Spring's `ApplicationEventPublisher` within the domain service:
 
-```
+```mermaid
+sequenceDiagram
+  participant OrdersRestController
+  participant OrderService
+  participant OrderRepository
+  participant ApplicationEventPublisher
+  participant EventPublicationRegistry
+  participant PostgreSQL
 
+  OrdersRestController->>OrderService: createOrder(request)
+  OrderService->>OrderRepository: save(order)
+  OrderRepository->>PostgreSQL: INSERT into orders.orders
+  OrderService->>ApplicationEventPublisher: publishEvent(OrderCreatedEvent)
+  ApplicationEventPublisher->>EventPublicationRegistry: register(event, listeners)
+  EventPublicationRegistry->>PostgreSQL: INSERT into events.event_publication
+  PostgreSQL-->>EventPublicationRegistry: commit transaction
+  EventPublicationRegistry-->>OrderService: async dispatch to listeners
 ```
 
 The `OrderService` publishes the `OrderCreatedEvent` after successfully persisting the order. Spring Modulith intercepts the publication, persists it to the event log, then dispatches it to registered listeners **after the transaction commits**.
@@ -121,8 +176,39 @@ Events published through Spring Modulith are **republished to RabbitMQ** for ext
 * The `amqp-modulith` service to process events asynchronously
 * Future microservices to subscribe to domain events
 
-```
+```mermaid
+flowchart TD
 
+ModulithBus["Spring Modulith<br>Event Bus"]
+RabbitPublisher["RabbitMQ<br>Event Publisher"]
+Exchange["bookstore.events<br>Exchange"]
+OrderQueue["orders.created<br>Queue"]
+DLQ["orders.created.dlq<br>Dead Letter Queue"]
+OrdersSvc["orders-service"]
+AMQPMod["amqp-modulith"]
+
+RabbitPublisher -->|"Publish"| Exchange
+OrderQueue -->|"Consume"| OrdersSvc
+OrderQueue -->|"Consume"| AMQPMod
+
+subgraph subGraph2 ["External Consumers"]
+    OrdersSvc
+    AMQPMod
+end
+
+subgraph subGraph1 ["RabbitMQ Broker"]
+    Exchange
+    OrderQueue
+    DLQ
+    Exchange -->|"Route"| OrderQueue
+    OrderQueue -->|"Failed messages"| DLQ
+end
+
+subgraph Monolith ["Monolith"]
+    ModulithBus
+    RabbitPublisher
+    ModulithBus -->|"Republish"| RabbitPublisher
+end
 ```
 
 **Sources:**
@@ -152,8 +238,17 @@ RabbitMQ runs on port **5672** (AMQP) with management console on **15672**. Defa
 
 Failed message processing is handled through dead letter queues (DLQ):
 
-```
+```mermaid
+flowchart TD
 
+MainQueue["orders.created<br>Queue"]
+DLQ["orders.created.dlq<br>Dead Letter Queue"]
+Consumer["Event Consumer"]
+
+MainQueue -->|"Max retriesexceeded"| DLQ
+Consumer -->|"Process"| MainQueue
+Consumer -->|"Failure"| MainQueue
+DLQ -->|"Manualinvestigation"| Consumer
 ```
 
 When a consumer fails to process a message after the configured retry count, RabbitMQ automatically routes it to the dead letter queue for manual investigation and potential replay.
@@ -170,8 +265,30 @@ When a consumer fails to process a message after the configured retry count, Rab
 
 The `OrderCreatedEvent` demonstrates the complete event flow from publication to consumption:
 
-```
+```mermaid
+sequenceDiagram
+  participant REST Client
+  participant OrdersRestController
+  participant OrderService
+  participant PostgreSQL
+  participant Spring Modulith
+  participant InventoryEventHandler
+  participant NotificationListener
+  participant RabbitMQ Broker
 
+  REST Client->>OrdersRestController: POST /api/orders
+  OrdersRestController->>OrderService: createOrder(request)
+  note over OrderService,PostgreSQL: Transaction begins
+  OrderService->>PostgreSQL: INSERT into orders.orders
+  OrderService->>Spring Modulith: publishEvent(OrderCreatedEvent)
+  Spring Modulith->>PostgreSQL: INSERT into events.event_publication
+  note over OrderService,PostgreSQL: Transaction commits
+  Spring Modulith->>InventoryEventHandler: onOrderCreated(event)
+  InventoryEventHandler->>PostgreSQL: UPDATE inventory.inventory
+  Spring Modulith->>NotificationListener: SET available_quantity = available_quantity - qty
+  NotificationListener-->>NotificationListener: onOrderCreated(event)
+  Spring Modulith->>RabbitMQ Broker: Log notification intent
+  OrdersRestController-->>REST Client: Publish to bookstore.events
 ```
 
 **Sources:**
@@ -207,8 +324,19 @@ Modules consume events using the `@ApplicationModuleListener` annotation. Spring
 
 **Inventory Module Example:**
 
-```
+```mermaid
+flowchart TD
 
+Event["OrderCreatedEvent<br>(productCode, quantity)"]
+Listener["InventoryEventHandler<br>@ApplicationModuleListener"]
+Service["InventoryService"]
+Cache["inventory-cache<br>Hazelcast IMap"]
+DB["inventory schema<br>inventory table"]
+
+Event -->|"onOrderCreated"| Listener
+Listener -->|"updateStock"| Service
+Service -->|"decrementQuantity"| Cache
+Cache -->|"Write-throughInventoryMapStore"| DB
 ```
 
 The `InventoryService` decrements available stock when processing the event. Cache write-through ensures the database is updated synchronously.
@@ -269,8 +397,19 @@ Spring Modulith automatically replays incomplete event publications on applicati
 
 **Replay Process:**
 
-```
+```mermaid
+flowchart TD
 
+Start["Application Startup"]
+Query["Query event_publication<br>WHERE completion_date IS NULL"]
+Events["Incomplete Events"]
+Dispatch["Dispatch to Listeners"]
+Track["Update completion_date"]
+
+Start --> Query
+Query --> Events
+Events --> Dispatch
+Dispatch --> Track
 ```
 
 **Sources:**
@@ -298,8 +437,22 @@ For debugging or data recovery, events can be replayed by:
 
 Spring Modulith provides a `Scenario` API for testing event publication and consumption in integration tests:
 
-```
+```mermaid
+sequenceDiagram
+  participant InventoryIntegrationTests
+  participant Spring Modulith Scenario
+  participant Event Publisher
+  participant InventoryEventHandler
+  participant InventoryService
 
+  InventoryIntegrationTests->>Spring Modulith Scenario: publish(OrderCreatedEvent)
+  Spring Modulith Scenario->>Event Publisher: Publish to internal bus
+  Event Publisher->>InventoryEventHandler: Dispatch event
+  InventoryEventHandler->>InventoryService: updateStock(productCode, quantity)
+  InventoryIntegrationTests->>Spring Modulith Scenario: andWaitForStateChange()
+  Spring Modulith Scenario->>InventoryService: Check stockLevel(productCode)
+  InventoryService-->>Spring Modulith Scenario: 598 (600 - 2)
+  Spring Modulith Scenario-->>InventoryIntegrationTests: Assertion passes
 ```
 
 **Example Test:**

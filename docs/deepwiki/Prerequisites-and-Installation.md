@@ -53,8 +53,8 @@ HazelcastImg["hazelcast/hazelcast:5.5.2<br>container image"]
 HyperDXImg["hyperdx/hyperdx:latest<br>container image"]
 NginxImg["nginx:1.29.2-alpine-otel<br>container image"]
 
-Java21 -->|"executes"| MVNWrapper
-Maven -->|"executes"| MVNWrapper
+Java21 -->|"compiles"| MVNWrapper
+Maven -->|"wrapped by"| MVNWrapper
 Task -->|"executes"| TaskfileYML
 Docker -->|"pulls"| PostgresImg
 Docker -->|"pulls"| RabbitMQImg
@@ -81,7 +81,7 @@ subgraph subGraph1 ["Repository Clone"]
     MVNWrapper
     ComposeYML
     TaskfileYML
-    GitRepo -->|"compiles"| MVNWrapper
+    GitRepo -->|"contains"| MVNWrapper
     GitRepo -->|"contains"| ComposeYML
     GitRepo -->|"contains"| TaskfileYML
     GitRepo -->|"requires"| EnvFile
@@ -459,12 +459,6 @@ EnvFile --> SPRING_DATASOURCE_URL
 EnvFile --> SPRING_RABBITMQ_HOST
 EnvFile --> SPRING_PROFILES_ACTIVE
 ComposeFile -->|"references"| HYPERDX_KEY
-HYPERDX_KEY --> Webproxy
-HYPERDX_KEY --> Monolith
-HYPERDX_KEY --> HyperDX
-SPRING_DATASOURCE_URL --> Monolith
-SPRING_RABBITMQ_HOST --> Monolith
-SPRING_PROFILES_ACTIVE --> Monolith
 
 subgraph subGraph3 ["Services Using Variables"]
     Monolith

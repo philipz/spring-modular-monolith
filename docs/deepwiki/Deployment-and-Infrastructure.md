@@ -457,7 +457,7 @@ subgraph subGraph1 ["Hazelcast Cluster: bookstore-cluster"]
     monolithHz --> productCache
     monolithHz --> orderCache
     monolithHz --> inventoryCache
-    monolithHz -->|"Cluster Sync"| sessionCache
+    monolithHz --> sessionCache
     ordersHz --> orderCache
     ordersHz --> sessionCache
 

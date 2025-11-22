@@ -73,11 +73,11 @@ common -->|"Shared Utilities"| orders
 common -->|"Shared Utilities"| inventory
 common -->|"Shared Utilities"| notifications
 catalog --> catalogSchema
-orders -->|"ProductApi.getProductByCode()"| ordersSchema
+orders --> ordersSchema
 inventory --> inventorySchema
 catalog --> rest
-orders -->|"OrderCreatedEvent"| rest
-orders -->|"OrderCreatedEvent"| grpc
+orders --> rest
+orders --> grpc
 
 subgraph subGraph3 ["API Surface"]
     rest
@@ -154,7 +154,7 @@ ordersService -->|"JDBC"| ordersPostgres
 ordersService -->|"AMQP"| rabbitmq
 ordersService -->|"OTLP_ENDPOINT"| hyperdx
 ordersService -->|"Embedded"| hazelcast
-amqp -->|"JDBC"| rabbitmq
+amqp -->|"AMQP Consumer"| rabbitmq
 amqp -->|"JDBC"| ordersPostgres
 
 subgraph Observability ["Observability"]

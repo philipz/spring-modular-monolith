@@ -57,15 +57,15 @@ Orders -->|"Uses"| CacheHelpers
 Orders -->|"Uses"| SessionMgmt
 Inventory -->|"Uses"| Utilities
 Inventory -->|"Uses"| Exceptions
-Inventory -->|"UsesUsesUsesUsesUsesUsesUsesUsesUsesUsesUsesUses"| CacheHelpers
-Notifications --> Utilities
+Inventory -->|"Uses"| CacheHelpers
+Notifications -->|"Uses"| Utilities
 Notifications -->|"Uses"| Exceptions
 
 subgraph subGraph2 ["Infrastructure Module (Open)"]
     Common
     Common --> Utilities
     Common --> Exceptions
-    Common -->|"Uses"| CacheHelpers
+    Common --> CacheHelpers
     Common --> SessionMgmt
 
 subgraph subGraph1 ["Exported Components"]

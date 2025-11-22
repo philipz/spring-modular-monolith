@@ -55,7 +55,7 @@ Props -->|"injected into"| InventoryConfig
 OrdersMapConfig -->|"contributed viaObjectProvider"| MainConfig
 ProductsMapConfig -->|"contributed viaObjectProvider"| MainConfig
 InventoryMapConfig -->|"contributed viaObjectProvider"| MainConfig
-InventoryIndexMapConfig -->|"references"| MainConfig
+InventoryIndexMapConfig -->|"contributed viaObjectProvider"| MainConfig
 
 subgraph subGraph3 ["inventory Module"]
     InventoryConfig
@@ -71,7 +71,7 @@ subgraph subGraph2 ["catalog Module"]
     CatalogConfig
     ProductsMapConfig
     ProductMapStore
-    CatalogConfig -->|"injected into"| ProductsMapConfig
+    CatalogConfig --> ProductsMapConfig
     ProductsMapConfig -->|"references"| ProductMapStore
 end
 
@@ -233,7 +233,7 @@ HZInstance["HazelcastInstance<br>Hazelcast.newHazelcastInstance()"]
 
 ConfigMethod -->|"creates"| ConfigInstance
 ConfigInstance -->|"receives"| MapConfigs
-ConfigInstance -->|"creates"| InstanceMethod
+ConfigInstance -->|"passed to"| InstanceMethod
 InstanceMethod -->|"creates"| HZInstance
 HZInstance -->|"used by"| CacheBeans
 HZInstance -->|"used by"| NameBeans

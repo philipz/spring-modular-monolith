@@ -48,8 +48,8 @@ GrpcHealthIndicator["GrpcHealthIndicator<br>Actuator Integration"]
 
 GrpcServerConfig -->|"registers"| OrdersGrpcService
 GrpcServerConfig -->|"uses properties"| GrpcProperties
-OrdersGrpcService -->|"uses properties"| GrpcMessageMapper
-OrdersGrpcService -->|"uses properties"| GrpcExceptionHandler
+OrdersGrpcService -->|"uses"| GrpcMessageMapper
+OrdersGrpcService -->|"delegates to"| GrpcExceptionHandler
 OrdersGrpcClient -->|"uses"| GrpcMessageMapper
 OrdersGrpcClient -->|"maps exceptions"| GrpcExceptionHandler
 GrpcRetryInterceptor -->|"uses properties"| GrpcProperties
@@ -333,7 +333,7 @@ subgraph subGraph2 ["Server Side"]
     ServerDTO
     ResponseDTO
     ProtoResponse
-    ServerDTO -->|"GrpcMessageMappertoCreateOrderRequestProto()"| ResponseDTO
+    ServerDTO -->|"OrdersApicreateOrder()"| ResponseDTO
     ResponseDTO -->|"GrpcMessageMappertoCreateOrderResponse()"| ProtoResponse
 end
 
@@ -407,7 +407,7 @@ ResponseObserver["responseObserver<br>.onError()"]
 ServiceMethod --> TryBlock
 TryBlock -->|"exception thrown"| CatchBlock
 CatchBlock --> Handler
-Handler -->|"exception thrownStatusRuntimeExceptionOrderNotFoundExceptionInvalidOrderExceptionConstraintViolationExceptionOther"| CheckType
+Handler --> CheckType
 CheckType -->|"StatusRuntimeException"| Propagate
 CheckType -->|"OrderNotFoundException"| NotFound
 CheckType -->|"InvalidOrderException"| InvalidArg
@@ -562,7 +562,7 @@ Response["Health Response"]
 
 Actuator -->|"calls health()"| GrpcHealthIndicator
 GrpcHealthIndicator -->|"checks"| GrpcServer
-GrpcServer -->|"calls health()"| Check
+GrpcServer -->|"isShutdown()?isTerminated()?"| Check
 Check -->|"Yes"| UpHealth
 Check -->|"No"| DownHealth
 UpHealth --> Response
