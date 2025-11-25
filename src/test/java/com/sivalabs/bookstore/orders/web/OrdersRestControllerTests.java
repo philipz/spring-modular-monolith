@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sivalabs.bookstore.common.models.PagedResult;
 import com.sivalabs.bookstore.orders.api.CreateOrderRequest;
 import com.sivalabs.bookstore.orders.api.CreateOrderResponse;
@@ -26,28 +27,37 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-/**
- * Unit tests for OrdersRestController using @WebMvcTest.
- * Tests all orders REST API endpoints with mocked OrdersRemoteClient including gRPC error scenarios.
- */
-@WebMvcTest(OrdersRestController.class)
+@ExtendWith(MockitoExtension.class)
 class OrdersRestControllerTests {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    @MockBean
+    @Mock
     private OrdersRemoteClient ordersRemoteClient;
+
+    @InjectMocks
+    private OrdersRestController ordersRestController;
+
+    @BeforeEach
+    void setUp() {
+        this.mockMvc = MockMvcBuilders.standaloneSetup(ordersRestController)
+                .setControllerAdvice(new OrdersRestExceptionHandler())
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
+    }
 
     @Test
     void shouldCreateOrderSuccessfully() throws Exception {

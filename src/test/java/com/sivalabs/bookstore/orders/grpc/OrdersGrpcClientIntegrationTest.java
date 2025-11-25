@@ -36,13 +36,13 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -81,10 +81,10 @@ class OrdersGrpcClientIntegrationTest {
         registry.add("bookstore.grpc.client.deadline-ms", () -> 2_000);
     }
 
-    @MockBean
+    @MockitoBean
     private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 
-    @MockBean
+    @MockitoBean
     private ProductApi productApi;
 
     @Autowired
