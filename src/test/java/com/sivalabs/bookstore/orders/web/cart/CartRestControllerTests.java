@@ -17,25 +17,37 @@ import com.sivalabs.bookstore.orders.web.cart.dto.AddToCartRequest;
 import com.sivalabs.bookstore.orders.web.cart.dto.UpdateQuantityRequest;
 import java.math.BigDecimal;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@WebMvcTest(CartRestController.class)
+@ExtendWith(MockitoExtension.class)
 class CartRestControllerTests {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    @MockBean
+    @Mock
     private ProductApi productApi;
+
+    @InjectMocks
+    private CartRestController cartRestController;
+
+    @BeforeEach
+    void setUp() {
+        this.mockMvc = MockMvcBuilders.standaloneSetup(cartRestController)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
+    }
 
     @Test
     void shouldAddItemToCart() throws Exception {
@@ -146,7 +158,7 @@ class CartRestControllerTests {
     }
 
     @Test
-    void shouldGetCart() throws Exception {
+    void shouldGetCartSuccessfully() throws Exception {
         ProductDto product = new ProductDto(
                 "P100", "Test Product", "A test product description", "test.jpg", new BigDecimal("29.99"));
         when(productApi.getByCode("P100")).thenReturn(Optional.of(product));

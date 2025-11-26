@@ -2,6 +2,8 @@ package com.sivalabs.bookstore.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sivalabs.bookstore.TestcontainersConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -11,51 +13,53 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Validation tests for OpenAPI specification completeness.
- * Ensures that all REST endpoints, DTOs, and error responses are properly documented.
+ * Ensures that all REST endpoints, DTOs, and error responses are properly
+ * documented.
  */
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
-@ActiveProfiles("test")
 class OpenApiSpecificationTests {
 
+    private MockMvc mockMvc;
+
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebApplicationContext context;
 
-    @LocalServerPort
-    private int port;
-
-    @Test
-    void shouldLoadOpenApiSpecificationSuccessfully() {
-        // Given: The application is running
-        String apiDocsUrl = "http://localhost:" + port + "/api-docs";
-
-        // When: Fetching the OpenAPI specification
-        ResponseEntity<String> response = restTemplate.getForEntity(apiDocsUrl, String.class);
-
-        // Then: The specification should be accessible
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
+    @BeforeEach
+    void setUp() {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
     }
 
     @Test
-    void shouldValidateOpenApiSpecAgainstOpenApi3Schema() {
+    void shouldLoadOpenApiSpecificationSuccessfully() throws Exception {
         // Given: The application is running
-        String apiDocsUrl = "http://localhost:" + port + "/api-docs";
+        String apiDocsUrl = "/api-docs";
+
+        // When: Fetching the OpenAPI specification
+        mockMvc.perform(get(apiDocsUrl)).andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldValidateOpenApiSpecAgainstOpenApi3Schema() throws Exception {
+        // Given: The application is running
+        String apiDocsUrl = "/api-docs";
 
         // When: Parsing the OpenAPI specification
-        SwaggerParseResult parseResult = new OpenAPIV3Parser().readLocation(apiDocsUrl, null, null);
+        String responseBody =
+                mockMvc.perform(get(apiDocsUrl)).andReturn().getResponse().getContentAsString();
+
+        SwaggerParseResult parseResult = new OpenAPIV3Parser().readContents(responseBody, null, null);
 
         // Then: The specification should be valid OpenAPI 3.0
         assertThat(parseResult.getMessages())
@@ -279,7 +283,8 @@ class OpenApiSpecificationTests {
         // Then: PagedResult should be documented (as part of response)
         Map<String, Schema> schemas = openAPI.getComponents().getSchemas();
 
-        // Find any PagedResult schema variant (could be PagedResultProductDto or similar)
+        // Find any PagedResult schema variant (could be PagedResultProductDto or
+        // similar)
         boolean hasPagedResult = schemas.keySet().stream().anyMatch(key -> key.contains("PagedResult"));
 
         assertThat(hasPagedResult).as("PagedResult schema should be documented").isTrue();
@@ -384,12 +389,18 @@ class OpenApiSpecificationTests {
     // Helper methods
 
     private OpenAPI loadOpenApiSpec() {
-        String apiDocsUrl = "http://localhost:" + port + "/api-docs";
-        SwaggerParseResult parseResult = new OpenAPIV3Parser().readLocation(apiDocsUrl, null, null);
-        assertThat(parseResult.getOpenAPI())
-                .as("OpenAPI spec should be loaded successfully")
-                .isNotNull();
-        return parseResult.getOpenAPI();
+        try {
+            String apiDocsUrl = "/api-docs";
+            String responseBody =
+                    mockMvc.perform(get(apiDocsUrl)).andReturn().getResponse().getContentAsString();
+            SwaggerParseResult parseResult = new OpenAPIV3Parser().readContents(responseBody, null, null);
+            assertThat(parseResult.getOpenAPI())
+                    .as("OpenAPI spec should be loaded successfully")
+                    .isNotNull();
+            return parseResult.getOpenAPI();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getHttpMethod(PathItem pathItem, Operation operation) {

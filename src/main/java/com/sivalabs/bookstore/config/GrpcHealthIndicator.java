@@ -2,14 +2,15 @@ package com.sivalabs.bookstore.config;
 
 import io.grpc.Server;
 import java.util.Objects;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
- * Simple Actuator health indicator that reflects the state of the embedded gRPC server.
+ * Simple Actuator health indicator that reflects the state of the embedded gRPC
+ * server.
  */
 @Component
 @ConditionalOnClass(Server.class)
